@@ -302,7 +302,7 @@ export default function MarketWatchClient() {
     width: "100%",
     padding: "8px 12px",
     borderRadius: 6,
-    border: "1px solid #d1d5db",
+    border: "1px solid hsl(var(--border))",
     fontSize: 14,
     outline: "none",
     boxSizing: "border-box",
@@ -343,7 +343,7 @@ export default function MarketWatchClient() {
 
         {/* Search */}
         <div style={{ marginBottom: 12 }}>
-          <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}>
+          <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "hsl(var(--foreground))" }}>
             Zip Code or TMK
           </label>
           <div style={{ display: "flex", gap: 8 }}>
@@ -372,7 +372,7 @@ export default function MarketWatchClient() {
 
         {/* Timeframe */}
         <div style={{ marginBottom: 12 }}>
-          <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}>
+          <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "hsl(var(--foreground))" }}>
             Timeframe
           </label>
           <select value={timeframe} onChange={(e) => setTimeframe(e.target.value as typeof timeframe)} style={selectStyle}>
@@ -386,7 +386,7 @@ export default function MarketWatchClient() {
 
         {/* Property Type */}
         <div style={{ marginBottom: 16 }}>
-          <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}>
+          <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "hsl(var(--foreground))" }}>
             Property Type
           </label>
           <select
@@ -403,7 +403,7 @@ export default function MarketWatchClient() {
         {/* Status Counts */}
         {totalListings > 0 && (
           <div style={{ marginBottom: 16 }}>
-            <div style={{ fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 8 }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: "hsl(var(--foreground))", marginBottom: 8 }}>
               Status Filter ({totalListings} total)
             </div>
             {Object.entries(statusCounts).map(([status, count]) => {
@@ -449,7 +449,7 @@ export default function MarketWatchClient() {
         {/* Price Changes */}
         {(priceChanges.increases > 0 || priceChanges.decreases > 0) && (
           <div style={{ marginBottom: 16 }}>
-            <div style={{ fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 8 }}>Price Changes</div>
+            <div style={{ fontSize: 12, fontWeight: 600, color: "hsl(var(--foreground))", marginBottom: 8 }}>Price Changes</div>
             <div style={{ display: "flex", gap: 8 }}>
               <div
                 style={{
@@ -481,7 +481,7 @@ export default function MarketWatchClient() {
 
         {/* Legend */}
         <div style={{ borderTop: "1px solid #e5e7eb", paddingTop: 12 }}>
-          <div style={{ fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 8 }}>Legend</div>
+          <div style={{ fontSize: 12, fontWeight: 600, color: "hsl(var(--foreground))", marginBottom: 8 }}>Legend</div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
             {Object.entries(STATUS_COLORS).map(([status, color]) => (
               <div key={status} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11 }}>
@@ -494,11 +494,11 @@ export default function MarketWatchClient() {
                     border: `1.5px solid ${color.stroke}`,
                   }}
                 />
-                <span style={{ color: "#6b7280" }}>{color.label}</span>
+                <span style={{ color: "hsl(var(--muted-foreground))" }}>{color.label}</span>
               </div>
             ))}
           </div>
-          <div style={{ marginTop: 8, display: "flex", gap: 12, fontSize: 11, color: "#6b7280" }}>
+          <div style={{ marginTop: 8, display: "flex", gap: 12, fontSize: 11, color: "hsl(var(--muted-foreground))" }}>
             {Object.entries(PROPERTY_TYPE_SHAPES).map(([type, shape]) => (
               <span key={type}>
                 {shape === "circle" ? "\u25CF" : shape === "diamond" ? "\u25C6" : "\u25B2"} {type}
@@ -526,7 +526,7 @@ export default function MarketWatchClient() {
         )}
 
         {loading && (
-          <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: 200, color: "#6b7280" }}>
+          <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: 200, color: "hsl(var(--muted-foreground))" }}>
             Loading market data...
           </div>
         )}
@@ -539,7 +539,7 @@ export default function MarketWatchClient() {
               justifyContent: "center",
               alignItems: "center",
               height: 300,
-              color: "#9ca3af",
+              color: "hsl(var(--muted-foreground))",
             }}
           >
             <div style={{ fontSize: 48, marginBottom: 12 }}>&#x1F50D;</div>
@@ -548,7 +548,7 @@ export default function MarketWatchClient() {
         )}
 
         {!loading && filteredListings.length === 0 && totalListings > 0 && (
-          <div style={{ textAlign: "center", padding: 40, color: "#9ca3af" }}>
+          <div style={{ textAlign: "center", padding: 40, color: "hsl(var(--muted-foreground))" }}>
             No listings match the selected status filters.
           </div>
         )}
@@ -556,7 +556,7 @@ export default function MarketWatchClient() {
         {/* Google Map / Hot Sheet */}
         {(filteredListings.length > 0 || tmkBoundary || loading) && (
           <>
-            <div style={{ fontSize: 13, color: "#6b7280", marginBottom: 8 }}>
+            <div style={{ fontSize: 13, color: "hsl(var(--muted-foreground))", marginBottom: 8 }}>
               {filteredListings.length > 0 ? `Showing ${filteredListings.length} of ${listings.length} listings` : loading ? "Loading..." : "No listings found"}
             </div>
             <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
@@ -572,7 +572,7 @@ export default function MarketWatchClient() {
                     minHeight: 400,
                     borderRadius: 12,
                     overflow: "hidden",
-                    border: "1px solid #e5e7eb",
+                    border: "1px solid hsl(var(--border))",
                     marginBottom: 16,
                   }}
                 >
@@ -646,8 +646,8 @@ export default function MarketWatchClient() {
                                 {selectedListing.isNew ? "New" : (STATUS_COLORS[selectedListing.status] || STATUS_COLORS.Active).label}
                               </span>
                             </div>
-                            <div style={{ fontSize: 13, color: "#374151", marginBottom: 6 }}>{selectedListing.address}</div>
-                            <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 6 }}>
+                            <div style={{ fontSize: 13, color: "hsl(var(--foreground))", marginBottom: 6 }}>{selectedListing.address}</div>
+                            <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginBottom: 6 }}>
                               {[
                                 selectedListing.beds && `${selectedListing.beds} bd`,
                                 selectedListing.baths && `${selectedListing.baths} ba`,
@@ -655,12 +655,12 @@ export default function MarketWatchClient() {
                                 selectedListing.daysOnMarket != null && `${selectedListing.daysOnMarket} DOM`,
                               ].filter(Boolean).join(" \u00B7 ")}
                             </div>
-                            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#9ca3af", marginBottom: 4 }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "hsl(var(--muted-foreground))", marginBottom: 4 }}>
                               {selectedListing.listingId && <span>MLS# {selectedListing.listingId}</span>}
                               {selectedListing.propertySubType && <span>{selectedListing.propertySubType}</span>}
                             </div>
                             {(selectedListing.subdivision || selectedListing.ownershipType) && (
-                              <div style={{ fontSize: 11, color: "#6b7280", marginBottom: 8 }}>
+                              <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", marginBottom: 8 }}>
                                 {[
                                   selectedListing.subdivision,
                                   selectedListing.ownershipType === "Fee Simple" ? "Fee Simple" : selectedListing.ownershipType === "Leasehold" ? "Leasehold" : selectedListing.ownershipType,
@@ -706,7 +706,7 @@ export default function MarketWatchClient() {
                 const cmp = typeof av === "number" && typeof bv === "number" ? av - bv : String(av).localeCompare(String(bv));
                 return sortDir === "asc" ? cmp : -cmp;
               });
-              const thStyle: React.CSSProperties = { position: "sticky", top: 0, background: "#f9fafb", padding: "8px 10px", fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: "#6b7280", cursor: "pointer", whiteSpace: "nowrap", borderBottom: "2px solid #e5e7eb", textAlign: "left", userSelect: "none" };
+              const thStyle: React.CSSProperties = { position: "sticky", top: 0, background: "hsl(var(--muted))", padding: "8px 10px", fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: "hsl(var(--muted-foreground))", cursor: "pointer", whiteSpace: "nowrap", borderBottom: "2px solid #e5e7eb", textAlign: "left", userSelect: "none" };
               const tdStyle: React.CSSProperties = { padding: "6px 10px", fontSize: 13, borderBottom: "1px solid #f3f4f6", whiteSpace: "nowrap" };
               const getStatusLabel = (l: Listing) => {
                 if (l.isNew) return "NEW";
@@ -721,7 +721,7 @@ export default function MarketWatchClient() {
               const fmtDate = (d?: string) => { if (!d) return ""; const dt = new Date(d); return `${String(dt.getMonth() + 1).padStart(2, "0")}/${String(dt.getDate()).padStart(2, "0")}/${String(dt.getFullYear()).slice(-2)}`; };
 
               return (
-                <div style={{ height: "calc(100vh - 280px)", minHeight: 400, overflow: "auto", border: "1px solid #e5e7eb", borderRadius: 12 }}>
+                <div style={{ height: "calc(100vh - 280px)", minHeight: 400, overflow: "auto", border: "1px solid hsl(var(--border))", borderRadius: 12 }}>
                   <table style={{ width: "100%", borderCollapse: "collapse" }}>
                     <thead>
                       <tr>

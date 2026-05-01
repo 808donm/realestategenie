@@ -96,12 +96,12 @@ export default function MarketQuickLookClient() {
       <div
         style={{
           padding: "20px 24px",
-          border: "1px solid #e5e7eb",
+          border: "1px solid hsl(var(--border))",
           borderRadius: 12,
           backgroundColor: "#fff",
         }}
       >
-        <div style={{ fontSize: 13, fontWeight: 500, color: "#6b7280", marginBottom: 12 }}>{stat.label}</div>
+        <div style={{ fontSize: 13, fontWeight: 500, color: "hsl(var(--muted-foreground))", marginBottom: 12 }}>{stat.label}</div>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
           <div style={{ fontSize: 32, fontWeight: 700, color: "#111827" }}>{displayValue}</div>
           <TrendArrow value={stat.trend} />
@@ -121,7 +121,7 @@ export default function MarketQuickLookClient() {
           style={{
             padding: "8px 16px",
             borderRadius: 8,
-            border: "1px solid #d1d5db",
+            border: "1px solid hsl(var(--border))",
             fontSize: 14,
             fontWeight: 500,
             cursor: "pointer",
@@ -135,7 +135,7 @@ export default function MarketQuickLookClient() {
       </div>
 
       {loading && (
-        <div style={{ textAlign: "center", padding: 60, color: "#6b7280" }}>
+        <div style={{ textAlign: "center", padding: 60, color: "hsl(var(--muted-foreground))" }}>
           Loading market statistics for {county}...
         </div>
       )}
@@ -155,7 +155,7 @@ export default function MarketQuickLookClient() {
               backgroundColor: "#f9fafb",
               borderRadius: 16,
               marginBottom: 24,
-              border: "1px solid #e5e7eb",
+              border: "1px solid hsl(var(--border))",
             }}
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
@@ -192,7 +192,7 @@ export default function MarketQuickLookClient() {
                 }}
               />
             </div>
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#6b7280" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "hsl(var(--muted-foreground))" }}>
               <span>Buyer&apos;s Market</span>
               <span>Seller&apos;s Market</span>
             </div>
@@ -205,13 +205,13 @@ export default function MarketQuickLookClient() {
               backgroundColor: "#f9fafb",
               borderRadius: 16,
               marginBottom: 24,
-              border: "1px solid #e5e7eb",
+              border: "1px solid hsl(var(--border))",
             }}
           >
             <div style={{ marginBottom: 8 }}>
               <span style={{ fontSize: 18, fontWeight: 700, color: "#111827" }}>Quick Stats</span>
             </div>
-            <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 16 }}>
+            <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginBottom: 16 }}>
               90 Day Trend: Figures below represent the monthly average over the past 90 days
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
@@ -222,7 +222,7 @@ export default function MarketQuickLookClient() {
               <StatCard stat={data.quickStats.daysOnMarket} />
               <StatCard stat={data.quickStats.saleToListRatio} />
             </div>
-            <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 12 }}>
+            <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", marginTop: 12 }}>
               <span style={{ display: "inline-block", width: 8, height: 8, borderRadius: "50%", backgroundColor: "#60a5fa", marginRight: 4, verticalAlign: "middle" }} />
               {data.county}, {data.state}
             </div>
@@ -236,7 +236,7 @@ export default function MarketQuickLookClient() {
                 padding: "24px",
                 backgroundColor: "#f9fafb",
                 borderRadius: 16,
-                border: "1px solid #e5e7eb",
+                border: "1px solid hsl(var(--border))",
               }}
             >
               <div style={{ fontSize: 16, fontWeight: 700, color: "#111827", marginBottom: 16 }}>
@@ -258,7 +258,7 @@ export default function MarketQuickLookClient() {
                   <Bar dataKey="avgPrice" fill="#7dd3fc" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
-              <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 8 }}>
+              <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", marginTop: 8 }}>
                 <span style={{ display: "inline-block", width: 8, height: 8, borderRadius: "50%", backgroundColor: "#7dd3fc", marginRight: 4, verticalAlign: "middle" }} />
                 {data.county}, {data.state}
               </div>
@@ -270,7 +270,7 @@ export default function MarketQuickLookClient() {
                 padding: "24px",
                 backgroundColor: "#f9fafb",
                 borderRadius: 16,
-                border: "1px solid #e5e7eb",
+                border: "1px solid hsl(var(--border))",
               }}
             >
               <div style={{ fontSize: 16, fontWeight: 700, color: "#111827", marginBottom: 16 }}>
@@ -288,7 +288,7 @@ export default function MarketQuickLookClient() {
                   <Bar dataKey="count" fill="#7dd3fc" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
-              <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 8 }}>
+              <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", marginTop: 8 }}>
                 <span style={{ display: "inline-block", width: 8, height: 8, borderRadius: "50%", backgroundColor: "#7dd3fc", marginRight: 4, verticalAlign: "middle" }} />
                 {data.county}, {data.state}
               </div>

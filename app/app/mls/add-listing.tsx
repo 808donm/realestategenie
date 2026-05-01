@@ -274,7 +274,7 @@ export default function AddListingForm({ onClose, onSuccess, editListing }: AddL
   const inputStyle: React.CSSProperties = {
     width: "100%",
     padding: "10px 14px",
-    border: "1px solid #d1d5db",
+    border: "1px solid hsl(var(--border))",
     borderRadius: 8,
     fontSize: 14,
     outline: "none",
@@ -285,7 +285,7 @@ export default function AddListingForm({ onClose, onSuccess, editListing }: AddL
     display: "block",
     fontSize: 12,
     fontWeight: 600,
-    color: "#374151",
+    color: "hsl(var(--foreground))",
     marginBottom: 4,
   };
 
@@ -349,7 +349,7 @@ export default function AddListingForm({ onClose, onSuccess, editListing }: AddL
               onChange={(e) => updateField("status", e.target.value)}
               style={{
                 padding: "8px 12px",
-                border: "1px solid #d1d5db",
+                border: "1px solid hsl(var(--border))",
                 borderRadius: 6,
                 fontSize: 13,
                 fontWeight: 600,
@@ -367,7 +367,7 @@ export default function AddListingForm({ onClose, onSuccess, editListing }: AddL
               onClick={onClose}
               style={{
                 padding: "6px 14px",
-                border: "1px solid #d1d5db",
+                border: "1px solid hsl(var(--border))",
                 borderRadius: 6,
                 background: "#fff",
                 cursor: "pointer",
@@ -835,7 +835,7 @@ export default function AddListingForm({ onClose, onSuccess, editListing }: AddL
                   textAlign: "center",
                   marginBottom: 20,
                   cursor: uploadingPhoto ? "wait" : "pointer",
-                  background: "#f9fafb",
+                  background: "hsl(var(--muted))",
                 }}
                 onClick={() => !uploadingPhoto && fileInputRef.current?.click()}
               >
@@ -848,7 +848,7 @@ export default function AddListingForm({ onClose, onSuccess, editListing }: AddL
                   style={{ display: "none" }}
                 />
                 <div style={{ fontSize: 32, marginBottom: 8 }}>+</div>
-                <div style={{ fontSize: 14, fontWeight: 600, color: "#374151", marginBottom: 4 }}>
+                <div style={{ fontSize: 14, fontWeight: 600, color: "hsl(var(--foreground))", marginBottom: 4 }}>
                   {uploadingPhoto ? "Uploading..." : "Click to upload photos"}
                 </div>
                 <div style={{ fontSize: 12, color: "#9ca3af" }}>JPEG, PNG, WebP, HEIC — Max 10MB per photo</div>
@@ -864,7 +864,7 @@ export default function AddListingForm({ onClose, onSuccess, editListing }: AddL
                         position: "relative",
                         borderRadius: 8,
                         overflow: "hidden",
-                        border: "1px solid #e5e7eb",
+                        border: "1px solid hsl(var(--border))",
                       }}
                     >
                       <img
@@ -971,7 +971,7 @@ export default function AddListingForm({ onClose, onSuccess, editListing }: AddL
                           style={{
                             width: "100%",
                             padding: "4px 8px",
-                            border: "1px solid #e5e7eb",
+                            border: "1px solid hsl(var(--border))",
                             borderRadius: 4,
                             fontSize: 12,
                           }}
@@ -1008,10 +1008,10 @@ export default function AddListingForm({ onClose, onSuccess, editListing }: AddL
               onClick={onClose}
               style={{
                 padding: "10px 20px",
-                border: "1px solid #d1d5db",
+                border: "1px solid hsl(var(--border))",
                 borderRadius: 8,
                 background: "#fff",
-                color: "#374151",
+                color: "hsl(var(--foreground))",
                 fontWeight: 600,
                 cursor: "pointer",
               }}

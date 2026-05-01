@@ -577,7 +577,7 @@ export default function MLSFeaturesClient({ initialTab }: { initialTab?: string 
 
   const inputStyle: React.CSSProperties = {
     padding: "10px 14px",
-    border: "1px solid #d1d5db",
+    border: "1px solid hsl(var(--border))",
     borderRadius: 8,
     fontSize: 14,
     outline: "none",
@@ -590,7 +590,7 @@ export default function MLSFeaturesClient({ initialTab }: { initialTab?: string 
     fontSize: 12,
     fontWeight: 600,
     marginBottom: 4,
-    color: "#374151",
+    color: "hsl(var(--foreground))",
   };
 
   const primaryBtnStyle: React.CSSProperties = {
@@ -616,15 +616,15 @@ export default function MLSFeaturesClient({ initialTab }: { initialTab?: string 
   };
 
   const cardStyle: React.CSSProperties = {
-    background: "#fff",
-    border: "1px solid #e5e7eb",
+    background: "hsl(var(--card))",
+    border: "1px solid hsl(var(--border))",
     borderRadius: 12,
     padding: 20,
   };
 
   const statCardStyle: React.CSSProperties = {
-    background: "#f9fafb",
-    border: "1px solid #e5e7eb",
+    background: "hsl(var(--muted))",
+    border: "1px solid hsl(var(--border))",
     borderRadius: 10,
     padding: 16,
     textAlign: "center" as const,
@@ -641,10 +641,10 @@ export default function MLSFeaturesClient({ initialTab }: { initialTab?: string 
         <div>
           {/* CMA Form */}
           <div style={{ ...cardStyle, marginBottom: 20 }}>
-            <h3 style={{ fontSize: 18, fontWeight: 700, color: "#111827", marginBottom: 4 }}>
+            <h3 style={{ fontSize: 18, fontWeight: 700, color: "hsl(var(--foreground))", marginBottom: 4 }}>
               Comparative Market Analysis
             </h3>
-            <p style={{ fontSize: 14, color: "#6b7280", marginBottom: 16 }}>
+            <p style={{ fontSize: 14, color: "hsl(var(--muted-foreground))", marginBottom: 16 }}>
               Enter subject property details to find comparable listings and generate a CMA report.
             </p>
 
@@ -789,7 +789,7 @@ export default function MLSFeaturesClient({ initialTab }: { initialTab?: string 
 
           {/* CMA Loading */}
           {cmaLoading && (
-            <div style={{ textAlign: "center", padding: 40, color: "#6b7280" }}>
+            <div style={{ textAlign: "center", padding: 40, color: "hsl(var(--muted-foreground))" }}>
               Generating CMA report... Searching for comparable properties.
             </div>
           )}
@@ -813,7 +813,7 @@ export default function MLSFeaturesClient({ initialTab }: { initialTab?: string 
                 </button>
                 <button
                   onClick={() => window.print()}
-                  style={{ padding: "7px 14px", fontSize: 12, fontWeight: 600, borderRadius: 6, border: "1px solid #d1d5db", background: "#fff", color: "#374151", cursor: "pointer" }}
+                  style={{ padding: "7px 14px", fontSize: 12, fontWeight: 600, borderRadius: 6, border: "1px solid hsl(var(--border))", background: "hsl(var(--card))", color: "hsl(var(--foreground))", cursor: "pointer" }}
                 >
                   Print Report
                 </button>
@@ -847,8 +847,8 @@ export default function MLSFeaturesClient({ initialTab }: { initialTab?: string 
                 const analysis = compProps.length > 0 ? calculateCMAAnalysis(subject, compProps) : null;
 
                 return analysis ? (
-                  <Suspense fallback={<div style={{ padding: 40, textAlign: "center", color: "#6b7280" }}>Loading report...</div>}>
-                    <div style={{ background: "#fff", borderRadius: 12, overflow: "hidden", border: "1px solid #e5e7eb" }}>
+                  <Suspense fallback={<div style={{ padding: 40, textAlign: "center", color: "hsl(var(--muted-foreground))" }}>Loading report...</div>}>
+                    <div style={{ background: "hsl(var(--card))", borderRadius: 12, overflow: "hidden", border: "1px solid hsl(var(--border))" }}>
                       <CMAReportView
                         analysis={analysis}
                         branding={{ displayName: "Agent", email: "" }}
@@ -857,7 +857,7 @@ export default function MLSFeaturesClient({ initialTab }: { initialTab?: string 
                     </div>
                   </Suspense>
                 ) : (
-                  <div style={{ padding: 20, textAlign: "center", color: "#6b7280" }}>No comps available for analysis.</div>
+                  <div style={{ padding: 20, textAlign: "center", color: "hsl(var(--muted-foreground))" }}>No comps available for analysis.</div>
                 );
               })()}
             </div>
@@ -865,10 +865,10 @@ export default function MLSFeaturesClient({ initialTab }: { initialTab?: string 
 
           {/* Saved CMAs */}
           <div style={{ ...cardStyle, marginTop: 8 }}>
-            <h3 style={{ fontSize: 16, fontWeight: 700, color: "#111827", marginBottom: 12 }}>Saved CMA Reports</h3>
+            <h3 style={{ fontSize: 16, fontWeight: 700, color: "hsl(var(--foreground))", marginBottom: 12 }}>Saved CMA Reports</h3>
 
             {savedCMAsLoading && (
-              <div style={{ textAlign: "center", padding: 20, color: "#6b7280", fontSize: 14 }}>
+              <div style={{ textAlign: "center", padding: 20, color: "hsl(var(--muted-foreground))", fontSize: 14 }}>
                 Loading saved reports...
               </div>
             )}
@@ -888,7 +888,7 @@ export default function MLSFeaturesClient({ initialTab }: { initialTab?: string 
             )}
 
             {!savedCMAsLoading && !savedCMAsError && savedCMAs.length === 0 && (
-              <div style={{ textAlign: "center", padding: 24, color: "#6b7280", fontSize: 14 }}>
+              <div style={{ textAlign: "center", padding: 24, color: "hsl(var(--muted-foreground))", fontSize: 14 }}>
                 No saved CMA reports yet. Generate a CMA above and save it.
               </div>
             )}
@@ -903,9 +903,9 @@ export default function MLSFeaturesClient({ initialTab }: { initialTab?: string 
                       justifyContent: "space-between",
                       alignItems: "center",
                       padding: "12px 16px",
-                      background: "#f9fafb",
+                      background: "hsl(var(--muted))",
                       borderRadius: 8,
-                      border: "1px solid #e5e7eb",
+                      border: "1px solid hsl(var(--border))",
                       cursor: "pointer",
                       transition: "background 0.15s",
                     }}
@@ -917,16 +917,16 @@ export default function MLSFeaturesClient({ initialTab }: { initialTab?: string 
                     onMouseLeave={(e) => (e.currentTarget.style.background = "#f9fafb")}
                   >
                     <div>
-                      <div style={{ fontWeight: 600, fontSize: 14, color: "#111827" }}>
+                      <div style={{ fontWeight: 600, fontSize: 14, color: "hsl(var(--foreground))" }}>
                         {report.subjectAddress || report.subjectPostalCode}
                       </div>
-                      <div style={{ fontSize: 12, color: "#6b7280" }}>
+                      <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>
                         {[report.subjectCity, report.subjectPostalCode].filter(Boolean).join(", ")}
                         {report.stats ? ` | ${report.stats.totalComps} comps` : ""}
                         {report.subjectListPrice ? ` | ${formatPriceShort(report.subjectListPrice)}` : ""}
                       </div>
                     </div>
-                    <div style={{ fontSize: 12, color: "#9ca3af", flexShrink: 0 }}>
+                    <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", flexShrink: 0 }}>
                       {report.generatedAt ? new Date(report.generatedAt).toLocaleDateString() : ""}
                     </div>
                   </div>
@@ -954,10 +954,10 @@ export default function MLSFeaturesClient({ initialTab }: { initialTab?: string 
               }}
             >
               <div>
-                <h3 style={{ fontSize: 18, fontWeight: 700, color: "#111827", marginBottom: 4 }}>
+                <h3 style={{ fontSize: 18, fontWeight: 700, color: "hsl(var(--foreground))", marginBottom: 4 }}>
                   Lead-to-Listing Matching
                 </h3>
-                <p style={{ fontSize: 14, color: "#6b7280" }}>
+                <p style={{ fontSize: 14, color: "hsl(var(--muted-foreground))" }}>
                   Match your leads to active MLS listings based on their preferences and criteria.
                 </p>
               </div>
@@ -993,7 +993,7 @@ export default function MLSFeaturesClient({ initialTab }: { initialTab?: string 
 
           {/* Loading */}
           {leadMatchLoading && (
-            <div style={{ textAlign: "center", padding: 48, color: "#6b7280" }}>
+            <div style={{ textAlign: "center", padding: 48, color: "hsl(var(--muted-foreground))" }}>
               <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 8 }}>Scanning MLS listings...</div>
               <div style={{ fontSize: 14 }}>
                 Comparing lead preferences against active listings. This may take a moment.
@@ -1007,12 +1007,12 @@ export default function MLSFeaturesClient({ initialTab }: { initialTab?: string 
               style={{
                 textAlign: "center",
                 padding: 48,
-                background: "#f9fafb",
+                background: "hsl(var(--muted))",
                 borderRadius: 12,
-                color: "#6b7280",
+                color: "hsl(var(--muted-foreground))",
               }}
             >
-              <p style={{ fontSize: 16, fontWeight: 600, marginBottom: 8, color: "#374151" }}>No Matches Found</p>
+              <p style={{ fontSize: 16, fontWeight: 600, marginBottom: 8, color: "hsl(var(--foreground))" }}>No Matches Found</p>
               <p style={{ fontSize: 14 }}>
                 No leads matched any active MLS listings. Ensure your leads have preferences set (location, price range,
                 beds/baths).
@@ -1031,15 +1031,15 @@ export default function MLSFeaturesClient({ initialTab }: { initialTab?: string 
               }}
             >
               <div style={statCardStyle}>
-                <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Total Leads</div>
-                <div style={{ fontSize: 22, fontWeight: 700, color: "#111827" }}>{leadMatchStats.totalLeads}</div>
+                <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginBottom: 4 }}>Total Leads</div>
+                <div style={{ fontSize: 22, fontWeight: 700, color: "hsl(var(--foreground))" }}>{leadMatchStats.totalLeads}</div>
               </div>
               <div style={statCardStyle}>
-                <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Listings Scanned</div>
-                <div style={{ fontSize: 22, fontWeight: 700, color: "#111827" }}>{leadMatchStats.totalListings}</div>
+                <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginBottom: 4 }}>Listings Scanned</div>
+                <div style={{ fontSize: 22, fontWeight: 700, color: "hsl(var(--foreground))" }}>{leadMatchStats.totalListings}</div>
               </div>
               <div style={statCardStyle}>
-                <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Matches Found</div>
+                <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginBottom: 4 }}>Matches Found</div>
                 <div style={{ fontSize: 22, fontWeight: 700, color: "#3b82f6" }}>{leadMatchStats.matchCount}</div>
               </div>
             </div>
@@ -1078,10 +1078,10 @@ export default function MLSFeaturesClient({ initialTab }: { initialTab?: string 
                           : "?"}
                       </div>
                       <div>
-                        <div style={{ fontWeight: 700, fontSize: 16, color: "#111827" }}>
+                        <div style={{ fontWeight: 700, fontSize: 16, color: "hsl(var(--foreground))" }}>
                           {group.leadName || "Unknown Lead"}
                         </div>
-                        <div style={{ fontSize: 13, color: "#6b7280" }}>
+                        <div style={{ fontSize: 13, color: "hsl(var(--muted-foreground))" }}>
                           {group.matches.length} matching listing{group.matches.length !== 1 ? "s" : ""}
                         </div>
                       </div>
@@ -1102,10 +1102,10 @@ export default function MLSFeaturesClient({ initialTab }: { initialTab?: string 
                         <div
                           key={`${match.leadId}-${match.listingKey}`}
                           style={{
-                            border: "1px solid #e5e7eb",
+                            border: "1px solid hsl(var(--border))",
                             borderRadius: 10,
                             overflow: "hidden",
-                            background: "#fff",
+                            background: "hsl(var(--card))",
                           }}
                         >
                           {/* Photo */}
@@ -1123,7 +1123,7 @@ export default function MLSFeaturesClient({ initialTab }: { initialTab?: string 
                                   alignItems: "center",
                                   justifyContent: "center",
                                   height: "100%",
-                                  color: "#9ca3af",
+                                  color: "hsl(var(--muted-foreground))",
                                   fontSize: 13,
                                 }}
                               >
@@ -1149,17 +1149,17 @@ export default function MLSFeaturesClient({ initialTab }: { initialTab?: string 
                           </div>
 
                           <div style={{ padding: 14 }}>
-                            <div style={{ fontSize: 18, fontWeight: 700, color: "#111827", marginBottom: 2 }}>
+                            <div style={{ fontSize: 18, fontWeight: 700, color: "hsl(var(--foreground))", marginBottom: 2 }}>
                               {formatPrice(match.listPrice)}
                             </div>
-                            <div style={{ fontSize: 13, fontWeight: 500, color: "#374151", marginBottom: 2 }}>
+                            <div style={{ fontSize: 13, fontWeight: 500, color: "hsl(var(--foreground))", marginBottom: 2 }}>
                               {match.address}
                             </div>
-                            <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 8 }}>
+                            <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginBottom: 8 }}>
                               {match.city}, {match.postalCode}
                             </div>
 
-                            <div style={{ display: "flex", gap: 10, fontSize: 12, color: "#6b7280", marginBottom: 10 }}>
+                            <div style={{ display: "flex", gap: 10, fontSize: 12, color: "hsl(var(--muted-foreground))", marginBottom: 10 }}>
                               {match.bedrooms != null && (
                                 <span>
                                   <strong>{match.bedrooms}</strong> bed
@@ -1199,7 +1199,7 @@ export default function MLSFeaturesClient({ initialTab }: { initialTab?: string 
                               </div>
                             )}
 
-                            <div style={{ marginTop: 8, fontSize: 11, color: "#9ca3af" }}>
+                            <div style={{ marginTop: 8, fontSize: 11, color: "hsl(var(--muted-foreground))" }}>
                               MLS# {match.listingId || match.listingKey}
                             </div>
                           </div>
@@ -1218,12 +1218,12 @@ export default function MLSFeaturesClient({ initialTab }: { initialTab?: string 
               style={{
                 textAlign: "center",
                 padding: 60,
-                background: "#f9fafb",
+                background: "hsl(var(--muted))",
                 borderRadius: 12,
-                color: "#6b7280",
+                color: "hsl(var(--muted-foreground))",
               }}
             >
-              <p style={{ fontSize: 18, fontWeight: 600, marginBottom: 8, color: "#374151" }}>
+              <p style={{ fontSize: 18, fontWeight: 600, marginBottom: 8, color: "hsl(var(--foreground))" }}>
                 Match Leads to Listings
               </p>
               <p style={{ fontSize: 14, maxWidth: 440, margin: "0 auto" }}>
@@ -1253,15 +1253,15 @@ export default function MLSFeaturesClient({ initialTab }: { initialTab?: string 
               }}
             >
               <div>
-                <h3 style={{ fontSize: 18, fontWeight: 700, color: "#111827", marginBottom: 4 }}>Open House Sync</h3>
-                <p style={{ fontSize: 14, color: "#6b7280" }}>
+                <h3 style={{ fontSize: 18, fontWeight: 700, color: "hsl(var(--foreground))", marginBottom: 4 }}>Open House Sync</h3>
+                <p style={{ fontSize: 14, color: "hsl(var(--muted-foreground))" }}>
                   Bi-directional sync between your local open house events and MLS open house data.
                 </p>
               </div>
             </div>
 
             {syncStatusLoading && (
-              <div style={{ textAlign: "center", padding: 20, color: "#6b7280", fontSize: 14 }}>
+              <div style={{ textAlign: "center", padding: 20, color: "hsl(var(--muted-foreground))", fontSize: 14 }}>
                 Loading sync status...
               </div>
             )}
@@ -1289,20 +1289,20 @@ export default function MLSFeaturesClient({ initialTab }: { initialTab?: string 
                 }}
               >
                 <div style={statCardStyle}>
-                  <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Total Upcoming</div>
-                  <div style={{ fontSize: 22, fontWeight: 700, color: "#111827" }}>{syncStatus.totalUpcoming}</div>
+                  <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginBottom: 4 }}>Total Upcoming</div>
+                  <div style={{ fontSize: 22, fontWeight: 700, color: "hsl(var(--foreground))" }}>{syncStatus.totalUpcoming}</div>
                 </div>
                 <div style={statCardStyle}>
-                  <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Synced from MLS</div>
+                  <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginBottom: 4 }}>Synced from MLS</div>
                   <div style={{ fontSize: 22, fontWeight: 700, color: "#16a34a" }}>{syncStatus.syncedFromMLS}</div>
                 </div>
                 <div style={statCardStyle}>
-                  <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Local Only</div>
+                  <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginBottom: 4 }}>Local Only</div>
                   <div style={{ fontSize: 22, fontWeight: 700, color: "#d97706" }}>{syncStatus.localOnly}</div>
                 </div>
                 <div style={statCardStyle}>
-                  <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Last Sync</div>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: "#374151" }}>
+                  <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginBottom: 4 }}>Last Sync</div>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: "hsl(var(--foreground))" }}>
                     {syncStatus.lastSyncTime ? new Date(syncStatus.lastSyncTime).toLocaleString() : "Never"}
                   </div>
                 </div>
@@ -1376,8 +1376,8 @@ export default function MLSFeaturesClient({ initialTab }: { initialTab?: string 
 
               {syncResult.pull && (
                 <div style={{ marginBottom: 12 }}>
-                  <div style={{ fontWeight: 600, fontSize: 14, color: "#374151", marginBottom: 6 }}>Pull Results</div>
-                  <div style={{ display: "flex", gap: 16, flexWrap: "wrap", fontSize: 13, color: "#374151" }}>
+                  <div style={{ fontWeight: 600, fontSize: 14, color: "hsl(var(--foreground))", marginBottom: 6 }}>Pull Results</div>
+                  <div style={{ display: "flex", gap: 16, flexWrap: "wrap", fontSize: 13, color: "hsl(var(--foreground))" }}>
                     <span>
                       <strong style={{ color: "#16a34a" }}>{syncResult.pull.imported}</strong> imported
                     </span>
@@ -1385,7 +1385,7 @@ export default function MLSFeaturesClient({ initialTab }: { initialTab?: string 
                       <strong style={{ color: "#3b82f6" }}>{syncResult.pull.updated}</strong> updated
                     </span>
                     <span>
-                      <strong style={{ color: "#6b7280" }}>{syncResult.pull.skipped}</strong> skipped
+                      <strong style={{ color: "hsl(var(--muted-foreground))" }}>{syncResult.pull.skipped}</strong> skipped
                     </span>
                     {syncResult.pull.errors > 0 && (
                       <span>
@@ -1394,7 +1394,7 @@ export default function MLSFeaturesClient({ initialTab }: { initialTab?: string 
                     )}
                   </div>
                   {syncResult.pull.details && syncResult.pull.details.length > 0 && (
-                    <div style={{ marginTop: 8, fontSize: 12, color: "#6b7280" }}>
+                    <div style={{ marginTop: 8, fontSize: 12, color: "hsl(var(--muted-foreground))" }}>
                       {syncResult.pull.details.map((d, i) => (
                         <div key={i}>{d}</div>
                       ))}
@@ -1405,15 +1405,15 @@ export default function MLSFeaturesClient({ initialTab }: { initialTab?: string 
 
               {syncResult.push && (
                 <div>
-                  <div style={{ fontWeight: 600, fontSize: 14, color: "#374151", marginBottom: 6 }}>Push Results</div>
-                  <div style={{ fontSize: 13, color: "#374151" }}>
+                  <div style={{ fontWeight: 600, fontSize: 14, color: "hsl(var(--foreground))", marginBottom: 6 }}>Push Results</div>
+                  <div style={{ fontSize: 13, color: "hsl(var(--foreground))" }}>
                     <strong>{syncResult.push.unsyncedCount}</strong> local event
                     {syncResult.push.unsyncedCount !== 1 ? "s" : ""} available for push
                   </div>
                   {syncResult.push.events && syncResult.push.events.length > 0 && (
                     <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 4 }}>
                       {syncResult.push.events.map((ev, i) => (
-                        <div key={i} style={{ fontSize: 12, color: "#6b7280" }}>
+                        <div key={i} style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>
                           {ev.address} - {new Date(ev.date).toLocaleDateString()} {ev.startTime} - {ev.endTime}
                         </div>
                       ))}
@@ -1427,7 +1427,7 @@ export default function MLSFeaturesClient({ initialTab }: { initialTab?: string 
           {/* Event List */}
           {!syncStatusLoading && syncStatus && syncStatus.events.length > 0 && (
             <div style={cardStyle}>
-              <h4 style={{ fontSize: 16, fontWeight: 700, color: "#111827", marginBottom: 14 }}>
+              <h4 style={{ fontSize: 16, fontWeight: 700, color: "hsl(var(--foreground))", marginBottom: 14 }}>
                 Upcoming Open Houses
               </h4>
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -1441,16 +1441,16 @@ export default function MLSFeaturesClient({ initialTab }: { initialTab?: string 
                         justifyContent: "space-between",
                         alignItems: "center",
                         padding: "14px 16px",
-                        background: "#f9fafb",
+                        background: "hsl(var(--muted))",
                         borderRadius: 8,
-                        border: "1px solid #e5e7eb",
+                        border: "1px solid hsl(var(--border))",
                         flexWrap: "wrap",
                         gap: 8,
                       }}
                     >
                       <div style={{ flex: 1, minWidth: 200 }}>
-                        <div style={{ fontWeight: 600, fontSize: 14, color: "#111827" }}>{event.address}</div>
-                        <div style={{ fontSize: 13, color: "#6b7280" }}>
+                        <div style={{ fontWeight: 600, fontSize: 14, color: "hsl(var(--foreground))" }}>{event.address}</div>
+                        <div style={{ fontSize: 13, color: "hsl(var(--muted-foreground))" }}>
                           {new Date(event.date).toLocaleDateString(undefined, {
                             weekday: "short",
                             month: "short",
@@ -1459,7 +1459,7 @@ export default function MLSFeaturesClient({ initialTab }: { initialTab?: string 
                           {event.startTime} - {event.endTime}
                         </div>
                         {event.listingKey && (
-                          <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 2 }}>MLS# {event.listingKey}</div>
+                          <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", marginTop: 2 }}>MLS# {event.listingKey}</div>
                         )}
                       </div>
                       <span
@@ -1488,12 +1488,12 @@ export default function MLSFeaturesClient({ initialTab }: { initialTab?: string 
               style={{
                 textAlign: "center",
                 padding: 48,
-                background: "#f9fafb",
+                background: "hsl(var(--muted))",
                 borderRadius: 12,
-                color: "#6b7280",
+                color: "hsl(var(--muted-foreground))",
               }}
             >
-              <p style={{ fontSize: 16, fontWeight: 600, marginBottom: 8, color: "#374151" }}>
+              <p style={{ fontSize: 16, fontWeight: 600, marginBottom: 8, color: "hsl(var(--foreground))" }}>
                 No Upcoming Open Houses
               </p>
               <p style={{ fontSize: 14 }}>Pull from MLS to import open house events, or create local events first.</p>
@@ -1509,8 +1509,8 @@ export default function MLSFeaturesClient({ initialTab }: { initialTab?: string 
         <div>
           {/* Search Card */}
           <div style={{ ...cardStyle, marginBottom: 20 }}>
-            <h3 style={{ fontSize: 18, fontWeight: 700, color: "#111827", marginBottom: 4 }}>Investment Analyzer</h3>
-            <p style={{ fontSize: 14, color: "#6b7280", marginBottom: 16 }}>
+            <h3 style={{ fontSize: 18, fontWeight: 700, color: "hsl(var(--foreground))", marginBottom: 4 }}>Investment Analyzer</h3>
+            <p style={{ fontSize: 14, color: "hsl(var(--muted-foreground))", marginBottom: 16 }}>
               Fetch MLS property and unit data, then import it into the BRRR or Flip analyzer with one click.
             </p>
 
@@ -1556,7 +1556,7 @@ export default function MLSFeaturesClient({ initialTab }: { initialTab?: string 
 
           {/* Loading */}
           {investmentLoading && (
-            <div style={{ textAlign: "center", padding: 40, color: "#6b7280" }}>
+            <div style={{ textAlign: "center", padding: 40, color: "hsl(var(--muted-foreground))" }}>
               Fetching property and unit data from MLS...
             </div>
           )}
@@ -1566,7 +1566,7 @@ export default function MLSFeaturesClient({ initialTab }: { initialTab?: string 
             <div>
               {/* Property Summary */}
               <div style={{ ...cardStyle, marginBottom: 20 }}>
-                <h4 style={{ fontSize: 16, fontWeight: 700, color: "#111827", marginBottom: 12 }}>Property Summary</h4>
+                <h4 style={{ fontSize: 16, fontWeight: 700, color: "hsl(var(--foreground))", marginBottom: 12 }}>Property Summary</h4>
                 <div
                   style={{
                     display: "grid",
@@ -1575,43 +1575,43 @@ export default function MLSFeaturesClient({ initialTab }: { initialTab?: string 
                   }}
                 >
                   <div>
-                    <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 2 }}>Address</div>
-                    <div style={{ fontSize: 14, fontWeight: 600, color: "#111827" }}>
+                    <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginBottom: 2 }}>Address</div>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: "hsl(var(--foreground))" }}>
                       {investmentData.property.address}
                     </div>
                   </div>
                   <div>
-                    <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 2 }}>List Price</div>
-                    <div style={{ fontSize: 18, fontWeight: 700, color: "#111827" }}>
+                    <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginBottom: 2 }}>List Price</div>
+                    <div style={{ fontSize: 18, fontWeight: 700, color: "hsl(var(--foreground))" }}>
                       {formatPrice(investmentData.property.listPrice)}
                     </div>
                   </div>
                   <div>
-                    <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 2 }}>Type</div>
-                    <div style={{ fontSize: 14, fontWeight: 600, color: "#374151" }}>
+                    <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginBottom: 2 }}>Type</div>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: "hsl(var(--foreground))" }}>
                       {investmentData.property.propertyType}
                     </div>
                   </div>
                   <div>
-                    <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 2 }}>Beds / Baths</div>
-                    <div style={{ fontSize: 14, fontWeight: 600, color: "#374151" }}>
+                    <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginBottom: 2 }}>Beds / Baths</div>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: "hsl(var(--foreground))" }}>
                       {investmentData.property.bedrooms ?? "--"} / {investmentData.property.bathrooms ?? "--"}
                     </div>
                   </div>
                   <div>
-                    <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 2 }}>Sqft</div>
-                    <div style={{ fontSize: 14, fontWeight: 600, color: "#374151" }}>
+                    <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginBottom: 2 }}>Sqft</div>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: "hsl(var(--foreground))" }}>
                       {investmentData.property.livingArea ? investmentData.property.livingArea.toLocaleString() : "--"}
                     </div>
                   </div>
                   <div>
-                    <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 2 }}>Year Built</div>
-                    <div style={{ fontSize: 14, fontWeight: 600, color: "#374151" }}>
+                    <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginBottom: 2 }}>Year Built</div>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: "hsl(var(--foreground))" }}>
                       {investmentData.property.yearBuilt ?? "--"}
                     </div>
                   </div>
                 </div>
-                <div style={{ marginTop: 10, fontSize: 11, color: "#9ca3af" }}>
+                <div style={{ marginTop: 10, fontSize: 11, color: "hsl(var(--muted-foreground))" }}>
                   MLS# {investmentData.property.listingId || investmentData.property.listingKey}
                 </div>
               </div>
@@ -1620,7 +1620,7 @@ export default function MLSFeaturesClient({ initialTab }: { initialTab?: string 
               {investmentData.units && investmentData.units.length > 0 && (
                 <div style={{ ...cardStyle, marginBottom: 20, padding: 0, overflow: "hidden" }}>
                   <div style={{ padding: "16px 20px 0" }}>
-                    <h4 style={{ fontSize: 16, fontWeight: 700, color: "#111827", marginBottom: 4 }}>Unit Breakdown</h4>
+                    <h4 style={{ fontSize: 16, fontWeight: 700, color: "hsl(var(--foreground))", marginBottom: 4 }}>Unit Breakdown</h4>
                   </div>
                   <div style={{ overflowX: "auto" }}>
                     <table
@@ -1631,13 +1631,13 @@ export default function MLSFeaturesClient({ initialTab }: { initialTab?: string 
                       }}
                     >
                       <thead>
-                        <tr style={{ background: "#f9fafb" }}>
+                        <tr style={{ background: "hsl(var(--muted))" }}>
                           <th
                             style={{
                               padding: "12px 14px",
                               textAlign: "left",
                               fontWeight: 600,
-                              color: "#374151",
+                              color: "hsl(var(--foreground))",
                               borderBottom: "1px solid #e5e7eb",
                             }}
                           >
@@ -1648,7 +1648,7 @@ export default function MLSFeaturesClient({ initialTab }: { initialTab?: string 
                               padding: "12px 14px",
                               textAlign: "center",
                               fontWeight: 600,
-                              color: "#374151",
+                              color: "hsl(var(--foreground))",
                               borderBottom: "1px solid #e5e7eb",
                             }}
                           >
@@ -1659,7 +1659,7 @@ export default function MLSFeaturesClient({ initialTab }: { initialTab?: string 
                               padding: "12px 14px",
                               textAlign: "center",
                               fontWeight: 600,
-                              color: "#374151",
+                              color: "hsl(var(--foreground))",
                               borderBottom: "1px solid #e5e7eb",
                             }}
                           >
@@ -1670,7 +1670,7 @@ export default function MLSFeaturesClient({ initialTab }: { initialTab?: string 
                               padding: "12px 14px",
                               textAlign: "right",
                               fontWeight: 600,
-                              color: "#374151",
+                              color: "hsl(var(--foreground))",
                               borderBottom: "1px solid #e5e7eb",
                             }}
                           >
@@ -1681,7 +1681,7 @@ export default function MLSFeaturesClient({ initialTab }: { initialTab?: string 
                               padding: "12px 14px",
                               textAlign: "right",
                               fontWeight: 600,
-                              color: "#374151",
+                              color: "hsl(var(--foreground))",
                               borderBottom: "1px solid #e5e7eb",
                             }}
                           >
@@ -1692,7 +1692,7 @@ export default function MLSFeaturesClient({ initialTab }: { initialTab?: string 
                               padding: "12px 14px",
                               textAlign: "left",
                               fontWeight: 600,
-                              color: "#374151",
+                              color: "hsl(var(--foreground))",
                               borderBottom: "1px solid #e5e7eb",
                             }}
                           >
@@ -1703,22 +1703,22 @@ export default function MLSFeaturesClient({ initialTab }: { initialTab?: string 
                       <tbody>
                         {investmentData.units.map((unit, idx) => (
                           <tr key={idx} style={{ borderBottom: "1px solid #f3f4f6" }}>
-                            <td style={{ padding: "10px 14px", fontWeight: 500, color: "#111827" }}>
+                            <td style={{ padding: "10px 14px", fontWeight: 500, color: "hsl(var(--foreground))" }}>
                               {unit.type || `Unit ${idx + 1}`}
                             </td>
-                            <td style={{ padding: "10px 14px", textAlign: "center", color: "#374151" }}>
+                            <td style={{ padding: "10px 14px", textAlign: "center", color: "hsl(var(--foreground))" }}>
                               {unit.beds ?? "--"}
                             </td>
-                            <td style={{ padding: "10px 14px", textAlign: "center", color: "#374151" }}>
+                            <td style={{ padding: "10px 14px", textAlign: "center", color: "hsl(var(--foreground))" }}>
                               {unit.baths ?? "--"}
                             </td>
-                            <td style={{ padding: "10px 14px", textAlign: "right", color: "#111827", fontWeight: 500 }}>
+                            <td style={{ padding: "10px 14px", textAlign: "right", color: "hsl(var(--foreground))", fontWeight: 500 }}>
                               {formatPrice(unit.actualRent)}
                             </td>
-                            <td style={{ padding: "10px 14px", textAlign: "right", color: "#374151" }}>
+                            <td style={{ padding: "10px 14px", textAlign: "right", color: "hsl(var(--foreground))" }}>
                               {formatPrice(unit.proFormaRent)}
                             </td>
-                            <td style={{ padding: "10px 14px", color: "#6b7280", fontSize: 12 }}>
+                            <td style={{ padding: "10px 14px", color: "hsl(var(--muted-foreground))", fontSize: 12 }}>
                               {unit.description || "--"}
                             </td>
                           </tr>
@@ -1740,31 +1740,31 @@ export default function MLSFeaturesClient({ initialTab }: { initialTab?: string 
                   }}
                 >
                   <div style={statCardStyle}>
-                    <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Total Units</div>
-                    <div style={{ fontSize: 22, fontWeight: 700, color: "#111827" }}>
+                    <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginBottom: 4 }}>Total Units</div>
+                    <div style={{ fontSize: 22, fontWeight: 700, color: "hsl(var(--foreground))" }}>
                       {investmentData.totals.unitCount}
                     </div>
                   </div>
                   <div style={statCardStyle}>
-                    <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Total Actual Rent</div>
+                    <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginBottom: 4 }}>Total Actual Rent</div>
                     <div style={{ fontSize: 20, fontWeight: 700, color: "#16a34a" }}>
                       {formatPrice(investmentData.totals.totalActualRent)}
                     </div>
-                    <div style={{ fontSize: 11, color: "#6b7280" }}>per month</div>
+                    <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>per month</div>
                   </div>
                   <div style={statCardStyle}>
-                    <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Total Pro Forma</div>
+                    <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginBottom: 4 }}>Total Pro Forma</div>
                     <div style={{ fontSize: 20, fontWeight: 700, color: "#3b82f6" }}>
                       {formatPrice(investmentData.totals.totalProFormaRent)}
                     </div>
-                    <div style={{ fontSize: 11, color: "#6b7280" }}>per month</div>
+                    <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>per month</div>
                   </div>
                   <div style={statCardStyle}>
-                    <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Avg Rent / Unit</div>
-                    <div style={{ fontSize: 20, fontWeight: 700, color: "#374151" }}>
+                    <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginBottom: 4 }}>Avg Rent / Unit</div>
+                    <div style={{ fontSize: 20, fontWeight: 700, color: "hsl(var(--foreground))" }}>
                       {formatPrice(investmentData.totals.avgRentPerUnit)}
                     </div>
-                    <div style={{ fontSize: 11, color: "#6b7280" }}>per month</div>
+                    <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>per month</div>
                   </div>
                 </div>
               )}
@@ -1772,10 +1772,10 @@ export default function MLSFeaturesClient({ initialTab }: { initialTab?: string 
               {/* Analyzer Action Buttons */}
               <div style={{ ...cardStyle, display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
                 <div style={{ flex: 1, minWidth: 200 }}>
-                  <h4 style={{ fontSize: 15, fontWeight: 700, color: "#111827", marginBottom: 4 }}>
+                  <h4 style={{ fontSize: 15, fontWeight: 700, color: "hsl(var(--foreground))", marginBottom: 4 }}>
                     Import into Analyzer
                   </h4>
-                  <p style={{ fontSize: 13, color: "#6b7280" }}>
+                  <p style={{ fontSize: 13, color: "hsl(var(--muted-foreground))" }}>
                     Property data will be auto-filled into the selected analyzer.
                   </p>
                 </div>
@@ -1811,12 +1811,12 @@ export default function MLSFeaturesClient({ initialTab }: { initialTab?: string 
               style={{
                 textAlign: "center",
                 padding: 60,
-                background: "#f9fafb",
+                background: "hsl(var(--muted))",
                 borderRadius: 12,
-                color: "#6b7280",
+                color: "hsl(var(--muted-foreground))",
               }}
             >
-              <p style={{ fontSize: 18, fontWeight: 600, marginBottom: 8, color: "#374151" }}>
+              <p style={{ fontSize: 18, fontWeight: 600, marginBottom: 8, color: "hsl(var(--foreground))" }}>
                 Analyze Investment Properties
               </p>
               <p style={{ fontSize: 14, maxWidth: 440, margin: "0 auto" }}>

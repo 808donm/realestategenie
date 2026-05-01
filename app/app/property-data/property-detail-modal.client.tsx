@@ -183,7 +183,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
         style={{
           fontSize: 14,
           fontWeight: 700,
-          color: "#374151",
+          color: "hsl(var(--foreground))",
           marginBottom: 10,
           paddingBottom: 6,
           borderBottom: "1px solid #e5e7eb",
@@ -202,10 +202,10 @@ function Field({ label, value }: { label: string; value?: string | number | null
   if (value == null || value === "") return null;
   return (
     <div>
-      <div style={{ fontSize: 11, fontWeight: 500, color: "#9ca3af", textTransform: "uppercase", letterSpacing: 0.5 }}>
+      <div style={{ fontSize: 11, fontWeight: 500, color: "hsl(var(--muted-foreground))", textTransform: "uppercase", letterSpacing: 0.5 }}>
         {label}
       </div>
-      <div style={{ fontSize: 14, color: "#111827", fontWeight: 500 }}>{value}</div>
+      <div style={{ fontSize: 14, color: "hsl(var(--foreground))", fontWeight: 500 }}>{value}</div>
     </div>
   );
 }
@@ -2122,7 +2122,7 @@ export default function PropertyDetailModal({
               Estimated Value
             </div>
             <div style={{ fontSize: 18, fontWeight: 700, color: "#059669" }}>{fmt(displayVal)}</div>
-            <div style={{ fontSize: 9, color: "#9ca3af", marginTop: 2 }}>
+            <div style={{ fontSize: 9, color: "hsl(var(--muted-foreground))", marginTop: 2 }}>
               {isGenie ? "Genie AVM" : rentcastAvmPrice ? "Comps AVM" : "Property AVM"}
             </div>
           </div>
@@ -2137,7 +2137,7 @@ export default function PropertyDetailModal({
           </div>
           <div style={{ fontSize: 18, fontWeight: 700, color: "#3b82f6" }}>{fmt(lastSaleAmt)}</div>
           {p.sale?.amount?.saleTransDate && (
-            <div style={{ fontSize: 11, color: "#6b7280" }}>{p.sale.amount.saleTransDate}</div>
+            <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>{p.sale.amount.saleTransDate}</div>
           )}
         </div>
       )}
@@ -2317,7 +2317,7 @@ export default function PropertyDetailModal({
 
           {/* Hawaii Hazard & Environmental Zones */}
           {hazardLoading && (
-            <div style={{ textAlign: "center", padding: 16, color: "#6b7280", fontSize: 13 }}>
+            <div style={{ textAlign: "center", padding: 16, color: "hsl(var(--muted-foreground))", fontSize: 13 }}>
               Loading environmental data...
             </div>
           )}
@@ -2381,7 +2381,7 @@ export default function PropertyDetailModal({
                   zones.push({
                     label: "State Land Use District",
                     value: String(district),
-                    color: "#374151",
+                    color: "hsl(var(--foreground))",
                     bg: "#f3f4f6",
                   });
                 }
@@ -2395,7 +2395,7 @@ export default function PropertyDetailModal({
                     style={{
                       fontSize: 14,
                       fontWeight: 700,
-                      color: "#374151",
+                      color: "hsl(var(--foreground))",
                       marginBottom: 10,
                       paddingBottom: 6,
                       borderBottom: "1px solid #e5e7eb",
@@ -2425,11 +2425,11 @@ export default function PropertyDetailModal({
                         >
                           {z.label}
                         </div>
-                        <div style={{ fontSize: 13, fontWeight: 500, color: "#374151", marginTop: 2 }}>{z.value}</div>
+                        <div style={{ fontSize: 13, fontWeight: 500, color: "hsl(var(--foreground))", marginTop: 2 }}>{z.value}</div>
                       </div>
                     ))}
                   </div>
-                  <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 8 }}>
+                  <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", marginTop: 8 }}>
                     Source: State of Hawaii Statewide GIS Program. Data updated periodically. Verify with county for
                     official determinations.
                   </div>
@@ -2463,7 +2463,7 @@ export default function PropertyDetailModal({
                 style={{
                   fontSize: 14,
                   fontWeight: 700,
-                  color: "#374151",
+                  color: "hsl(var(--foreground))",
                   marginBottom: 10,
                   paddingBottom: 6,
                   borderBottom: "1px solid #e5e7eb",
@@ -2497,7 +2497,7 @@ export default function PropertyDetailModal({
                   <Field label="Fire Response Zone" value={gisEnrichment.fireResponseZone.zone} />
                 )}
               </div>
-              <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 6 }}>
+              <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", marginTop: 6 }}>
                 Source: Hawaii State GIS (geodata.hawaii.gov)
               </div>
             </div>
@@ -2633,34 +2633,34 @@ export default function PropertyDetailModal({
                   </div>
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12, marginTop: 8 }}>
                     <div>
-                      <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 500 }}>Estimated Value</div>
-                      <div style={{ fontSize: 16, fontWeight: 700, color: "#111827" }}>{heAvmValue != null ? fmt(heAvmValue) : "Not Disclosed"}</div>
+                      <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", fontWeight: 500 }}>Estimated Value</div>
+                      <div style={{ fontSize: 16, fontWeight: 700, color: "hsl(var(--foreground))" }}>{heAvmValue != null ? fmt(heAvmValue) : "Not Disclosed"}</div>
                     </div>
                     <div>
-                      <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 500 }}>Est. Loan Balance</div>
-                      <div style={{ fontSize: 16, fontWeight: 700, color: "#111827" }}>{heLoanBalance != null ? fmt(heLoanBalance) : "Not Disclosed"}</div>
+                      <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", fontWeight: 500 }}>Est. Loan Balance</div>
+                      <div style={{ fontSize: 16, fontWeight: 700, color: "hsl(var(--foreground))" }}>{heLoanBalance != null ? fmt(heLoanBalance) : "Not Disclosed"}</div>
                     </div>
                     <div>
-                      <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 500 }}>Est. Equity</div>
+                      <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", fontWeight: 500 }}>Est. Equity</div>
                       <div style={{ fontSize: 16, fontWeight: 700, color: heEquityAmount != null ? (heIsPositive ? "#059669" : "#dc2626") : "#9ca3af" }}>
                         {heEquityAmount != null ? `${heEquityAmount >= 0 ? "+" : ""}${fmt(heEquityAmount)}` : "Not Disclosed"}
                       </div>
                     </div>
                     <div>
-                      <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 500 }}>Loan-to-Value</div>
+                      <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", fontWeight: 500 }}>Loan-to-Value</div>
                       <div style={{ fontSize: 16, fontWeight: 700, color: heLtv != null ? (Number(heLtv) > 80 ? "#dc2626" : "#059669") : "#9ca3af" }}>
                         {heLtv != null ? `${Number(heLtv).toFixed(1)}%` : "Not Disclosed"}
                       </div>
                     </div>
                   </div>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 16, marginTop: 10, fontSize: 12, color: "#374151" }}>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 16, marginTop: 10, fontSize: 12, color: "hsl(var(--foreground))" }}>
                     {(genieAvm || avmConfidenceLevel) && (
                       <span>
                         <strong>AVM Confidence:</strong>{" "}
                         <span style={{ color: (genieAvm?.confidence || avmConfidenceLevel) === "High" ? "#059669" : (genieAvm?.confidence || avmConfidenceLevel) === "Medium" ? "#d97706" : "#dc2626", fontWeight: 700 }}>
                           {genieAvm?.confidence || avmConfidenceLevel}
                         </span>
-                        <span style={{ color: "#9ca3af" }}> (FSD: {genieAvm?.fsd ?? avmFSD}%)</span>
+                        <span style={{ color: "hsl(var(--muted-foreground))" }}> (FSD: {genieAvm?.fsd ?? avmFSD}%)</span>
                       </span>
                     )}
                     {reapiData?.homeEquity?.equityPercent != null && <span><strong>Equity:</strong> {reapiData.homeEquity.equityPercent}%</span>}
@@ -2675,7 +2675,7 @@ export default function PropertyDetailModal({
               )}
 
               {avmLoading && !avm && !hasFallbackValue && (
-                <div style={{ textAlign: "center", padding: 20, color: "#6b7280", fontSize: 13 }}>
+                <div style={{ textAlign: "center", padding: 20, color: "hsl(var(--muted-foreground))", fontSize: 13 }}>
                   Loading AVM valuation data...
                 </div>
               )}
@@ -2741,10 +2741,10 @@ export default function PropertyDetailModal({
                 <div
                   style={{
                     padding: "12px 16px",
-                    background: "#f9fafb",
+                    background: "hsl(var(--muted))",
                     borderRadius: 8,
                     fontSize: 13,
-                    color: "#6b7280",
+                    color: "hsl(var(--muted-foreground))",
                     marginBottom: 16,
                   }}
                 >
@@ -2850,7 +2850,7 @@ export default function PropertyDetailModal({
                           borderBottom: "1px solid #e5e7eb",
                         }}
                       >
-                        <h3 style={{ fontSize: 14, fontWeight: 700, color: "#374151", margin: 0 }}>Tax Assessment</h3>
+                        <h3 style={{ fontSize: 14, fontWeight: 700, color: "hsl(var(--foreground))", margin: 0 }}>Tax Assessment</h3>
                         {assessQpubLink && (
                           <a
                             href={assessQpubLink}
@@ -2915,7 +2915,7 @@ export default function PropertyDetailModal({
                         style={{
                           fontSize: 14,
                           fontWeight: 700,
-                          color: "#374151",
+                          color: "hsl(var(--foreground))",
                           marginBottom: 10,
                           paddingBottom: 6,
                           borderBottom: "1px solid #e5e7eb",
@@ -2927,19 +2927,19 @@ export default function PropertyDetailModal({
                         <table style={{ width: "100%", fontSize: 12, borderCollapse: "collapse" }}>
                           <thead>
                             <tr style={{ borderBottom: "2px solid #e5e7eb" }}>
-                              <th style={{ textAlign: "left", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>
+                              <th style={{ textAlign: "left", padding: "6px 8px", color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>
                                 Year
                               </th>
-                              <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>
+                              <th style={{ textAlign: "right", padding: "6px 8px", color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>
                                 Assessed Total
                               </th>
-                              <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>
+                              <th style={{ textAlign: "right", padding: "6px 8px", color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>
                                 Land
                               </th>
-                              <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>
+                              <th style={{ textAlign: "right", padding: "6px 8px", color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>
                                 Improvements
                               </th>
-                              <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>
+                              <th style={{ textAlign: "right", padding: "6px 8px", color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>
                                 Tax
                               </th>
                             </tr>
@@ -2956,7 +2956,7 @@ export default function PropertyDetailModal({
                                   key={year}
                                   style={{
                                     borderBottom: "1px solid #f3f4f6",
-                                    background: i % 2 === 0 ? "#fff" : "#f9fafb",
+                                    background: i % 2 === 0 ? "hsl(var(--card))" : "hsl(var(--muted))",
                                   }}
                                 >
                                   <td style={{ padding: "6px 8px", fontWeight: 600 }}>{year}</td>
@@ -3013,7 +3013,7 @@ export default function PropertyDetailModal({
 
               {/* Hawaii county-level tax assessment (from Honolulu CCHNL ArcGIS) */}
               {hawaiiLoading && !hawaiiData && (
-                <div style={{ textAlign: "center", padding: 20, color: "#6b7280", fontSize: 13 }}>
+                <div style={{ textAlign: "center", padding: 20, color: "hsl(var(--muted-foreground))", fontSize: 13 }}>
                   Loading Hawaii tax records...
                 </div>
               )}
@@ -3097,7 +3097,7 @@ export default function PropertyDetailModal({
 
               {/* ── Enriched Financial Data (loaded on tab open) ── */}
               {enrichedFinancialLoading && (
-                <div style={{ textAlign: "center", padding: 20, color: "#6b7280", fontSize: 13 }}>
+                <div style={{ textAlign: "center", padding: 20, color: "hsl(var(--muted-foreground))", fontSize: 13 }}>
                   Loading additional financial data...
                 </div>
               )}
@@ -3150,18 +3150,18 @@ export default function PropertyDetailModal({
                               <span style={{ fontWeight: 600, fontSize: 13 }}>
                                 {fmt(mh.amount)}
                                 {mh.open === true && <span style={{ fontSize: 10, marginLeft: 6, padding: "1px 5px", borderRadius: 3, background: "#d1fae5", color: "#065f46" }}>Open</span>}
-                                {mh.open === false && <span style={{ fontSize: 10, marginLeft: 6, padding: "1px 5px", borderRadius: 3, background: "#f3f4f6", color: "#6b7280" }}>Closed</span>}
+                                {mh.open === false && <span style={{ fontSize: 10, marginLeft: 6, padding: "1px 5px", borderRadius: 3, background: "hsl(var(--muted))", color: "hsl(var(--muted-foreground))" }}>Closed</span>}
                               </span>
-                              <span style={{ fontSize: 12, color: "#6b7280" }}>{mh.lenderName}</span>
+                              <span style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>{mh.lenderName}</span>
                             </div>
-                            <div style={{ fontSize: 11, color: "#9ca3af" }}>
+                            <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>
                               {[mh.loanType, mh.position, mh.interestRateType, mh.documentDate?.split("T")[0]].filter(Boolean).join(" - ")}
                             </div>
                             {mh.granteeName && (
-                              <div style={{ fontSize: 11, color: "#6b7280", marginTop: 2 }}>Borrower: {mh.granteeName}</div>
+                              <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", marginTop: 2 }}>Borrower: {mh.granteeName}</div>
                             )}
                             {mh.maturityDate && (
-                              <div style={{ fontSize: 11, color: "#9ca3af" }}>Maturity: {mh.maturityDate.split("T")[0]}</div>
+                              <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>Maturity: {mh.maturityDate.split("T")[0]}</div>
                             )}
                           </div>
                         ))}
@@ -3231,7 +3231,7 @@ export default function PropertyDetailModal({
                         style={{
                           fontSize: 14,
                           fontWeight: 700,
-                          color: "#374151",
+                          color: "hsl(var(--foreground))",
                           marginBottom: 4,
                           paddingBottom: 6,
                           borderBottom: "1px solid #e5e7eb",
@@ -3240,7 +3240,7 @@ export default function PropertyDetailModal({
                         AVM Value History
                       </h3>
                       {change != null && (
-                        <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 8 }}>
+                        <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginBottom: 8 }}>
                           <span style={{ fontWeight: 600, color: change >= 0 ? "#059669" : "#dc2626" }}>
                             {change >= 0 ? "+" : ""}
                             {change.toFixed(1)}%
@@ -3252,16 +3252,16 @@ export default function PropertyDetailModal({
                         <table style={{ width: "100%", fontSize: 12, borderCollapse: "collapse" }}>
                           <thead>
                             <tr style={{ borderBottom: "2px solid #e5e7eb" }}>
-                              <th style={{ textAlign: "left", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>
+                              <th style={{ textAlign: "left", padding: "6px 8px", color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>
                                 Date
                               </th>
-                              <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>
+                              <th style={{ textAlign: "right", padding: "6px 8px", color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>
                                 Value
                               </th>
-                              <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>
+                              <th style={{ textAlign: "right", padding: "6px 8px", color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>
                                 Range
                               </th>
-                              <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>
+                              <th style={{ textAlign: "right", padding: "6px 8px", color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>
                                 Confidence
                               </th>
                             </tr>
@@ -3272,14 +3272,14 @@ export default function PropertyDetailModal({
                                 key={i}
                                 style={{
                                   borderBottom: "1px solid #f3f4f6",
-                                  background: i % 2 === 0 ? "#fff" : "#f9fafb",
+                                  background: i % 2 === 0 ? "hsl(var(--card))" : "hsl(var(--muted))",
                                 }}
                               >
                                 <td style={{ padding: "6px 8px", fontWeight: 500 }}>{h.date || "—"}</td>
                                 <td style={{ padding: "6px 8px", textAlign: "right", fontWeight: 600 }}>
                                   {fmt(h.value)}
                                 </td>
-                                <td style={{ padding: "6px 8px", textAlign: "right", fontSize: 11, color: "#6b7280" }}>
+                                <td style={{ padding: "6px 8px", textAlign: "right", fontSize: 11, color: "hsl(var(--muted-foreground))" }}>
                                   {h.low != null && h.high != null ? `${fmt(h.low)} – ${fmt(h.high)}` : "—"}
                                 </td>
                                 <td style={{ padding: "6px 8px", textAlign: "right" }}>{h.scr ?? "—"}</td>
@@ -3303,7 +3303,7 @@ export default function PropertyDetailModal({
                       style={{
                         fontSize: 14,
                         fontWeight: 700,
-                        color: "#374151",
+                        color: "hsl(var(--foreground))",
                         marginBottom: 10,
                         paddingBottom: 6,
                         borderBottom: "1px solid #e5e7eb",
@@ -3334,39 +3334,39 @@ export default function PropertyDetailModal({
                               }}
                             >
                               <div>
-                                <div style={{ fontSize: 14, fontWeight: 700, color: "#111827" }}>
+                                <div style={{ fontSize: 14, fontWeight: 700, color: "hsl(var(--foreground))" }}>
                                   {s.amount != null && s.amount > 0 ? fmt(s.amount) : "Price Not Disclosed"}
                                 </div>
-                                <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>
+                                <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 2 }}>
                                   {[s.date, s.deedType].filter(Boolean).join(" · ")}
                                 </div>
                                 {s.recordingDate && (
-                                  <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 1 }}>
+                                  <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", marginTop: 1 }}>
                                     Recorded: {s.recordingDate}
                                   </div>
                                 )}
                               </div>
                               {pricePerSqft != null && pricePerSqft > 0 && (
-                                <div style={{ fontSize: 12, color: "#6b7280" }}>${pricePerSqft.toFixed(0)}/sqft</div>
+                                <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>${pricePerSqft.toFixed(0)}/sqft</div>
                               )}
                             </div>
                             {(s.buyerName || s.sellerName) && (
-                              <div style={{ fontSize: 12, color: "#374151", marginTop: 6, lineHeight: 1.5 }}>
+                              <div style={{ fontSize: 12, color: "hsl(var(--foreground))", marginTop: 6, lineHeight: 1.5 }}>
                                 {s.sellerName && (
                                   <div>
-                                    <span style={{ color: "#9ca3af", fontWeight: 500, fontSize: 11 }}>Seller:</span>{" "}
+                                    <span style={{ color: "hsl(var(--muted-foreground))", fontWeight: 500, fontSize: 11 }}>Seller:</span>{" "}
                                     {s.sellerName}
                                   </div>
                                 )}
                                 {s.buyerName && (
                                   <div>
-                                    <span style={{ color: "#9ca3af", fontWeight: 500, fontSize: 11 }}>Buyer:</span>{" "}
+                                    <span style={{ color: "hsl(var(--muted-foreground))", fontWeight: 500, fontSize: 11 }}>Buyer:</span>{" "}
                                     {s.buyerName}
                                   </div>
                                 )}
                               </div>
                             )}
-                            <div style={{ marginTop: 4, fontSize: 11, color: "#9ca3af" }}>
+                            <div style={{ marginTop: 4, fontSize: 11, color: "hsl(var(--muted-foreground))" }}>
                               Source: Public Records
                             </div>
                           </div>
@@ -3386,7 +3386,7 @@ export default function PropertyDetailModal({
       {activeSection === "avm" && (
         <div>
           <h3 style={{ fontSize: 16, fontWeight: 700, margin: "0 0 16px" }}>AVM Comparison</h3>
-          <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 16 }}>
+          <p style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginBottom: 16 }}>
             Three valuation models for comparison. Use this to evaluate accuracy and determine which model best fits the property.
           </p>
 
@@ -3401,13 +3401,13 @@ export default function PropertyDetailModal({
               </div>
               {genieAvm && (
                 <>
-                  <div style={{ fontSize: 12, color: "#374151", marginBottom: 2 }}>
+                  <div style={{ fontSize: 12, color: "hsl(var(--foreground))", marginBottom: 2 }}>
                     Range: {fmt(genieAvm.low)} - {fmt(genieAvm.high)}
                   </div>
-                  <div style={{ fontSize: 12, color: "#374151", marginBottom: 2 }}>
+                  <div style={{ fontSize: 12, color: "hsl(var(--foreground))", marginBottom: 2 }}>
                     Confidence: {genieAvm.confidence} (FSD: {genieAvm.fsd}%)
                   </div>
-                  <div style={{ fontSize: 12, color: "#374151", marginBottom: 8 }}>
+                  <div style={{ fontSize: 12, color: "hsl(var(--foreground))", marginBottom: 8 }}>
                     Comps Used: {genieAvm.methodology?.compsUsed || 0}
                     {genieAvm.methodology?.compsFromSubdivision > 0 && ` (${genieAvm.methodology.compsFromSubdivision} same subdivision)`}
                   </div>
@@ -3419,7 +3419,7 @@ export default function PropertyDetailModal({
                   )}
                 </>
               )}
-              <div style={{ fontSize: 10, color: "#9ca3af", marginTop: 8 }}>
+              <div style={{ fontSize: 10, color: "hsl(var(--muted-foreground))", marginTop: 8 }}>
                 Ensemble: comps, list price, property AVM, assessment
               </div>
             </div>
@@ -3433,11 +3433,11 @@ export default function PropertyDetailModal({
                 {rentcastAvmPrice ? fmt(rentcastAvmPrice) : rentcastCompsLoading ? "Loading..." : "N/A"}
               </div>
               {rentcastComps && rentcastComps.length > 0 && (
-                <div style={{ fontSize: 12, color: "#374151", marginBottom: 2 }}>
+                <div style={{ fontSize: 12, color: "hsl(var(--foreground))", marginBottom: 2 }}>
                   Based on {rentcastComps.length} comparable properties
                 </div>
               )}
-              <div style={{ fontSize: 10, color: "#9ca3af", marginTop: 8 }}>
+              <div style={{ fontSize: 10, color: "hsl(var(--muted-foreground))", marginTop: 8 }}>
                 RentCast comp-based valuation
               </div>
             </div>
@@ -3451,16 +3451,16 @@ export default function PropertyDetailModal({
                 {avmVal ? fmt(avmVal) : "N/A"}
               </div>
               {avmLow != null && avmHigh != null && (
-                <div style={{ fontSize: 12, color: "#374151", marginBottom: 2 }}>
+                <div style={{ fontSize: 12, color: "hsl(var(--foreground))", marginBottom: 2 }}>
                   Range: {fmt(avmLow)} - {fmt(avmHigh)}
                 </div>
               )}
               {avmConfidenceLevel && (
-                <div style={{ fontSize: 12, color: "#374151", marginBottom: 2 }}>
+                <div style={{ fontSize: 12, color: "hsl(var(--foreground))", marginBottom: 2 }}>
                   Confidence: {avmConfidenceLevel} (FSD: {avmFSD}%)
                 </div>
               )}
-              <div style={{ fontSize: 10, color: "#9ca3af", marginTop: 8 }}>
+              <div style={{ fontSize: 10, color: "hsl(var(--muted-foreground))", marginTop: 8 }}>
                 Property data valuation
               </div>
             </div>
@@ -3473,16 +3473,16 @@ export default function PropertyDetailModal({
               <div style={{ fontSize: 28, fontWeight: 800, color: "#dc2626", marginBottom: 4 }}>
                 {reapiAvm ? fmt(reapiAvm.value) : reapiError ? "N/A" : activeSection === "avm" && !reapiData ? "Loading..." : "N/A"}
               </div>
-              <div style={{ fontSize: 10, color: "#9ca3af", marginTop: 8 }}>
+              <div style={{ fontSize: 10, color: "hsl(var(--muted-foreground))", marginTop: 8 }}>
                 Property data valuation
               </div>
             </div>
           </div>
 
           {/* Context info */}
-          <div style={{ padding: 14, background: "#f9fafb", borderRadius: 10, border: "1px solid #e5e7eb" }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 8 }}>Property Context</div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "4px 16px", fontSize: 12, color: "#6b7280" }}>
+          <div style={{ padding: 14, background: "hsl(var(--muted))", borderRadius: 10, border: "1px solid hsl(var(--border))" }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: "hsl(var(--foreground))", marginBottom: 8 }}>Property Context</div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "4px 16px", fontSize: 12, color: "hsl(var(--muted-foreground))" }}>
               <div>Beds: {beds ?? "N/A"}</div>
               <div>Baths: {baths ?? "N/A"}</div>
               <div>Sqft: {sqft ? fmtNum(sqft) : "N/A"}</div>
@@ -3491,7 +3491,7 @@ export default function PropertyDetailModal({
               <div>Tenure: {mlsOwnershipType || (p as any).OwnershipType || (p as any).ownershipType || ((p as any).LeaseExpiration || mlsLeaseExpiration ? "Leasehold" : "N/A")}</div>
             </div>
             {lastSaleAmt && (
-              <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>
+              <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 4 }}>
                 Last Sale: {fmt(lastSaleAmt)} ({p.sale?.amount?.saleTransDate || "date unknown"})
               </div>
             )}
@@ -3535,7 +3535,7 @@ export default function PropertyDetailModal({
           return (
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               {rentcastCompsLoading && (
-                <div style={{ textAlign: "center", padding: 32, color: "#6b7280" }}>
+                <div style={{ textAlign: "center", padding: 32, color: "hsl(var(--muted-foreground))" }}>
                   <div style={{ fontSize: 24, marginBottom: 8 }}>Loading comparable sales...</div>
                   <div style={{ fontSize: 13 }}>Searching for recent sales nearby</div>
                 </div>
@@ -3604,7 +3604,7 @@ export default function PropertyDetailModal({
                             <div style={{ fontSize: 12, color: "#166534", fontWeight: 600 }}>
                               Automated Valuation (AVM)
                             </div>
-                            <div style={{ fontSize: 10, color: "#6b7280", fontWeight: 500 }}>{source}</div>
+                            <div style={{ fontSize: 10, color: "hsl(var(--muted-foreground))", fontWeight: 500 }}>{source}</div>
                           </div>
                           <div style={{ fontSize: 22, fontWeight: 800, color: "#15803d" }}>{fmt(avmValue)}</div>
                           {hasRange && (
@@ -3641,7 +3641,7 @@ export default function PropertyDetailModal({
                                   display: "flex",
                                   justifyContent: "space-between",
                                   fontSize: 10,
-                                  color: "#6b7280",
+                                  color: "hsl(var(--muted-foreground))",
                                   marginTop: 4,
                                 }}
                               >
@@ -3671,7 +3671,7 @@ export default function PropertyDetailModal({
                           padding: 12,
                           borderRadius: 8,
                           marginBottom: 8,
-                          background: "#fff",
+                          background: "hsl(var(--card))",
                           border: `1px solid ${isMls ? "#bfdbfe" : "#e5e7eb"}`,
                         }}
                       >
@@ -3719,7 +3719,7 @@ export default function PropertyDetailModal({
                             )}
                           </div>
                         </div>
-                        <div style={{ display: "flex", gap: 16, fontSize: 12, color: "#6b7280", flexWrap: "wrap" }}>
+                        <div style={{ display: "flex", gap: 16, fontSize: 12, color: "hsl(var(--muted-foreground))", flexWrap: "wrap" }}>
                           {compPrice != null && (
                             <span style={{ fontWeight: 600, color: "#166534" }}>
                               ${compPrice.toLocaleString()}
@@ -3739,7 +3739,7 @@ export default function PropertyDetailModal({
                           {comp.daysOnMarket != null && <span>{comp.daysOnMarket} DOM</span>}
                         </div>
                         {isMls && (comp.listAgentName || comp.buyerAgentName) && (
-                          <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 4 }}>
+                          <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", marginTop: 4 }}>
                             {comp.listAgentName && `List: ${comp.listAgentName}`}
                             {comp.listAgentName && comp.buyerAgentName && " | "}
                             {comp.buyerAgentName && `Buyer: ${comp.buyerAgentName}`}
@@ -3747,7 +3747,7 @@ export default function PropertyDetailModal({
                         )}
                         {/* REAPI comp enrichment: owner, lender, flags */}
                         {(comp.owner1FirstName || comp.owner1LastName || comp.companyName || comp.lenderName) && (
-                          <div style={{ fontSize: 11, color: "#6b7280", marginTop: 4, borderTop: "1px solid #f3f4f6", paddingTop: 4 }}>
+                          <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", marginTop: 4, borderTop: "1px solid #f3f4f6", paddingTop: 4 }}>
                             {(comp.owner1FirstName || comp.owner1LastName || comp.companyName) && (
                               <span>Owner: {comp.companyName || [comp.owner1FirstName, comp.owner1LastName].filter(Boolean).join(" ")}
                                 {comp.owner2FirstName && ` & ${comp.owner2FirstName} ${comp.owner2LastName || ""}`}
@@ -3768,7 +3768,7 @@ export default function PropertyDetailModal({
               )}
 
               {rentcastComps && rentcastComps.length === 0 && !rentcastCompsLoading && (
-                <div style={{ padding: 16, textAlign: "center", color: "#6b7280", fontSize: 13 }}>
+                <div style={{ padding: 16, textAlign: "center", color: "hsl(var(--muted-foreground))", fontSize: 13 }}>
                   No comparable properties found.
                 </div>
               )}
@@ -3887,14 +3887,14 @@ export default function PropertyDetailModal({
                     )}
                   </div>
                   {!qpubLink && hawaiiLoading && (
-                    <div style={{ fontSize: 11, color: "#6b7280", marginTop: 6 }}>Loading Hawaii public records...</div>
+                    <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", marginTop: 6 }}>Loading Hawaii public records...</div>
                   )}
                 </div>
               )}
 
               {/* County Deed Owners (Honolulu OWNINFO) - PRIMARY source, weekly updated */}
               {hawaiiLoading && !hawaiiData && (
-                <div style={{ textAlign: "center", padding: 12, color: "#6b7280", fontSize: 13 }}>
+                <div style={{ textAlign: "center", padding: 12, color: "hsl(var(--muted-foreground))", fontSize: 13 }}>
                   Loading county ownership records...
                 </div>
               )}
@@ -3911,7 +3911,7 @@ export default function PropertyDetailModal({
                       borderBottom: "2px solid #16a34a",
                     }}
                   >
-                    <span style={{ fontSize: 14, fontWeight: 700, color: "#111827" }}>Deed Owners</span>
+                    <span style={{ fontSize: 14, fontWeight: 700, color: "hsl(var(--foreground))" }}>Deed Owners</span>
                     <span
                       style={{
                         display: "inline-flex",
@@ -3929,7 +3929,7 @@ export default function PropertyDetailModal({
                     >
                       County Records
                     </span>
-                    <span style={{ fontSize: 10, color: "#6b7280", marginLeft: "auto" }}>Updated weekly from county deed records</span>
+                    <span style={{ fontSize: 10, color: "hsl(var(--muted-foreground))", marginLeft: "auto" }}>Updated weekly from county deed records</span>
                   </div>
                   {hawaiiData.owners.map((ctyOwner: any, i: number) => {
                     const ownerName = ctyOwner.taxbillown || ctyOwner.taxbillown1 || ctyOwner.owner;
@@ -3952,25 +3952,25 @@ export default function PropertyDetailModal({
                       >
                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px 16px" }}>
                           <div style={{ gridColumn: "1 / -1" }}>
-                            <span style={{ fontSize: 11, color: "#6b7280" }}>
+                            <span style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>
                               Owner {ctyOwner.ownseq || i + 1}
                               {ownerType ? ` - ${ownerType}` : ""}
                             </span>
-                            <div style={{ fontSize: 14, fontWeight: 600, color: "#111827" }}>{ownerName}</div>
+                            <div style={{ fontSize: 14, fontWeight: 600, color: "hsl(var(--foreground))" }}>{ownerName}</div>
                             {ownerName2 && (
-                              <div style={{ fontSize: 13, color: "#374151", marginTop: 2 }}>{ownerName2}</div>
+                              <div style={{ fontSize: 13, color: "hsl(var(--foreground))", marginTop: 2 }}>{ownerName2}</div>
                             )}
                           </div>
                           {mailing && (
                             <div style={{ gridColumn: "1 / -1" }}>
-                              <span style={{ fontSize: 11, color: "#6b7280" }}>Mailing Address</span>
-                              <div style={{ fontSize: 12, color: "#374151" }}>{mailing}</div>
+                              <span style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>Mailing Address</span>
+                              <div style={{ fontSize: 12, color: "hsl(var(--foreground))" }}>{mailing}</div>
                             </div>
                           )}
                           {ctyOwner.parid && (
                             <div>
-                              <span style={{ fontSize: 11, color: "#6b7280" }}>Parcel ID</span>
-                              <div style={{ fontSize: 12, color: "#374151", fontFamily: "monospace" }}>{ctyOwner.parid}</div>
+                              <span style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>Parcel ID</span>
+                              <div style={{ fontSize: 12, color: "hsl(var(--foreground))", fontFamily: "monospace" }}>{ctyOwner.parid}</div>
                             </div>
                           )}
                         </div>
@@ -4199,7 +4199,7 @@ export default function PropertyDetailModal({
                     </button>
                   )}
                   {portfolioLoading && (
-                    <div style={{ fontSize: 12, color: "#6b7280", padding: 8 }}>Loading portfolio properties...</div>
+                    <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", padding: 8 }}>Loading portfolio properties...</div>
                   )}
                   {portfolioProperties.length > 0 && (
                     <div style={{ marginTop: 8 }}>
@@ -4209,11 +4209,11 @@ export default function PropertyDetailModal({
                         const propEquity = prop?.homeEquity?.equity;
                         const propType = prop?.summary?.propSubType || prop?.summary?.propType;
                         return (
-                          <div key={pi} style={{ padding: 10, border: "1px solid #e5e7eb", borderRadius: 8, marginBottom: 6, background: "#f9fafb" }}>
+                          <div key={pi} style={{ padding: 10, border: "1px solid hsl(var(--border))", borderRadius: 8, marginBottom: 6, background: "hsl(var(--muted))" }}>
                             <div style={{ fontWeight: 600, fontSize: 13, color: "#1f2937", marginBottom: 4 }}>
                               {propAddr}
                             </div>
-                            <div style={{ display: "flex", gap: 12, fontSize: 12, color: "#6b7280", flexWrap: "wrap" }}>
+                            <div style={{ display: "flex", gap: 12, fontSize: 12, color: "hsl(var(--muted-foreground))", flexWrap: "wrap" }}>
                               {propType && <span>{propType}</span>}
                               {propVal && <span style={{ fontWeight: 600, color: "#059669" }}>Value: {fmt(propVal)}</span>}
                               {propEquity != null && <span>Equity: {fmt(propEquity)}</span>}
@@ -4247,19 +4247,19 @@ export default function PropertyDetailModal({
                   >
                     Run Skip Trace
                   </button>
-                  <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 6 }}>
+                  <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", marginTop: 6 }}>
                     Find phone numbers, emails, and contact info for the property owner
                   </div>
                 </Section>
               )}
               {skipTraceLoading && (
                 <Section title="Skip Trace">
-                  <div style={{ color: "#6b7280", fontSize: 13 }}>Loading contact information...</div>
+                  <div style={{ color: "hsl(var(--muted-foreground))", fontSize: 13 }}>Loading contact information...</div>
                 </Section>
               )}
               {skipTraceData && skipTraceData.length === 0 && (
                 <Section title="Skip Trace">
-                  <div style={{ color: "#9ca3af", fontSize: 13 }}>No contact information found for this owner.</div>
+                  <div style={{ color: "hsl(var(--muted-foreground))", fontSize: 13 }}>No contact information found for this owner.</div>
                 </Section>
               )}
               {skipTraceData && skipTraceData.length > 0 && skipTraceData.map((person: any, pi: number) => (
@@ -4270,13 +4270,13 @@ export default function PropertyDetailModal({
                   {/* Phone Numbers */}
                   {person.phones?.length > 0 && (
                     <div style={{ marginTop: 8 }}>
-                      <div style={{ fontSize: 11, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", marginBottom: 4 }}>Phone Numbers</div>
+                      <div style={{ fontSize: 11, fontWeight: 600, color: "hsl(var(--muted-foreground))", textTransform: "uppercase", marginBottom: 4 }}>Phone Numbers</div>
                       {person.phones.map((ph: any, i: number) => (
                         <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "3px 0", fontSize: 13, borderBottom: "1px solid #f3f4f6" }}>
                           <span style={{ fontWeight: 600 }}>
                             <a href={`tel:${ph.number}`} style={{ color: "#2563eb", textDecoration: "none" }}>{ph.number}</a>
                           </span>
-                          <span style={{ fontSize: 11, color: "#9ca3af" }}>
+                          <span style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>
                             {[ph.type, ph.lineType, ph.doNotCall ? "DNC" : null].filter(Boolean).join(" - ")}
                           </span>
                         </div>
@@ -4286,11 +4286,11 @@ export default function PropertyDetailModal({
                   {/* Emails */}
                   {person.emails?.length > 0 && (
                     <div style={{ marginTop: 8 }}>
-                      <div style={{ fontSize: 11, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", marginBottom: 4 }}>Email Addresses</div>
+                      <div style={{ fontSize: 11, fontWeight: 600, color: "hsl(var(--muted-foreground))", textTransform: "uppercase", marginBottom: 4 }}>Email Addresses</div>
                       {person.emails.map((em: any, i: number) => (
                         <div key={i} style={{ padding: "3px 0", fontSize: 13, borderBottom: "1px solid #f3f4f6" }}>
                           <a href={`mailto:${em.address}`} style={{ color: "#2563eb", textDecoration: "none" }}>{em.address}</a>
-                          {em.type && <span style={{ fontSize: 11, color: "#9ca3af", marginLeft: 8 }}>{em.type}</span>}
+                          {em.type && <span style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", marginLeft: 8 }}>{em.type}</span>}
                         </div>
                       ))}
                     </div>
@@ -4298,7 +4298,7 @@ export default function PropertyDetailModal({
                   {/* Social Profiles */}
                   {person.socialProfiles?.length > 0 && (
                     <div style={{ marginTop: 8 }}>
-                      <div style={{ fontSize: 11, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", marginBottom: 4 }}>Social Profiles</div>
+                      <div style={{ fontSize: 11, fontWeight: 600, color: "hsl(var(--muted-foreground))", textTransform: "uppercase", marginBottom: 4 }}>Social Profiles</div>
                       {person.socialProfiles.map((sp: any, i: number) => (
                         <div key={i} style={{ padding: "3px 0", fontSize: 13, borderBottom: "1px solid #f3f4f6" }}>
                           <span style={{ fontWeight: 600 }}>{sp.type}</span>
@@ -4310,7 +4310,7 @@ export default function PropertyDetailModal({
                   {/* Demographics */}
                   {person.demographics && (person.demographics.occupation || person.demographics.incomeRange || person.demographics.education) && (
                     <div style={{ marginTop: 8 }}>
-                      <div style={{ fontSize: 11, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", marginBottom: 4 }}>Demographics</div>
+                      <div style={{ fontSize: 11, fontWeight: 600, color: "hsl(var(--muted-foreground))", textTransform: "uppercase", marginBottom: 4 }}>Demographics</div>
                       {person.demographics.occupation && <Field label="Occupation" value={person.demographics.occupation} />}
                       {person.demographics.education && <Field label="Education" value={person.demographics.education} />}
                       {person.demographics.incomeRange && <Field label="Income Range" value={person.demographics.incomeRange} />}
@@ -4321,11 +4321,11 @@ export default function PropertyDetailModal({
                   {/* Known Addresses */}
                   {person.addresses?.length > 0 && (
                     <div style={{ marginTop: 8 }}>
-                      <div style={{ fontSize: 11, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", marginBottom: 4 }}>Known Addresses</div>
+                      <div style={{ fontSize: 11, fontWeight: 600, color: "hsl(var(--muted-foreground))", textTransform: "uppercase", marginBottom: 4 }}>Known Addresses</div>
                       {person.addresses.slice(0, 5).map((a: any, i: number) => (
-                        <div key={i} style={{ padding: "3px 0", fontSize: 12, color: "#374151", borderBottom: "1px solid #f3f4f6" }}>
+                        <div key={i} style={{ padding: "3px 0", fontSize: 12, color: "hsl(var(--foreground))", borderBottom: "1px solid #f3f4f6" }}>
                           {[a.address, a.city, a.state, a.zip].filter(Boolean).join(", ")}
-                          {a.type && <span style={{ fontSize: 11, color: "#9ca3af", marginLeft: 6 }}>({a.type})</span>}
+                          {a.type && <span style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", marginLeft: 6 }}>({a.type})</span>}
                         </div>
                       ))}
                     </div>
@@ -4333,10 +4333,10 @@ export default function PropertyDetailModal({
                   {/* Relatives */}
                   {person.relatives?.length > 0 && (
                     <div style={{ marginTop: 8 }}>
-                      <div style={{ fontSize: 11, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", marginBottom: 4 }}>Known Relatives</div>
+                      <div style={{ fontSize: 11, fontWeight: 600, color: "hsl(var(--muted-foreground))", textTransform: "uppercase", marginBottom: 4 }}>Known Relatives</div>
                       {person.relatives.slice(0, 5).map((r: any, i: number) => (
-                        <div key={i} style={{ padding: "2px 0", fontSize: 12, color: "#374151" }}>
-                          {r.name}{r.relationship && <span style={{ color: "#9ca3af", marginLeft: 6 }}>({r.relationship})</span>}
+                        <div key={i} style={{ padding: "2px 0", fontSize: 12, color: "hsl(var(--foreground))" }}>
+                          {r.name}{r.relationship && <span style={{ color: "hsl(var(--muted-foreground))", marginLeft: 6 }}>({r.relationship})</span>}
                         </div>
                       ))}
                     </div>
@@ -4365,7 +4365,7 @@ export default function PropertyDetailModal({
 
               {/* Enriched owner data from detailmortgageowner endpoint */}
               {enrichedOwnerLoading && (
-                <div style={{ textAlign: "center", padding: 12, color: "#6b7280", fontSize: 13 }}>
+                <div style={{ textAlign: "center", padding: 12, color: "hsl(var(--muted-foreground))", fontSize: 13 }}>
                   Loading detailed ownership records...
                 </div>
               )}
@@ -4392,7 +4392,7 @@ export default function PropertyDetailModal({
                         if (!o?.fullName && !o?.lastName) return null;
                         return (
                           <div key={n} style={{ gridColumn: "1 / -1" }}>
-                            <div style={{ fontSize: 12, fontWeight: 600, color: "#111827" }}>
+                            <div style={{ fontSize: 12, fontWeight: 600, color: "hsl(var(--foreground))" }}>
                               Owner {n}: {o.fullName || [o.firstNameAndMi, o.lastName].filter(Boolean).join(" ")}
                             </div>
                           </div>
@@ -4547,7 +4547,7 @@ export default function PropertyDetailModal({
                     background: "#f0f9ff",
                     borderRadius: 8,
                     fontSize: 11,
-                    color: "#6b7280",
+                    color: "hsl(var(--muted-foreground))",
                   }}
                 >
                   Source: State of Hawaii Statewide GIS Program &amp; City &amp; County of Honolulu OWNALL. Public data
@@ -4561,11 +4561,11 @@ export default function PropertyDetailModal({
       {activeSection === "neighborhood" && (
         <>
           {neighborhoodLoading && (
-            <div style={{ textAlign: "center", padding: 40, color: "#6b7280" }}>Loading neighborhood data...</div>
+            <div style={{ textAlign: "center", padding: 40, color: "hsl(var(--muted-foreground))" }}>Loading neighborhood data...</div>
           )}
 
           {!neighborhoodLoading && !neighborhoodData && (
-            <div style={{ textAlign: "center", padding: 40, color: "#6b7280" }}>
+            <div style={{ textAlign: "center", padding: 40, color: "hsl(var(--muted-foreground))" }}>
               Neighborhood data not available. Connect the property data integration to access community intelligence.
             </div>
           )}
@@ -4617,7 +4617,7 @@ export default function PropertyDetailModal({
 
               if (!hasCommunity && schoolList.length === 0 && poiList.length === 0) {
                 return (
-                  <div style={{ textAlign: "center", padding: 40, color: "#6b7280" }}>
+                  <div style={{ textAlign: "center", padding: 40, color: "hsl(var(--muted-foreground))" }}>
                     No neighborhood data found for this property. This may occur if the area is not covered by the
                     community data provider.
                   </div>
@@ -4645,7 +4645,7 @@ export default function PropertyDetailModal({
                     >
                       <div style={{ fontSize: 15, fontWeight: 700, color: "#1e40af" }}>{geo.geographyName}</div>
                       {geo.geographyTypeName && (
-                        <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>{geo.geographyTypeName}</div>
+                        <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 2 }}>{geo.geographyTypeName}</div>
                       )}
                     </div>
                   )}
@@ -4770,7 +4770,7 @@ export default function PropertyDetailModal({
                         style={{
                           fontSize: 14,
                           fontWeight: 700,
-                          color: "#374151",
+                          color: "hsl(var(--foreground))",
                           marginBottom: 10,
                           paddingBottom: 6,
                           borderBottom: "1px solid #e5e7eb",
@@ -4798,7 +4798,7 @@ export default function PropertyDetailModal({
                               key={c.label}
                               style={{
                                 padding: "10px 12px",
-                                background: "#f9fafb",
+                                background: "hsl(var(--muted))",
                                 borderRadius: 8,
                                 textAlign: "center",
                               }}
@@ -4808,7 +4808,7 @@ export default function PropertyDetailModal({
                                   fontSize: 10,
                                   fontWeight: 600,
                                   textTransform: "uppercase",
-                                  color: "#6b7280",
+                                  color: "hsl(var(--muted-foreground))",
                                   letterSpacing: 0.5,
                                 }}
                               >
@@ -4820,7 +4820,7 @@ export default function PropertyDetailModal({
                           ))}
                       </div>
                       {crime.year && (
-                        <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 8, textAlign: "right" }}>
+                        <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", marginTop: 8, textAlign: "right" }}>
                           Source: FBI Crime Data Explorer ({crime.year}) | {crime.areaName || "State"}
                         </div>
                       )}
@@ -4877,7 +4877,7 @@ export default function PropertyDetailModal({
                         style={{
                           fontSize: 14,
                           fontWeight: 700,
-                          color: "#374151",
+                          color: "hsl(var(--foreground))",
                           marginBottom: 10,
                           paddingBottom: 6,
                           borderBottom: "1px solid #e5e7eb",
@@ -4934,13 +4934,13 @@ export default function PropertyDetailModal({
                                     key={item.label}
                                     style={{
                                       padding: "12px 14px",
-                                      background: "#f9fafb",
+                                      background: "hsl(var(--muted))",
                                       borderRadius: 8,
                                       textAlign: "center",
                                       borderLeft: `3px solid ${riskColor(item.data.risk)}`,
                                     }}
                                   >
-                                    <div style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", color: "#6b7280", letterSpacing: 0.5 }}>
+                                    <div style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", color: "hsl(var(--muted-foreground))", letterSpacing: 0.5 }}>
                                       {item.label}
                                     </div>
                                     <div style={{ fontSize: 16, fontWeight: 800, color: riskColor(item.data.risk), marginTop: 4 }}>
@@ -4949,7 +4949,7 @@ export default function PropertyDetailModal({
                                   </div>
                                 ))}
                               </div>
-                              <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 8, textAlign: "right" }}>
+                              <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", marginTop: 8, textAlign: "right" }}>
                                 Source: FEMA National Risk Index (county-level)
                               </div>
                             </>
@@ -4960,8 +4960,8 @@ export default function PropertyDetailModal({
                           return (
                             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 8 }}>
                               {indexItems.map((c) => (
-                                <div key={c.label} style={{ padding: "10px 12px", background: "#f9fafb", borderRadius: 8, textAlign: "center" }}>
-                                  <div style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", color: "#6b7280", letterSpacing: 0.5 }}>{c.label}</div>
+                                <div key={c.label} style={{ padding: "10px 12px", background: "hsl(var(--muted))", borderRadius: 8, textAlign: "center" }}>
+                                  <div style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", color: "hsl(var(--muted-foreground))", letterSpacing: 0.5 }}>{c.label}</div>
                                   <div style={{ fontSize: 22, fontWeight: 800, color: idxColor(c.val!) }}>{c.val}</div>
                                   <div style={{ fontSize: 10, color: idxColor(c.val!) }}>{idxLabel(c.val!)}</div>
                                 </div>
@@ -4978,7 +4978,7 @@ export default function PropertyDetailModal({
                   {/* Assigned Schools (from GIS attendance zone boundaries) */}
                   {gisEnrichment && (gisEnrichment.elementarySchool || gisEnrichment.middleSchool || gisEnrichment.highSchool) && (
                     <div style={{ marginBottom: 20 }}>
-                      <h3 style={{ fontSize: 14, fontWeight: 700, color: "#374151", marginBottom: 10, paddingBottom: 6, borderBottom: "1px solid #e5e7eb" }}>
+                      <h3 style={{ fontSize: 14, fontWeight: 700, color: "hsl(var(--foreground))", marginBottom: 10, paddingBottom: 6, borderBottom: "1px solid #e5e7eb" }}>
                         Assigned Schools (Attendance Zone)
                       </h3>
                       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -4988,8 +4988,8 @@ export default function PropertyDetailModal({
                           gisEnrichment.highSchool && { ...gisEnrichment.highSchool, level: "High" },
                         ].filter(Boolean).map((school: any, i: number) => (
                           <div key={i} style={{ padding: "10px 14px", background: "#f0f9ff", borderRadius: 8, borderLeft: "4px solid #3b82f6" }}>
-                            <div style={{ fontWeight: 600, fontSize: 14, color: "#111827" }}>{school.name}</div>
-                            <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>
+                            <div style={{ fontWeight: 600, fontSize: 14, color: "hsl(var(--foreground))" }}>{school.name}</div>
+                            <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 2 }}>
                               {school.level}
                               {school.complex && ` - ${school.complex} Complex`}
                             </div>
@@ -5002,7 +5002,7 @@ export default function PropertyDetailModal({
                   {/* NCES nearby schools -- only shown if no GIS assigned schools available (non-Hawaii) */}
                   {!gisEnrichment?.elementarySchool && !gisEnrichment?.middleSchool && !gisEnrichment?.highSchool && schoolList.length > 0 && (
                     <div style={{ marginBottom: 20 }}>
-                      <h3 style={{ fontSize: 14, fontWeight: 700, color: "#374151", marginBottom: 10, paddingBottom: 6, borderBottom: "1px solid #e5e7eb" }}>
+                      <h3 style={{ fontSize: 14, fontWeight: 700, color: "hsl(var(--foreground))", marginBottom: 10, paddingBottom: 6, borderBottom: "1px solid #e5e7eb" }}>
                         Nearby Schools
                       </h3>
                       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -5055,7 +5055,7 @@ export default function PropertyDetailModal({
                               key={i}
                               style={{
                                 padding: "10px 14px",
-                                background: "#f9fafb",
+                                background: "hsl(var(--muted))",
                                 borderRadius: 8,
                                 display: "flex",
                                 justifyContent: "space-between",
@@ -5065,8 +5065,8 @@ export default function PropertyDetailModal({
                               }}
                             >
                               <div style={{ flex: 1, minWidth: 180 }}>
-                                <div style={{ fontWeight: 600, fontSize: 13, color: "#111827" }}>{name}</div>
-                                <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>
+                                <div style={{ fontWeight: 600, fontSize: 13, color: "hsl(var(--foreground))" }}>{name}</div>
+                                <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 2 }}>
                                   {[
                                     type,
                                     level,
@@ -5079,14 +5079,14 @@ export default function PropertyDetailModal({
                                 <div
                                   style={{
                                     fontSize: 11,
-                                    color: "#9ca3af",
+                                    color: "hsl(var(--muted-foreground))",
                                     marginTop: 1,
                                     display: "flex",
                                     flexWrap: "wrap",
                                     gap: 8,
                                   }}
                                 >
-                                  {students != null && <span style={{ color: "#111827", fontWeight: 600 }}>Enrollment: {Number(students).toLocaleString()}</span>}
+                                  {students != null && <span style={{ color: "hsl(var(--foreground))", fontWeight: 600 }}>Enrollment: {Number(students).toLocaleString()}</span>}
                                   {school.studentTeacherRatio && <span style={{ color: "#dc2626", fontWeight: 600 }}>Student:Teacher {school.studentTeacherRatio}:1</span>}
                                   {school.freeLunchPct != null && <span style={{ color: "#059669", fontWeight: 600 }}>Free/Reduced Lunch: {school.freeLunchPct}%</span>}
                                   {community && <span>{community}</span>}
@@ -5097,7 +5097,7 @@ export default function PropertyDetailModal({
                                 </div>
                                 {/* District info if nested in v4 */}
                                 {school.district?.schoolDistrictName && (
-                                  <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 1 }}>
+                                  <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", marginTop: 1 }}>
                                     District: {school.district.schoolDistrictName}
                                   </div>
                                 )}
@@ -5200,7 +5200,7 @@ export default function PropertyDetailModal({
 
                     return (
                       <div style={{ marginBottom: 20 }}>
-                        <h3 style={{ fontSize: 14, fontWeight: 700, color: "#374151", marginBottom: 10, paddingBottom: 6, borderBottom: "1px solid #e5e7eb" }}>
+                        <h3 style={{ fontSize: 14, fontWeight: 700, color: "hsl(var(--foreground))", marginBottom: 10, paddingBottom: 6, borderBottom: "1px solid #e5e7eb" }}>
                           Nearby Amenities
                         </h3>
                         {sortedGroups.map(([groupName, group]) => (
@@ -5210,10 +5210,10 @@ export default function PropertyDetailModal({
                             </div>
                             <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                               {group.items.slice(0, 8).map((poi, i) => (
-                                <div key={i} style={{ padding: "6px 12px", background: "#f9fafb", borderRadius: 6, fontSize: 12 }}>
-                                  <span style={{ fontWeight: 500, color: "#111827" }}>{poi.name}</span>
+                                <div key={i} style={{ padding: "6px 12px", background: "hsl(var(--muted))", borderRadius: 6, fontSize: 12 }}>
+                                  <span style={{ fontWeight: 500, color: "hsl(var(--foreground))" }}>{poi.name}</span>
                                   {poi.distance != null && typeof poi.distance === "number" && poi.distance < 25 && (
-                                    <span style={{ color: "#9ca3af", marginLeft: 6 }}>{poi.distance.toFixed(1)} mi</span>
+                                    <span style={{ color: "hsl(var(--muted-foreground))", marginLeft: 6 }}>{poi.distance.toFixed(1)} mi</span>
                                   )}
                                 </div>
                               ))}
@@ -5232,11 +5232,11 @@ export default function PropertyDetailModal({
       {activeSection === "market" && (
         <>
           {marketStatsLoading && (
-            <div style={{ textAlign: "center", padding: 40, color: "#6b7280" }}>Loading market statistics...</div>
+            <div style={{ textAlign: "center", padding: 40, color: "hsl(var(--muted-foreground))" }}>Loading market statistics...</div>
           )}
 
           {!marketStatsLoading && !marketStats && (
-            <div style={{ textAlign: "center", padding: 40, color: "#6b7280" }}>
+            <div style={{ textAlign: "center", padding: 40, color: "hsl(var(--muted-foreground))" }}>
               Market statistics not available. Ensure RentCast is connected and a valid zip code is present.
             </div>
           )}
@@ -5247,7 +5247,7 @@ export default function PropertyDetailModal({
               const rental = marketStats.rentalData;
               if (!sale && !rental)
                 return (
-                  <div style={{ textAlign: "center", padding: 40, color: "#6b7280" }}>
+                  <div style={{ textAlign: "center", padding: 40, color: "hsl(var(--muted-foreground))" }}>
                     No market data available for this zip code.
                   </div>
                 );
@@ -5299,7 +5299,7 @@ export default function PropertyDetailModal({
                       Market Statistics — {marketStats.zipCode || p.address?.postal1}
                       {headlineLabel && <span style={{ fontSize: 12, fontWeight: 500, color: "#059669" }}> ({headlineLabel.trim()})</span>}
                     </div>
-                    <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>
+                    <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 2 }}>
                       Source: Public Records{sale?.lastUpdatedDate ? ` (Updated: ${sale.lastUpdatedDate.split("T")[0]})` : ""}
                       {headlineLabel && " | Showing stats for matching property type"}
                     </div>
@@ -5357,7 +5357,7 @@ export default function PropertyDetailModal({
                         style={{
                           fontSize: 14,
                           fontWeight: 700,
-                          color: "#374151",
+                          color: "hsl(var(--foreground))",
                           marginBottom: 10,
                           paddingBottom: 6,
                           borderBottom: "1px solid #e5e7eb",
@@ -5369,19 +5369,19 @@ export default function PropertyDetailModal({
                         <table style={{ width: "100%", fontSize: 12, borderCollapse: "collapse" }}>
                           <thead>
                             <tr style={{ borderBottom: "2px solid #e5e7eb" }}>
-                              <th style={{ textAlign: "left", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>
+                              <th style={{ textAlign: "left", padding: "6px 8px", color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>
                                 Type
                               </th>
-                              <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>
+                              <th style={{ textAlign: "right", padding: "6px 8px", color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>
                                 Median Price
                               </th>
-                              <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>
+                              <th style={{ textAlign: "right", padding: "6px 8px", color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>
                                 Median $/Sqft
                               </th>
-                              <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>
+                              <th style={{ textAlign: "right", padding: "6px 8px", color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>
                                 Median DOM
                               </th>
-                              <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>
+                              <th style={{ textAlign: "right", padding: "6px 8px", color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>
                                 Listings
                               </th>
                             </tr>
@@ -5392,7 +5392,7 @@ export default function PropertyDetailModal({
                                 key={d.propertyType}
                                 style={{
                                   borderBottom: "1px solid #f3f4f6",
-                                  background: i % 2 === 0 ? "#fff" : "#f9fafb",
+                                  background: i % 2 === 0 ? "hsl(var(--card))" : "hsl(var(--muted))",
                                 }}
                               >
                                 <td style={{ padding: "6px 8px", fontWeight: 500 }}>{d.propertyType}</td>
@@ -5423,7 +5423,7 @@ export default function PropertyDetailModal({
                         style={{
                           fontSize: 14,
                           fontWeight: 700,
-                          color: "#374151",
+                          color: "hsl(var(--foreground))",
                           marginBottom: 10,
                           paddingBottom: 6,
                           borderBottom: "1px solid #e5e7eb",
@@ -5435,19 +5435,19 @@ export default function PropertyDetailModal({
                         <table style={{ width: "100%", fontSize: 12, borderCollapse: "collapse" }}>
                           <thead>
                             <tr style={{ borderBottom: "2px solid #e5e7eb" }}>
-                              <th style={{ textAlign: "left", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>
+                              <th style={{ textAlign: "left", padding: "6px 8px", color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>
                                 Beds
                               </th>
-                              <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>
+                              <th style={{ textAlign: "right", padding: "6px 8px", color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>
                                 Median Price
                               </th>
-                              <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>
+                              <th style={{ textAlign: "right", padding: "6px 8px", color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>
                                 Median $/Sqft
                               </th>
-                              <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>
+                              <th style={{ textAlign: "right", padding: "6px 8px", color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>
                                 Median DOM
                               </th>
-                              <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>
+                              <th style={{ textAlign: "right", padding: "6px 8px", color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>
                                 Listings
                               </th>
                             </tr>
@@ -5460,7 +5460,7 @@ export default function PropertyDetailModal({
                                   key={d.bedrooms}
                                   style={{
                                     borderBottom: "1px solid #f3f4f6",
-                                    background: i % 2 === 0 ? "#fff" : "#f9fafb",
+                                    background: i % 2 === 0 ? "hsl(var(--card))" : "hsl(var(--muted))",
                                   }}
                                 >
                                   <td style={{ padding: "6px 8px", fontWeight: 500 }}>{d.bedrooms} BR</td>
@@ -5491,7 +5491,7 @@ export default function PropertyDetailModal({
                         style={{
                           fontSize: 14,
                           fontWeight: 700,
-                          color: "#374151",
+                          color: "hsl(var(--foreground))",
                           marginBottom: 4,
                           paddingBottom: 6,
                           borderBottom: "1px solid #e5e7eb",
@@ -5500,7 +5500,7 @@ export default function PropertyDetailModal({
                         Monthly Sale Trends
                       </h3>
                       {saleTrend != null && (
-                        <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 8 }}>
+                        <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginBottom: 8 }}>
                           <span style={{ fontWeight: 600, color: saleTrend >= 0 ? "#059669" : "#dc2626" }}>
                             {saleTrend >= 0 ? "+" : ""}
                             {saleTrend.toFixed(1)}% median price change over {saleHistory.length} months
@@ -5511,22 +5511,22 @@ export default function PropertyDetailModal({
                         <table style={{ width: "100%", fontSize: 12, borderCollapse: "collapse" }}>
                           <thead>
                             <tr style={{ borderBottom: "2px solid #e5e7eb" }}>
-                              <th style={{ textAlign: "left", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>
+                              <th style={{ textAlign: "left", padding: "6px 8px", color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>
                                 Month
                               </th>
-                              <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>
+                              <th style={{ textAlign: "right", padding: "6px 8px", color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>
                                 Median Price
                               </th>
-                              <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>
+                              <th style={{ textAlign: "right", padding: "6px 8px", color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>
                                 Avg Price
                               </th>
-                              <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>
+                              <th style={{ textAlign: "right", padding: "6px 8px", color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>
                                 $/Sqft
                               </th>
-                              <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>
+                              <th style={{ textAlign: "right", padding: "6px 8px", color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>
                                 DOM
                               </th>
-                              <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>
+                              <th style={{ textAlign: "right", padding: "6px 8px", color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>
                                 Listings
                               </th>
                             </tr>
@@ -5537,7 +5537,7 @@ export default function PropertyDetailModal({
                                 key={month}
                                 style={{
                                   borderBottom: "1px solid #f3f4f6",
-                                  background: i % 2 === 0 ? "#fff" : "#f9fafb",
+                                  background: i % 2 === 0 ? "hsl(var(--card))" : "hsl(var(--muted))",
                                 }}
                               >
                                 <td style={{ padding: "6px 8px", fontWeight: 500 }}>{month}</td>
@@ -5613,7 +5613,7 @@ export default function PropertyDetailModal({
                         style={{
                           fontSize: 14,
                           fontWeight: 700,
-                          color: "#374151",
+                          color: "hsl(var(--foreground))",
                           marginBottom: 10,
                           paddingBottom: 6,
                           borderBottom: "1px solid #e5e7eb",
@@ -5625,19 +5625,19 @@ export default function PropertyDetailModal({
                         <table style={{ width: "100%", fontSize: 12, borderCollapse: "collapse" }}>
                           <thead>
                             <tr style={{ borderBottom: "2px solid #e5e7eb" }}>
-                              <th style={{ textAlign: "left", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>
+                              <th style={{ textAlign: "left", padding: "6px 8px", color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>
                                 Beds
                               </th>
-                              <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>
+                              <th style={{ textAlign: "right", padding: "6px 8px", color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>
                                 Median Rent
                               </th>
-                              <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>
+                              <th style={{ textAlign: "right", padding: "6px 8px", color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>
                                 $/Sqft
                               </th>
-                              <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>
+                              <th style={{ textAlign: "right", padding: "6px 8px", color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>
                                 Median DOM
                               </th>
-                              <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>
+                              <th style={{ textAlign: "right", padding: "6px 8px", color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>
                                 Listings
                               </th>
                             </tr>
@@ -5650,7 +5650,7 @@ export default function PropertyDetailModal({
                                   key={d.bedrooms}
                                   style={{
                                     borderBottom: "1px solid #f3f4f6",
-                                    background: i % 2 === 0 ? "#fff" : "#f9fafb",
+                                    background: i % 2 === 0 ? "hsl(var(--card))" : "hsl(var(--muted))",
                                   }}
                                 >
                                   <td style={{ padding: "6px 8px", fontWeight: 500 }}>{d.bedrooms} BR</td>
@@ -5682,11 +5682,11 @@ export default function PropertyDetailModal({
       {activeSection === "federal" && (
         <>
           {federalLoading && (
-            <div style={{ textAlign: "center", padding: 40, color: "#6b7280" }}>Loading federal data sources...</div>
+            <div style={{ textAlign: "center", padding: 40, color: "hsl(var(--muted-foreground))" }}>Loading federal data sources...</div>
           )}
 
           {!federalLoading && !federalData && (
-            <div style={{ textAlign: "center", padding: 40, color: "#6b7280" }}>
+            <div style={{ textAlign: "center", padding: 40, color: "hsl(var(--muted-foreground))" }}>
               Federal data not available. Connect the Federal Data integration to access government property
               intelligence.
             </div>
@@ -5834,12 +5834,12 @@ export default function PropertyDetailModal({
       {activeSection === "nearby" && (
         <>
           {nearbyLoading && (
-            <div style={{ padding: 40, textAlign: "center", color: "#6b7280" }}>Searching for nearby homeowners...</div>
+            <div style={{ padding: 40, textAlign: "center", color: "hsl(var(--muted-foreground))" }}>Searching for nearby homeowners...</div>
           )}
 
           {!nearbyLoading && nearbyHomes && nearbyHomes.length === 0 && (
             <div
-              style={{ padding: 40, textAlign: "center", color: "#9ca3af", background: "#f9fafb", borderRadius: 12 }}
+              style={{ padding: 40, textAlign: "center", color: "hsl(var(--muted-foreground))", background: "hsl(var(--muted))", borderRadius: 12 }}
             >
               No nearby properties found within {farmingContext?.radiusMiles || "0.5"} miles.
             </div>
@@ -5847,7 +5847,7 @@ export default function PropertyDetailModal({
 
           {!nearbyLoading && !nearbyHomes && !p.location?.latitude && (
             <div
-              style={{ padding: 40, textAlign: "center", color: "#9ca3af", background: "#f9fafb", borderRadius: 12 }}
+              style={{ padding: 40, textAlign: "center", color: "hsl(var(--muted-foreground))", background: "hsl(var(--muted))", borderRadius: 12 }}
             >
               No coordinates available for this property. Nearby homes search requires lat/lng data.
             </div>
@@ -5905,7 +5905,7 @@ export default function PropertyDetailModal({
                         <strong>{withMailing.length}</strong> with mailing addresses
                       </span>
                     </div>
-                    <div style={{ marginTop: 6, color: "#6b7280" }}>
+                    <div style={{ marginTop: 6, color: "hsl(var(--muted-foreground))" }}>
                       Use this data to send &ldquo;Your Neighbor&rsquo;s Home Just Sold&rdquo; postcards to nearby
                       homeowners.
                     </div>
@@ -5933,14 +5933,14 @@ export default function PropertyDetailModal({
                           key={nh.identifier?.attomId || idx}
                           style={{
                             padding: "10px 14px",
-                            background: "#fff",
-                            border: "1px solid #e5e7eb",
+                            background: "hsl(var(--card))",
+                            border: "1px solid hsl(var(--border))",
                             borderRadius: 8,
                             borderLeft: ownerName ? "3px solid #7c3aed" : "3px solid #e5e7eb",
                           }}
                         >
                           <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 3 }}>{nhAddr}</div>
-                          <div style={{ fontSize: 12, color: "#6b7280", display: "flex", flexWrap: "wrap", gap: 8 }}>
+                          <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", display: "flex", flexWrap: "wrap", gap: 8 }}>
                             {[
                               nhBeds != null ? `${nhBeds} bed` : null,
                               nhBaths != null ? `${nhBaths} bath` : null,
@@ -5955,12 +5955,12 @@ export default function PropertyDetailModal({
                               <strong>Owner:</strong> {ownerName || "Not listed"}
                             </div>
                             {mailingAddr && (
-                              <div style={{ color: "#374151" }}>
+                              <div style={{ color: "hsl(var(--foreground))" }}>
                                 <strong>Mailing:</strong> {mailingAddr}
                               </div>
                             )}
                             {nhValue != null && (
-                              <div style={{ color: "#6b7280" }}>
+                              <div style={{ color: "hsl(var(--muted-foreground))" }}>
                                 <strong>Est. Value:</strong> ${nhValue.toLocaleString()}
                               </div>
                             )}
@@ -5995,7 +5995,7 @@ export default function PropertyDetailModal({
                 {sellerScore.score}
               </div>
               <div style={{ fontSize: 16, fontWeight: 700, marginTop: 8, color: scoreColor }}>{scoreLabel}</div>
-              {sellerScore.owner && <div style={{ fontSize: 13, color: "#6b7280", marginTop: 4 }}>Owner: {sellerScore.owner}</div>}
+              {sellerScore.owner && <div style={{ fontSize: 13, color: "hsl(var(--muted-foreground))", marginTop: 4 }}>Owner: {sellerScore.owner}</div>}
             </div>
 
             {/* Key Score Insight Cards (2x2 grid) */}
@@ -6012,12 +6012,12 @@ export default function PropertyDetailModal({
                     </div>
                     <div style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
                       <span style={{ fontSize: 18, fontWeight: 800, color: card.text }}>{factor.points}</span>
-                      <span style={{ fontSize: 10, color: "#9ca3af" }}>/ {factor.maxPoints}</span>
+                      <span style={{ fontSize: 10, color: "hsl(var(--muted-foreground))" }}>/ {factor.maxPoints}</span>
                     </div>
                     <div style={{ height: 4, background: "rgba(255,255,255,0.6)", borderRadius: 2, overflow: "hidden", marginTop: 4 }}>
                       <div style={{ height: "100%", borderRadius: 2, background: card.bar, width: `${pct}%` }} />
                     </div>
-                    <div style={{ fontSize: 10, color: "#6b7280", marginTop: 4, lineHeight: 1.3 }}>{factor.description}</div>
+                    <div style={{ fontSize: 10, color: "hsl(var(--muted-foreground))", marginTop: 4, lineHeight: 1.3 }}>{factor.description}</div>
                   </div>
                 );
               })}
@@ -6033,13 +6033,13 @@ export default function PropertyDetailModal({
                     return (
                       <div key={f.name}>
                         <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 3 }}>
-                          <span style={{ fontWeight: 600, color: "#374151" }}>{f.name}</span>
-                          <span style={{ color: "#6b7280" }}>{f.points}/{f.maxPoints}</span>
+                          <span style={{ fontWeight: 600, color: "hsl(var(--foreground))" }}>{f.name}</span>
+                          <span style={{ color: "hsl(var(--muted-foreground))" }}>{f.points}/{f.maxPoints}</span>
                         </div>
-                        <div style={{ height: 6, background: "#f3f4f6", borderRadius: 3, overflow: "hidden" }}>
+                        <div style={{ height: 6, background: "hsl(var(--muted))", borderRadius: 3, overflow: "hidden" }}>
                           <div style={{ height: "100%", width: `${pct}%`, background: "#3b82f6", borderRadius: 3 }} />
                         </div>
-                        <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 2 }}>{f.description}</div>
+                        <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", marginTop: 2 }}>{f.description}</div>
                       </div>
                     );
                   })}
@@ -6114,9 +6114,9 @@ export default function PropertyDetailModal({
             fontSize: 12,
             fontWeight: 600,
             borderRadius: 6,
-            border: "1px solid #d1d5db",
-            background: "#fff",
-            color: "#374151",
+            border: "1px solid hsl(var(--border))",
+            background: "hsl(var(--card))",
+            color: "hsl(var(--foreground))",
             cursor: "pointer",
             appearance: "none",
             WebkitAppearance: "none",
@@ -6171,7 +6171,7 @@ export default function PropertyDetailModal({
         {reportCopied ? "Link Copied!" : "Share Link"}
       </button>
       {reportShareUrl && !reportCopied && (
-        <span style={{ fontSize: 11, color: "#6b7280", alignSelf: "center" }}>Link ready</span>
+        <span style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", alignSelf: "center" }}>Link ready</span>
       )}
     </div>
   );
@@ -6192,7 +6192,7 @@ export default function PropertyDetailModal({
         left: 0,
         right: 0,
         bottom: 0,
-        background: "#fff",
+        background: "hsl(var(--card))",
         zIndex: 2000,
         overflowY: "auto",
       }}
@@ -6203,7 +6203,7 @@ export default function PropertyDetailModal({
           position: "sticky",
           top: 0,
           zIndex: 2001,
-          background: "#fff",
+          background: "hsl(var(--card))",
           borderBottom: "1px solid #e5e7eb",
           padding: "8px 16px",
           display: "flex",
@@ -6211,13 +6211,13 @@ export default function PropertyDetailModal({
           alignItems: "center",
         }}
       >
-        <span style={{ fontSize: 13, fontWeight: 600, color: "#374151" }}>
+        <span style={{ fontSize: 13, fontWeight: 600, color: "hsl(var(--foreground))" }}>
           {reportTypes.find((r) => r.id === viewingReport)?.label}
         </span>
         <div style={{ display: "flex", gap: 8 }}>
           <button
             onClick={() => window.print()}
-            style={{ padding: "5px 12px", fontSize: 12, fontWeight: 600, borderRadius: 6, border: "1px solid #d1d5db", background: "#fff", color: "#374151", cursor: "pointer" }}
+            style={{ padding: "5px 12px", fontSize: 12, fontWeight: 600, borderRadius: 6, border: "1px solid hsl(var(--border))", background: "hsl(var(--card))", color: "hsl(var(--foreground))", cursor: "pointer" }}
           >
             Print
           </button>
@@ -6230,14 +6230,14 @@ export default function PropertyDetailModal({
           </button>
           <button
             onClick={() => setViewingReport(null)}
-            style={{ padding: "5px 12px", fontSize: 12, fontWeight: 600, borderRadius: 6, border: "1px solid #d1d5db", background: "#fff", color: "#374151", cursor: "pointer" }}
+            style={{ padding: "5px 12px", fontSize: 12, fontWeight: 600, borderRadius: 6, border: "1px solid hsl(var(--border))", background: "hsl(var(--card))", color: "hsl(var(--foreground))", cursor: "pointer" }}
           >
             Close
           </button>
         </div>
       </div>
 
-      <Suspense fallback={<div style={{ padding: 40, textAlign: "center", color: "#6b7280" }}>Loading report...</div>}>
+      <Suspense fallback={<div style={{ padding: 40, textAlign: "center", color: "hsl(var(--muted-foreground))" }}>Loading report...</div>}>
         {viewingReport === "property" && (
           <PropertyReportView data={collectReportData()} branding={reportBranding} />
         )}
@@ -6311,7 +6311,7 @@ export default function PropertyDetailModal({
               photos={mlsPhotos || undefined}
             />
           ) : (
-            <div style={{ padding: 40, textAlign: "center", color: "#6b7280" }}>
+            <div style={{ padding: 40, textAlign: "center", color: "hsl(var(--muted-foreground))" }}>
               No comparable sales data available. Search for comps first using the Comps tab.
             </div>
           );
@@ -6358,7 +6358,7 @@ export default function PropertyDetailModal({
     >
       <div
         style={{
-          background: "#fff",
+          background: "hsl(var(--card))",
           borderRadius: 16,
           width: "100%",
           maxWidth: 720,
@@ -6378,7 +6378,7 @@ export default function PropertyDetailModal({
                   List Price: ${mlsListPrice.toLocaleString()}
                 </div>
               ) : null}
-              <div style={{ fontSize: 13, color: "#6b7280", marginTop: 4 }}>
+              <div style={{ fontSize: 13, color: "hsl(var(--muted-foreground))", marginTop: 4 }}>
                 {[
                   beds != null ? `${beds} bed` : null,
                   baths != null ? `${baths} bath` : null,
@@ -6435,7 +6435,7 @@ export default function PropertyDetailModal({
                   border: "none",
                   fontSize: 22,
                   cursor: "pointer",
-                  color: "#9ca3af",
+                  color: "hsl(var(--muted-foreground))",
                   lineHeight: 1,
                   padding: 4,
                 }}
@@ -6453,7 +6453,7 @@ export default function PropertyDetailModal({
 
         {/* Reliability Disclaimer */}
         <div style={{ padding: "12px 24px", borderTop: "1px solid #f3f4f6", textAlign: "center" }}>
-          <p style={{ fontSize: 10, color: "#9ca3af", lineHeight: 1.5, margin: 0 }}>
+          <p style={{ fontSize: 10, color: "hsl(var(--muted-foreground))", lineHeight: 1.5, margin: 0 }}>
             Information presented is deemed reliable but not guaranteed and should be used accordingly.
           </p>
         </div>
@@ -6526,7 +6526,7 @@ function SalesHistorySection({ address, publicRecords, propertySale, reapiSaleHi
 
   if (loading)
     return (
-      <div style={{ padding: 20, textAlign: "center", color: "#9ca3af", fontSize: 13 }}>
+      <div style={{ padding: 20, textAlign: "center", color: "hsl(var(--muted-foreground))", fontSize: 13 }}>
         Loading sales history from MLS...
       </div>
     );
@@ -6581,7 +6581,7 @@ function SalesHistorySection({ address, publicRecords, propertySale, reapiSaleHi
 
   if (!hasAnyData && buildingHistory.length === 0) {
     return (
-      <div style={{ padding: 20, textAlign: "center", color: "#9ca3af", fontSize: 13 }}>
+      <div style={{ padding: 20, textAlign: "center", color: "hsl(var(--muted-foreground))", fontSize: 13 }}>
         No sales history found for this address.
       </div>
     );
@@ -6595,7 +6595,7 @@ function SalesHistorySection({ address, publicRecords, propertySale, reapiSaleHi
     return (
       <div
         key={tx.listingKey || i}
-        style={{ border: "1px solid #e5e7eb", borderRadius: 8, padding: 14, marginBottom: 10 }}
+        style={{ border: "1px solid hsl(var(--border))", borderRadius: 8, padding: 14, marginBottom: 10 }}
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
           <div>
@@ -6603,14 +6603,14 @@ function SalesHistorySection({ address, publicRecords, propertySale, reapiSaleHi
               {tx.closePrice ? `$${tx.closePrice.toLocaleString()}` : "Price Not Disclosed"}
             </span>
             {tx.closeDate && (
-              <span style={{ fontSize: 12, color: "#6b7280", marginLeft: 8 }}>
+              <span style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginLeft: 8 }}>
                 Closed {new Date(tx.closeDate).toLocaleDateString()}
               </span>
             )}
           </div>
           {tx.daysOnMarket != null && (
             <span
-              style={{ fontSize: 11, background: "#f3f4f6", color: "#4b5563", padding: "2px 8px", borderRadius: 12 }}
+              style={{ fontSize: 11, background: "hsl(var(--muted))", color: "#4b5563", padding: "2px 8px", borderRadius: 12 }}
             >
               {tx.daysOnMarket} DOM
             </span>
@@ -6618,9 +6618,9 @@ function SalesHistorySection({ address, publicRecords, propertySale, reapiSaleHi
         </div>
         {/* Address (for building sales, show unit) */}
         {tx.address && buildingHistory.length > 0 && (
-          <div style={{ fontSize: 11, color: "#6b7280", marginBottom: 6 }}>{tx.address}</div>
+          <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", marginBottom: 6 }}>{tx.address}</div>
         )}
-        <div style={{ display: "flex", gap: 16, fontSize: 12, color: "#6b7280", marginBottom: 8 }}>
+        <div style={{ display: "flex", gap: 16, fontSize: 12, color: "hsl(var(--muted-foreground))", marginBottom: 8 }}>
           {tx.listPrice && <span>List: ${tx.listPrice.toLocaleString()}</span>}
           {tx.originalListPrice && tx.originalListPrice !== tx.listPrice && (
             <span>Original: ${tx.originalListPrice.toLocaleString()}</span>
@@ -6632,7 +6632,7 @@ function SalesHistorySection({ address, publicRecords, propertySale, reapiSaleHi
             </span>
           )}
         </div>
-        <div style={{ display: "flex", gap: 12, fontSize: 11, color: "#9ca3af", marginBottom: 8 }}>
+        <div style={{ display: "flex", gap: 12, fontSize: 11, color: "hsl(var(--muted-foreground))", marginBottom: 8 }}>
           {tx.beds && <span>{tx.beds} bd</span>}
           {tx.baths && <span>{tx.baths} ba</span>}
           {tx.sqft && <span>{tx.sqft.toLocaleString()} sqft</span>}
@@ -6642,7 +6642,7 @@ function SalesHistorySection({ address, publicRecords, propertySale, reapiSaleHi
             </span>
           )}
         </div>
-        <div style={{ fontSize: 11, color: "#9ca3af" }}>
+        <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>
           {tx.listAgentName && (
             <div>
               <span style={{ color: "#d1d5db" }}>List Agent:</span> {tx.listAgentName}
@@ -6669,7 +6669,7 @@ function SalesHistorySection({ address, publicRecords, propertySale, reapiSaleHi
             style={{
               fontSize: 13,
               fontWeight: 700,
-              color: "#374151",
+              color: "hsl(var(--foreground))",
               marginBottom: 8,
               paddingBottom: 6,
               borderBottom: "1px solid #e5e7eb",
@@ -6691,7 +6691,7 @@ function SalesHistorySection({ address, publicRecords, propertySale, reapiSaleHi
               textAlign: "left",
               fontSize: 13,
               fontWeight: 700,
-              color: "#374151",
+              color: "hsl(var(--foreground))",
               marginBottom: 8,
               paddingBottom: 6,
               borderBottom: "1px solid #e5e7eb",
@@ -6704,7 +6704,7 @@ function SalesHistorySection({ address, publicRecords, propertySale, reapiSaleHi
             }}
           >
             <span>Building Sales — Other Units ({buildingHistory.length})</span>
-            <span style={{ fontSize: 11, color: "#9ca3af" }}>{showBuilding ? "▼" : "▶"}</span>
+            <span style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>{showBuilding ? "▼" : "▶"}</span>
           </button>
           {showBuilding && buildingHistory.map(renderTransaction)}
         </div>
@@ -6717,7 +6717,7 @@ function SalesHistorySection({ address, publicRecords, propertySale, reapiSaleHi
             style={{
               fontSize: 13,
               fontWeight: 700,
-              color: "#374151",
+              color: "hsl(var(--foreground))",
               marginBottom: 8,
               paddingBottom: 6,
               borderBottom: "1px solid #e5e7eb",
@@ -6726,7 +6726,7 @@ function SalesHistorySection({ address, publicRecords, propertySale, reapiSaleHi
             Public Records ({allPublicRecords.length})
           </h3>
           {unitHistory.length === 0 && (
-            <p style={{ fontSize: 11, color: "#9ca3af", marginBottom: 10 }}>
+            <p style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", marginBottom: 10 }}>
               Source: County deed records / property data
             </p>
           )}
@@ -6734,7 +6734,7 @@ function SalesHistorySection({ address, publicRecords, propertySale, reapiSaleHi
             <div
               key={i}
               style={{
-                border: "1px solid #e5e7eb",
+                border: "1px solid hsl(var(--border))",
                 borderRadius: 8,
                 padding: 14,
                 marginBottom: 10,
@@ -6755,15 +6755,15 @@ function SalesHistorySection({ address, publicRecords, propertySale, reapiSaleHi
                 </span>
               </div>
               {s.date && (
-                <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>
+                <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginBottom: 4 }}>
                   {s.date}
                   {s.recordingDate && (
-                    <span style={{ marginLeft: 8, fontSize: 11, color: "#9ca3af" }}>Recorded: {s.recordingDate}</span>
+                    <span style={{ marginLeft: 8, fontSize: 11, color: "hsl(var(--muted-foreground))" }}>Recorded: {s.recordingDate}</span>
                   )}
                 </div>
               )}
               {(s.buyerName || s.sellerName || s.deedType) && (
-                <div style={{ fontSize: 11, color: "#9ca3af" }}>
+                <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>
                   {s.buyerName && <div>Buyer: {s.buyerName}</div>}
                   {s.sellerName && <div>Seller: {s.sellerName}</div>}
                   {s.deedType && <div>Deed: {s.deedType}</div>}
@@ -6777,14 +6777,14 @@ function SalesHistorySection({ address, publicRecords, propertySale, reapiSaleHi
       {/* REAPI Sale History (enriched with buyer/seller names, doc types) */}
       {reapiSaleHistory && reapiSaleHistory.length > 0 && (
         <div style={{ marginTop: 16 }}>
-          <h3 style={{ fontSize: 13, fontWeight: 700, color: "#374151", marginBottom: 8, paddingBottom: 6, borderBottom: "1px solid #e5e7eb" }}>
+          <h3 style={{ fontSize: 13, fontWeight: 700, color: "hsl(var(--foreground))", marginBottom: 8, paddingBottom: 6, borderBottom: "1px solid #e5e7eb" }}>
             Deed History ({reapiSaleHistory.length} transactions)
           </h3>
           {reapiSaleHistory.map((s: any, i: number) => {
             const amt = s.amount?.saleAmt;
             const sqftVal = amt && s.sqft ? Math.round(amt / s.sqft) : null;
             return (
-              <div key={i} style={{ border: "1px solid #e5e7eb", borderRadius: 8, padding: 14, marginBottom: 10, background: "#f9fafb" }}>
+              <div key={i} style={{ border: "1px solid hsl(var(--border))", borderRadius: 8, padding: 14, marginBottom: 10, background: "hsl(var(--muted))" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 4 }}>
                   <span style={{ fontSize: 16, fontWeight: 700, color: amt && amt > 0 ? "#15803d" : "#9ca3af" }}>
                     {amt && amt > 0 ? `$${amt.toLocaleString()}` : "Price Not Disclosed"}
@@ -6792,17 +6792,17 @@ function SalesHistorySection({ address, publicRecords, propertySale, reapiSaleHi
                   <div style={{ display: "flex", gap: 4 }}>
                     {s.armsLength === true && <span style={{ fontSize: 10, background: "#d1fae5", color: "#065f46", padding: "2px 6px", borderRadius: 4 }}>Arms Length</span>}
                     {s.armsLength === false && <span style={{ fontSize: 10, background: "#fef3c7", color: "#92400e", padding: "2px 6px", borderRadius: 4 }}>Non-Arms Length</span>}
-                    {sqftVal && <span style={{ fontSize: 10, background: "#f3f4f6", color: "#4b5563", padding: "2px 6px", borderRadius: 4 }}>${sqftVal}/sqft</span>}
+                    {sqftVal && <span style={{ fontSize: 10, background: "hsl(var(--muted))", color: "#4b5563", padding: "2px 6px", borderRadius: 4 }}>${sqftVal}/sqft</span>}
                   </div>
                 </div>
-                <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>
+                <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginBottom: 4 }}>
                   {s.amount?.saleTransDate?.split("T")[0]}
-                  {s.amount?.saleRecDate && <span style={{ marginLeft: 8, fontSize: 11, color: "#9ca3af" }}>Recorded: {String(s.amount.saleRecDate).split("T")[0]}</span>}
+                  {s.amount?.saleRecDate && <span style={{ marginLeft: 8, fontSize: 11, color: "hsl(var(--muted-foreground))" }}>Recorded: {String(s.amount.saleRecDate).split("T")[0]}</span>}
                 </div>
-                <div style={{ fontSize: 12, color: "#374151", marginBottom: 4 }}>
+                <div style={{ fontSize: 12, color: "hsl(var(--foreground))", marginBottom: 4 }}>
                   {s.documentType && <span style={{ fontWeight: 600 }}>{s.documentType}</span>}
                 </div>
-                <div style={{ fontSize: 11, color: "#6b7280" }}>
+                <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>
                   {s.buyerNames && <div>Buyer: {s.buyerNames}</div>}
                   {s.sellerNames && <div>Seller: {s.sellerNames}</div>}
                   {s.downPayment != null && s.downPayment > 0 && <div>Down Payment: ${s.downPayment.toLocaleString()}</div>}
@@ -6816,7 +6816,7 @@ function SalesHistorySection({ address, publicRecords, propertySale, reapiSaleHi
 
       {/* No data at all */}
       {unitHistory.length === 0 && allPublicRecords.length === 0 && (!reapiSaleHistory || reapiSaleHistory.length === 0) && !showBuildingSales && (
-        <div style={{ padding: 20, textAlign: "center", color: "#9ca3af", fontSize: 13 }}>No sales history found.</div>
+        <div style={{ padding: 20, textAlign: "center", color: "hsl(var(--muted-foreground))", fontSize: 13 }}>No sales history found.</div>
       )}
     </div>
   );
@@ -6870,9 +6870,9 @@ function ListingHistorySection({ address }: { address: string }) {
   const fmtDate = (d?: string) => d ? new Date(d).toLocaleDateString() : "-";
   const fmtPrice = (v?: number) => v ? `$${v.toLocaleString()}` : "-";
 
-  if (loading) return <div style={{ textAlign: "center", padding: 40, color: "#6b7280" }}>Loading listing history...</div>;
+  if (loading) return <div style={{ textAlign: "center", padding: 40, color: "hsl(var(--muted-foreground))" }}>Loading listing history...</div>;
   if (error) return <div style={{ color: "#dc2626", padding: 20 }}>{error}</div>;
-  if (listings.length === 0) return <div style={{ color: "#6b7280", padding: 20 }}>No listing history found for this property.</div>;
+  if (listings.length === 0) return <div style={{ color: "hsl(var(--muted-foreground))", padding: 20 }}>No listing history found for this property.</div>;
 
   return (
     <div>
@@ -6891,7 +6891,7 @@ function ListingHistorySection({ address }: { address: string }) {
               borderRadius: 10,
               border: `1px solid #e5e7eb`,
               borderLeft: `4px solid ${statusColor}`,
-              backgroundColor: "#fff",
+              backgroundColor: "hsl(var(--card))",
             }}
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
@@ -6910,7 +6910,7 @@ function ListingHistorySection({ address }: { address: string }) {
                 >
                   {l.status}
                 </span>
-                <span style={{ fontSize: 13, fontWeight: 600, color: "#111827" }}>
+                <span style={{ fontSize: 13, fontWeight: 600, color: "hsl(var(--foreground))" }}>
                   {fmtPrice(l.status === "Closed" ? l.closePrice : l.listPrice)}
                 </span>
                 {hasPriceChange && (
@@ -6920,16 +6920,16 @@ function ListingHistorySection({ address }: { address: string }) {
                   </span>
                 )}
               </div>
-              <div style={{ fontSize: 11, color: "#6b7280", textAlign: "right" }}>
+              <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", textAlign: "right" }}>
                 {l.daysOnMarket != null && <span>{l.daysOnMarket} DOM</span>}
               </div>
             </div>
 
-            <div style={{ fontSize: 12, color: "#374151", marginBottom: 4 }}>
+            <div style={{ fontSize: 12, color: "hsl(var(--foreground))", marginBottom: 4 }}>
               {l.address}{l.unitNumber ? ` #${l.unitNumber}` : ""}
             </div>
 
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 16px", fontSize: 11, color: "#6b7280" }}>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 16px", fontSize: 11, color: "hsl(var(--muted-foreground))" }}>
               {l.onMarketDate && <span>Listed: {fmtDate(l.onMarketDate)}</span>}
               {l.closeDate && <span>Closed: {fmtDate(l.closeDate)}</span>}
               {l.withdrawnDate && <span>Withdrawn: {fmtDate(l.withdrawnDate)}</span>}
@@ -6941,7 +6941,7 @@ function ListingHistorySection({ address }: { address: string }) {
             </div>
 
             {(l.listAgentName || l.listOfficeName) && (
-              <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 4 }}>
+              <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", marginTop: 4 }}>
                 {l.listAgentName && <span>List Agent: <strong>{l.listAgentName}</strong></span>}
                 {l.listOfficeName && <span> / {l.listOfficeName}</span>}
                 {l.buyerAgentName && (
@@ -6963,7 +6963,7 @@ function ListingHistorySection({ address }: { address: string }) {
         );
       })}
 
-      <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 12, fontStyle: "italic" }}>
+      <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", marginTop: 12, fontStyle: "italic" }}>
         Information presented is deemed reliable but not guaranteed and should be used accordingly.
       </div>
     </div>

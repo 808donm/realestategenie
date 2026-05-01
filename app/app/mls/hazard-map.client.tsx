@@ -91,7 +91,7 @@ export default function HazardMapClient() {
     width: "100%",
     padding: "8px 12px",
     borderRadius: 6,
-    border: "1px solid #d1d5db",
+    border: "1px solid hsl(var(--border))",
     fontSize: 14,
     outline: "none",
     boxSizing: "border-box",
@@ -150,7 +150,7 @@ export default function HazardMapClient() {
           const groupInfo = HAZARD_GROUPS[group];
           return (
             <div key={group} style={{ marginBottom: 14 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: "#6b7280", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: "hsl(var(--muted-foreground))", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>
                 {groupInfo?.label || group}
               </div>
               {layers.map((layer) => {
@@ -193,9 +193,9 @@ export default function HazardMapClient() {
         })}
 
         {/* Legend */}
-        <div style={{ marginTop: 16, padding: 12, backgroundColor: "#fff", borderRadius: 8, border: "1px solid #e5e7eb" }}>
+        <div style={{ marginTop: 16, padding: 12, backgroundColor: "#fff", borderRadius: 8, border: "1px solid hsl(var(--border))" }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: "#374151", marginBottom: 6 }}>Legend</div>
-          <div style={{ fontSize: 10, color: "#6b7280", lineHeight: 1.6 }}>
+          <div style={{ fontSize: 10, color: "hsl(var(--muted-foreground))", lineHeight: 1.6 }}>
             <div><span style={{ display: "inline-block", width: 10, height: 10, backgroundColor: "#2563eb", opacity: 0.4, borderRadius: 2, marginRight: 4, verticalAlign: "middle" }} /> FEMA Flood Zones (AE, VE, X)</div>
             <div><span style={{ display: "inline-block", width: 10, height: 10, backgroundColor: "#0891b2", opacity: 0.5, borderRadius: 2, marginRight: 4, verticalAlign: "middle" }} /> Tsunami Evacuation Zones</div>
             <div><span style={{ display: "inline-block", width: 10, height: 10, backgroundColor: "#14b8a6", opacity: 0.5, borderRadius: 2, marginRight: 4, verticalAlign: "middle" }} /> Sea Level Rise Exposure</div>
@@ -209,7 +209,7 @@ export default function HazardMapClient() {
       {/* Map */}
       <div style={{ flex: 1, position: "relative" }}>
         {!GOOGLE_MAPS_KEY && (
-          <div style={{ padding: 40, textAlign: "center", color: "#6b7280" }}>
+          <div style={{ padding: 40, textAlign: "center", color: "hsl(var(--muted-foreground))" }}>
             Google Maps API key not configured
           </div>
         )}

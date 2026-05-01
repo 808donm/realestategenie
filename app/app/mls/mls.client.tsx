@@ -850,7 +850,7 @@ export default function MLSClient() {
                   style={{
                     width: "100%",
                     padding: "12px 16px",
-                    border: "1px solid #e5e7eb",
+                    border: "1px solid hsl(var(--border))",
                     borderRadius: 8,
                     fontSize: 15,
                     outline: "none",
@@ -879,8 +879,8 @@ export default function MLSClient() {
                 style={{
                   padding: "12px 16px",
                   background: showFilters ? "#e5e7eb" : "#fff",
-                  color: "#374151",
-                  border: "1px solid #e5e7eb",
+                  color: "hsl(var(--foreground))",
+                  border: "1px solid hsl(var(--border))",
                   borderRadius: 8,
                   fontWeight: 600,
                   cursor: "pointer",
@@ -896,8 +896,8 @@ export default function MLSClient() {
             <div
               style={{
                 padding: 20,
-                background: "#f9fafb",
-                border: "1px solid #e5e7eb",
+                background: "hsl(var(--muted))",
+                border: "1px solid hsl(var(--border))",
                 borderRadius: 12,
                 marginBottom: 20,
               }}
@@ -910,7 +910,7 @@ export default function MLSClient() {
                 }}
               >
                 <div style={{ gridColumn: "span 2" }}>
-                  <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}>
+                  <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "hsl(var(--foreground))" }}>
                     Status
                   </label>
                   <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
@@ -939,7 +939,7 @@ export default function MLSClient() {
                   </div>
                 </div>
                 <div style={{ gridColumn: "span 2" }}>
-                  <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}>
+                  <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "hsl(var(--foreground))" }}>
                     Neighborhood / Subdivision
                   </label>
                   <input
@@ -947,11 +947,11 @@ export default function MLSClient() {
                     placeholder="e.g. Kaimuki, Diamond Head, Hawaii Kai"
                     value={filters.subdivision}
                     onChange={(e) => setFilters({ ...filters, subdivision: e.target.value })}
-                    style={{ width: "100%", padding: 10, border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14 }}
+                    style={{ width: "100%", padding: 10, border: "1px solid hsl(var(--border))", borderRadius: 6, fontSize: 14 }}
                   />
                 </div>
                 <div>
-                  <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}>
+                  <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "hsl(var(--foreground))" }}>
                     Min Price
                   </label>
                   <input
@@ -959,11 +959,11 @@ export default function MLSClient() {
                     placeholder="e.g. 200000"
                     value={filters.minPrice}
                     onChange={(e) => setFilters({ ...filters, minPrice: e.target.value })}
-                    style={{ width: "100%", padding: 10, border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14 }}
+                    style={{ width: "100%", padding: 10, border: "1px solid hsl(var(--border))", borderRadius: 6, fontSize: 14 }}
                   />
                 </div>
                 <div>
-                  <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}>
+                  <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "hsl(var(--foreground))" }}>
                     Max Price
                   </label>
                   <input
@@ -971,17 +971,17 @@ export default function MLSClient() {
                     placeholder="e.g. 500000"
                     value={filters.maxPrice}
                     onChange={(e) => setFilters({ ...filters, maxPrice: e.target.value })}
-                    style={{ width: "100%", padding: 10, border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14 }}
+                    style={{ width: "100%", padding: 10, border: "1px solid hsl(var(--border))", borderRadius: 6, fontSize: 14 }}
                   />
                 </div>
                 <div>
-                  <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}>
+                  <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "hsl(var(--foreground))" }}>
                     Min Beds
                   </label>
                   <select
                     value={filters.minBeds}
                     onChange={(e) => setFilters({ ...filters, minBeds: e.target.value })}
-                    style={{ width: "100%", padding: 10, border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14 }}
+                    style={{ width: "100%", padding: 10, border: "1px solid hsl(var(--border))", borderRadius: 6, fontSize: 14 }}
                   >
                     <option value="">Any</option>
                     {[1, 2, 3, 4, 5].map((n) => (
@@ -992,13 +992,13 @@ export default function MLSClient() {
                   </select>
                 </div>
                 <div>
-                  <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}>
+                  <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "hsl(var(--foreground))" }}>
                     Min Baths
                   </label>
                   <select
                     value={filters.minBaths}
                     onChange={(e) => setFilters({ ...filters, minBaths: e.target.value })}
-                    style={{ width: "100%", padding: 10, border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14 }}
+                    style={{ width: "100%", padding: 10, border: "1px solid hsl(var(--border))", borderRadius: 6, fontSize: 14 }}
                   >
                     <option value="">Any</option>
                     {[1, 2, 3, 4].map((n) => (
@@ -1009,13 +1009,13 @@ export default function MLSClient() {
                   </select>
                 </div>
                 <div>
-                  <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}>
+                  <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "hsl(var(--foreground))" }}>
                     Property Type
                   </label>
                   <select
                     value={filters.propertyType}
                     onChange={(e) => setFilters({ ...filters, propertyType: e.target.value })}
-                    style={{ width: "100%", padding: 10, border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14 }}
+                    style={{ width: "100%", padding: 10, border: "1px solid hsl(var(--border))", borderRadius: 6, fontSize: 14 }}
                   >
                     <option value="">Any</option>
                     {PROPERTY_TYPES.map((t) => (
@@ -1026,13 +1026,13 @@ export default function MLSClient() {
                   </select>
                 </div>
                 <div>
-                  <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}>
+                  <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "hsl(var(--foreground))" }}>
                     Min Days on Market
                   </label>
                   <select
                     value={filters.minDaysOnMarket}
                     onChange={(e) => setFilters({ ...filters, minDaysOnMarket: e.target.value })}
-                    style={{ width: "100%", padding: 10, border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14 }}
+                    style={{ width: "100%", padding: 10, border: "1px solid hsl(var(--border))", borderRadius: 6, fontSize: 14 }}
                   >
                     <option value="">Any</option>
                     <option value="7">7+ days</option>
@@ -1048,7 +1048,7 @@ export default function MLSClient() {
               </div>
               {/* Rental filter toggle */}
               <div style={{ marginTop: 12, display: "flex", alignItems: "center", gap: 8 }}>
-                <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#374151", cursor: "pointer" }}>
+                <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "hsl(var(--foreground))", cursor: "pointer" }}>
                   <input
                     type="checkbox"
                     checked={!filters.includeRentals}
@@ -1057,7 +1057,7 @@ export default function MLSClient() {
                   />
                   Hide rental listings
                 </label>
-                <span style={{ fontSize: 11, color: "#9ca3af" }}>
+                <span style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>
                   Excludes ResidentialLease and listings under $25K
                 </span>
               </div>
@@ -1081,7 +1081,7 @@ export default function MLSClient() {
 
           {/* Loading */}
           {isLoading && (
-            <div style={{ textAlign: "center", padding: 40, color: "#6b7280" }}>Searching MLS listings...</div>
+            <div style={{ textAlign: "center", padding: 40, color: "hsl(var(--muted-foreground))" }}>Searching MLS listings...</div>
           )}
 
           {/* Latest Listings - shown before user searches */}
@@ -1102,10 +1102,10 @@ export default function MLSClient() {
                 </div>
               )}
               {isLoadingLatest ? (
-                <div style={{ textAlign: "center", padding: 40, color: "#6b7280" }}>Loading latest listings...</div>
+                <div style={{ textAlign: "center", padding: 40, color: "hsl(var(--muted-foreground))" }}>Loading latest listings...</div>
               ) : latestProperties.length > 0 ? (
                 <>
-                  <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 14, color: "#374151" }}>Latest Listings</h2>
+                  <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 14, color: "hsl(var(--foreground))" }}>Latest Listings</h2>
                   <div
                     style={{
                       display: "grid",
@@ -1122,8 +1122,8 @@ export default function MLSClient() {
                         <div
                           key={property.ListingKey}
                           style={{
-                            background: "#fff",
-                            border: "1px solid #e5e7eb",
+                            background: "hsl(var(--card))",
+                            border: "1px solid hsl(var(--border))",
                             borderRadius: 12,
                             overflow: "hidden",
                             cursor: "pointer",
@@ -1147,7 +1147,7 @@ export default function MLSClient() {
                                   alignItems: "center",
                                   justifyContent: "center",
                                   height: "100%",
-                                  color: "#9ca3af",
+                                  color: "hsl(var(--muted-foreground))",
                                   fontSize: 14,
                                 }}
                               >
@@ -1180,16 +1180,16 @@ export default function MLSClient() {
                             </div>
                           </div>
                           <div style={{ padding: 16 }}>
-                            <div style={{ fontSize: 22, fontWeight: 700, color: "#111827", marginBottom: 4 }}>
+                            <div style={{ fontSize: 22, fontWeight: 700, color: "hsl(var(--foreground))", marginBottom: 4 }}>
                               {formatPrice(property.ListPrice)}
                             </div>
-                            <div style={{ fontSize: 14, fontWeight: 500, color: "#374151", marginBottom: 4 }}>
+                            <div style={{ fontSize: 14, fontWeight: 500, color: "hsl(var(--foreground))", marginBottom: 4 }}>
                               {address || "Address not available"}
                             </div>
-                            <div style={{ fontSize: 13, color: "#6b7280", marginBottom: 10 }}>
+                            <div style={{ fontSize: 13, color: "hsl(var(--muted-foreground))", marginBottom: 10 }}>
                               {property.City}, {property.StateOrProvince} {property.PostalCode}
                             </div>
-                            <div style={{ display: "flex", gap: 12, fontSize: 13, color: "#6b7280" }}>
+                            <div style={{ display: "flex", gap: 12, fontSize: 13, color: "hsl(var(--muted-foreground))" }}>
                               {property.BedroomsTotal != null && (
                                 <span>
                                   <strong>{property.BedroomsTotal}</strong> bed
@@ -1218,7 +1218,7 @@ export default function MLSClient() {
                             <div
                               style={{ display: "flex", gap: 6, alignItems: "center", marginTop: 10, flexWrap: "wrap" }}
                             >
-                              <span style={{ fontSize: 11, color: "#9ca3af" }}>
+                              <span style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>
                                 MLS# {property.ListingId || property.ListingKey}
                                 {property.PropertyType && ` | ${property.PropertyType}`}
                                 {(property as any).SubdivisionName && ` | ${(property as any).SubdivisionName}`}
@@ -1243,7 +1243,7 @@ export default function MLSClient() {
                                 </span>
                               )}
                               {property.AssociationFee != null && property.AssociationFee > 0 && (
-                                <span style={{ fontSize: 10, color: "#6b7280" }}>
+                                <span style={{ fontSize: 10, color: "hsl(var(--muted-foreground))" }}>
                                   HOA: ${property.AssociationFee}/mo
                                 </span>
                               )}
@@ -1259,12 +1259,12 @@ export default function MLSClient() {
                   style={{
                     textAlign: "center",
                     padding: 60,
-                    background: "#f9fafb",
+                    background: "hsl(var(--muted))",
                     borderRadius: 12,
-                    color: "#6b7280",
+                    color: "hsl(var(--muted-foreground))",
                   }}
                 >
-                  <p style={{ fontSize: 18, fontWeight: 600, marginBottom: 8, color: "#374151" }}>Search the MLS</p>
+                  <p style={{ fontSize: 18, fontWeight: 600, marginBottom: 8, color: "hsl(var(--foreground))" }}>Search the MLS</p>
                   <p style={{ fontSize: 14, maxWidth: 400, margin: "0 auto" }}>
                     Enter a city name or zip code above to search for property listings. Use filters to narrow your
                     results by price, beds, baths, and more.
@@ -1280,9 +1280,9 @@ export default function MLSClient() {
               style={{
                 textAlign: "center",
                 padding: 40,
-                background: "#f9fafb",
+                background: "hsl(var(--muted))",
                 borderRadius: 12,
-                color: "#6b7280",
+                color: "hsl(var(--muted-foreground))",
               }}
             >
               <p style={{ fontSize: 16, marginBottom: 8 }}>No properties found matching your search.</p>
@@ -1296,7 +1296,7 @@ export default function MLSClient() {
               style={{
                 marginBottom: 16,
                 fontSize: 14,
-                color: "#6b7280",
+                color: "hsl(var(--muted-foreground))",
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
@@ -1356,8 +1356,8 @@ export default function MLSClient() {
                   <div
                     key={property.ListingKey}
                     style={{
-                      background: "#fff",
-                      border: "1px solid #e5e7eb",
+                      background: "hsl(var(--card))",
+                      border: "1px solid hsl(var(--border))",
                       borderRadius: 12,
                       overflow: "hidden",
                       cursor: "pointer",
@@ -1382,7 +1382,7 @@ export default function MLSClient() {
                             alignItems: "center",
                             justifyContent: "center",
                             height: "100%",
-                            color: "#9ca3af",
+                            color: "hsl(var(--muted-foreground))",
                             fontSize: 14,
                           }}
                         >
@@ -1428,18 +1428,18 @@ export default function MLSClient() {
 
                     {/* Details */}
                     <div style={{ padding: 16 }}>
-                      <div style={{ fontSize: 22, fontWeight: 700, color: "#111827", marginBottom: 4 }}>
+                      <div style={{ fontSize: 22, fontWeight: 700, color: "hsl(var(--foreground))", marginBottom: 4 }}>
                         {formatPrice(property.ListPrice)}
                       </div>
-                      <div style={{ fontSize: 14, fontWeight: 500, color: "#374151", marginBottom: 4 }}>
+                      <div style={{ fontSize: 14, fontWeight: 500, color: "hsl(var(--foreground))", marginBottom: 4 }}>
                         {address || "Address not available"}
                       </div>
-                      <div style={{ fontSize: 13, color: "#6b7280", marginBottom: 10 }}>
+                      <div style={{ fontSize: 13, color: "hsl(var(--muted-foreground))", marginBottom: 10 }}>
                         {property.City}, {property.StateOrProvince} {property.PostalCode}
                       </div>
 
                       {/* Specs row */}
-                      <div style={{ display: "flex", gap: 12, fontSize: 13, color: "#6b7280" }}>
+                      <div style={{ display: "flex", gap: 12, fontSize: 13, color: "hsl(var(--muted-foreground))" }}>
                         {property.BedroomsTotal != null && (
                           <span>
                             <strong>{property.BedroomsTotal}</strong> bed
@@ -1467,7 +1467,7 @@ export default function MLSClient() {
                       </div>
 
                       {/* MLS # */}
-                      <div style={{ marginTop: 10, fontSize: 11, color: "#9ca3af" }}>
+                      <div style={{ marginTop: 10, fontSize: 11, color: "hsl(var(--muted-foreground))" }}>
                         MLS# {property.ListingId || property.ListingKey}
                         {property.PropertyType && ` | ${property.PropertyType}`}
                       </div>
@@ -1494,7 +1494,7 @@ export default function MLSClient() {
                 onClick={() => searchProperties(Math.max(0, offset - limit))}
                 style={{
                   padding: "8px 16px",
-                  border: "1px solid #d1d5db",
+                  border: "1px solid hsl(var(--border))",
                   borderRadius: 6,
                   background: offset === 0 ? "#f3f4f6" : "#fff",
                   cursor: offset === 0 ? "not-allowed" : "pointer",
@@ -1504,7 +1504,7 @@ export default function MLSClient() {
               >
                 Previous
               </button>
-              <span style={{ fontSize: 14, color: "#6b7280" }}>
+              <span style={{ fontSize: 14, color: "hsl(var(--muted-foreground))" }}>
                 Page {currentPage} of {totalPages}
               </span>
               <button
@@ -1512,7 +1512,7 @@ export default function MLSClient() {
                 onClick={() => searchProperties(offset + limit)}
                 style={{
                   padding: "8px 16px",
-                  border: "1px solid #d1d5db",
+                  border: "1px solid hsl(var(--border))",
                   borderRadius: 6,
                   background: offset + limit >= totalCount ? "#f3f4f6" : "#fff",
                   cursor: offset + limit >= totalCount ? "not-allowed" : "pointer",
@@ -1551,10 +1551,10 @@ export default function MLSClient() {
                 }}
               >
                 <div>
-                  <h3 style={{ margin: "0 0 4px", fontSize: 16, fontWeight: 700, color: "#374151" }}>
+                  <h3 style={{ margin: "0 0 4px", fontSize: 16, fontWeight: 700, color: "hsl(var(--foreground))" }}>
                     AI Listing Description Generator
                   </h3>
-                  <p style={{ margin: 0, fontSize: 13, color: "#6b7280" }}>
+                  <p style={{ margin: 0, fontSize: 13, color: "hsl(var(--muted-foreground))" }}>
                     Enter property details and get 3 ready-to-use, Fair Housing compliant descriptions.
                   </p>
                 </div>
@@ -1580,7 +1580,7 @@ export default function MLSClient() {
                 <div
                   style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}
                 >
-                  <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "#374151" }}>
+                  <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "hsl(var(--foreground))" }}>
                     Generate Listing Description
                   </h3>
                   <button
@@ -1589,7 +1589,7 @@ export default function MLSClient() {
                       setDescResults(null);
                       setDescError("");
                     }}
-                    style={{ background: "none", border: "none", fontSize: 18, cursor: "pointer", color: "#6b7280" }}
+                    style={{ background: "none", border: "none", fontSize: 18, cursor: "pointer", color: "hsl(var(--muted-foreground))" }}
                   >
                     &times;
                   </button>
@@ -1623,14 +1623,14 @@ export default function MLSClient() {
                 >
                   <div>
                     <label
-                      style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}
+                      style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "hsl(var(--foreground))" }}
                     >
                       Property Type <span style={{ color: "#ef4444" }}>*</span>
                     </label>
                     <select
                       value={descForm.propertyType}
                       onChange={(e) => setDescForm({ ...descForm, propertyType: e.target.value })}
-                      style={{ width: "100%", padding: 10, border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14 }}
+                      style={{ width: "100%", padding: 10, border: "1px solid hsl(var(--border))", borderRadius: 6, fontSize: 14 }}
                     >
                       <option>Single Family Residential</option>
                       <option>Condo</option>
@@ -1643,7 +1643,7 @@ export default function MLSClient() {
                   </div>
                   <div>
                     <label
-                      style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}
+                      style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "hsl(var(--foreground))" }}
                     >
                       Bedrooms <span style={{ color: "#ef4444" }}>*</span>
                     </label>
@@ -1656,7 +1656,7 @@ export default function MLSClient() {
                       style={{
                         width: "100%",
                         padding: 10,
-                        border: "1px solid #d1d5db",
+                        border: "1px solid hsl(var(--border))",
                         borderRadius: 6,
                         fontSize: 14,
                         boxSizing: "border-box",
@@ -1665,7 +1665,7 @@ export default function MLSClient() {
                   </div>
                   <div>
                     <label
-                      style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}
+                      style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "hsl(var(--foreground))" }}
                     >
                       Bathrooms <span style={{ color: "#ef4444" }}>*</span>
                     </label>
@@ -1679,7 +1679,7 @@ export default function MLSClient() {
                       style={{
                         width: "100%",
                         padding: 10,
-                        border: "1px solid #d1d5db",
+                        border: "1px solid hsl(var(--border))",
                         borderRadius: 6,
                         fontSize: 14,
                         boxSizing: "border-box",
@@ -1688,7 +1688,7 @@ export default function MLSClient() {
                   </div>
                   <div>
                     <label
-                      style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}
+                      style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "hsl(var(--foreground))" }}
                     >
                       Square Feet <span style={{ color: "#ef4444" }}>*</span>
                     </label>
@@ -1701,7 +1701,7 @@ export default function MLSClient() {
                       style={{
                         width: "100%",
                         padding: 10,
-                        border: "1px solid #d1d5db",
+                        border: "1px solid hsl(var(--border))",
                         borderRadius: 6,
                         fontSize: 14,
                         boxSizing: "border-box",
@@ -1710,7 +1710,7 @@ export default function MLSClient() {
                   </div>
                   <div>
                     <label
-                      style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}
+                      style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "hsl(var(--foreground))" }}
                     >
                       Year Built
                     </label>
@@ -1724,7 +1724,7 @@ export default function MLSClient() {
                       style={{
                         width: "100%",
                         padding: 10,
-                        border: "1px solid #d1d5db",
+                        border: "1px solid hsl(var(--border))",
                         borderRadius: 6,
                         fontSize: 14,
                         boxSizing: "border-box",
@@ -1745,7 +1745,7 @@ export default function MLSClient() {
                       style={{
                         width: "100%",
                         padding: 10,
-                        border: "1px solid #d1d5db",
+                        border: "1px solid hsl(var(--border))",
                         borderRadius: 6,
                         fontSize: 14,
                         boxSizing: "border-box",
@@ -1754,14 +1754,14 @@ export default function MLSClient() {
                   </div>
                   <div style={{ gridColumn: "1 / -1" }}>
                     <label
-                      style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}
+                      style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "hsl(var(--foreground))" }}
                     >
                       Architectural Style
                     </label>
                     <select
                       value={descForm.architecturalStyle}
                       onChange={(e) => setDescForm({ ...descForm, architecturalStyle: e.target.value })}
-                      style={{ width: "100%", padding: 10, border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14 }}
+                      style={{ width: "100%", padding: 10, border: "1px solid hsl(var(--border))", borderRadius: 6, fontSize: 14 }}
                     >
                       <option value="">Not specified</option>
                       <option>Ranch</option>
@@ -1784,7 +1784,7 @@ export default function MLSClient() {
 
                 {/* Feature checkboxes */}
                 <div style={{ marginBottom: 16 }}>
-                  <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 8, color: "#374151" }}>
+                  <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 8, color: "hsl(var(--foreground))" }}>
                     Key Features (check all that apply)
                   </label>
                   <div
@@ -1798,7 +1798,7 @@ export default function MLSClient() {
                           alignItems: "center",
                           gap: 8,
                           fontSize: 13,
-                          color: "#374151",
+                          color: "hsl(var(--foreground))",
                           cursor: "pointer",
                           padding: "4px 0",
                         }}
@@ -1823,7 +1823,7 @@ export default function MLSClient() {
 
                 {/* Additional notes */}
                 <div style={{ marginBottom: 20 }}>
-                  <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}>
+                  <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "hsl(var(--foreground))" }}>
                     Additional Notes (optional)
                   </label>
                   <textarea
@@ -1834,7 +1834,7 @@ export default function MLSClient() {
                     style={{
                       width: "100%",
                       padding: 10,
-                      border: "1px solid #d1d5db",
+                      border: "1px solid hsl(var(--border))",
                       borderRadius: 6,
                       fontSize: 14,
                       resize: "vertical",
@@ -1923,7 +1923,7 @@ export default function MLSClient() {
                       <div
                         key={variant.tone}
                         style={{
-                          border: "1px solid #e5e7eb",
+                          border: "1px solid hsl(var(--border))",
                           borderRadius: 10,
                           overflow: "hidden",
                         }}
@@ -1966,7 +1966,7 @@ export default function MLSClient() {
                             {copiedIdx === idx ? "Copied!" : "Copy"}
                           </button>
                         </div>
-                        <div style={{ padding: 16, fontSize: 14, lineHeight: 1.7, color: "#374151" }}>
+                        <div style={{ padding: 16, fontSize: 14, lineHeight: 1.7, color: "hsl(var(--foreground))" }}>
                           {variant.description}
                         </div>
                       </div>
@@ -1998,10 +1998,10 @@ export default function MLSClient() {
                 }}
               >
                 <div>
-                  <h3 style={{ margin: "0 0 4px", fontSize: 16, fontWeight: 700, color: "#374151" }}>
+                  <h3 style={{ margin: "0 0 4px", fontSize: 16, fontWeight: 700, color: "hsl(var(--foreground))" }}>
                     AI Social Media Marketing Generator
                   </h3>
-                  <p style={{ margin: 0, fontSize: 13, color: "#6b7280" }}>
+                  <p style={{ margin: 0, fontSize: 13, color: "hsl(var(--muted-foreground))" }}>
                     Generate platform-optimized posts for Facebook, Instagram, LinkedIn &amp; TikTok with video scripts.
                   </p>
                 </div>
@@ -2027,7 +2027,7 @@ export default function MLSClient() {
                 <div
                   style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}
                 >
-                  <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "#374151" }}>
+                  <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "hsl(var(--foreground))" }}>
                     Social Media Marketing Generator
                   </h3>
                   <button
@@ -2036,7 +2036,7 @@ export default function MLSClient() {
                       setSocialResults(null);
                       setSocialError("");
                     }}
-                    style={{ background: "none", border: "none", fontSize: 18, cursor: "pointer", color: "#6b7280" }}
+                    style={{ background: "none", border: "none", fontSize: 18, cursor: "pointer", color: "hsl(var(--muted-foreground))" }}
                   >
                     &times;
                   </button>
@@ -2060,7 +2060,7 @@ export default function MLSClient() {
 
                 {/* Post Type Selection */}
                 <div style={{ marginBottom: 16 }}>
-                  <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 8, color: "#374151" }}>
+                  <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 8, color: "hsl(var(--foreground))" }}>
                     Post Type <span style={{ color: "#ef4444" }}>*</span>
                   </label>
                   <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -2103,14 +2103,14 @@ export default function MLSClient() {
                 >
                   <div>
                     <label
-                      style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}
+                      style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "hsl(var(--foreground))" }}
                     >
                       Property Type <span style={{ color: "#ef4444" }}>*</span>
                     </label>
                     <select
                       value={socialForm.propertyType}
                       onChange={(e) => setSocialForm({ ...socialForm, propertyType: e.target.value })}
-                      style={{ width: "100%", padding: 10, border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14 }}
+                      style={{ width: "100%", padding: 10, border: "1px solid hsl(var(--border))", borderRadius: 6, fontSize: 14 }}
                     >
                       <option>Single Family Residential</option>
                       <option>Condo</option>
@@ -2123,7 +2123,7 @@ export default function MLSClient() {
                   </div>
                   <div>
                     <label
-                      style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}
+                      style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "hsl(var(--foreground))" }}
                     >
                       Bedrooms <span style={{ color: "#ef4444" }}>*</span>
                     </label>
@@ -2136,7 +2136,7 @@ export default function MLSClient() {
                       style={{
                         width: "100%",
                         padding: 10,
-                        border: "1px solid #d1d5db",
+                        border: "1px solid hsl(var(--border))",
                         borderRadius: 6,
                         fontSize: 14,
                         boxSizing: "border-box",
@@ -2145,7 +2145,7 @@ export default function MLSClient() {
                   </div>
                   <div>
                     <label
-                      style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}
+                      style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "hsl(var(--foreground))" }}
                     >
                       Bathrooms <span style={{ color: "#ef4444" }}>*</span>
                     </label>
@@ -2159,7 +2159,7 @@ export default function MLSClient() {
                       style={{
                         width: "100%",
                         padding: 10,
-                        border: "1px solid #d1d5db",
+                        border: "1px solid hsl(var(--border))",
                         borderRadius: 6,
                         fontSize: 14,
                         boxSizing: "border-box",
@@ -2168,7 +2168,7 @@ export default function MLSClient() {
                   </div>
                   <div>
                     <label
-                      style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}
+                      style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "hsl(var(--foreground))" }}
                     >
                       Square Feet <span style={{ color: "#ef4444" }}>*</span>
                     </label>
@@ -2181,7 +2181,7 @@ export default function MLSClient() {
                       style={{
                         width: "100%",
                         padding: 10,
-                        border: "1px solid #d1d5db",
+                        border: "1px solid hsl(var(--border))",
                         borderRadius: 6,
                         fontSize: 14,
                         boxSizing: "border-box",
@@ -2190,7 +2190,7 @@ export default function MLSClient() {
                   </div>
                   <div>
                     <label
-                      style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}
+                      style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "hsl(var(--foreground))" }}
                     >
                       Address
                     </label>
@@ -2202,7 +2202,7 @@ export default function MLSClient() {
                       style={{
                         width: "100%",
                         padding: 10,
-                        border: "1px solid #d1d5db",
+                        border: "1px solid hsl(var(--border))",
                         borderRadius: 6,
                         fontSize: 14,
                         boxSizing: "border-box",
@@ -2211,7 +2211,7 @@ export default function MLSClient() {
                   </div>
                   <div>
                     <label
-                      style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}
+                      style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "hsl(var(--foreground))" }}
                     >
                       City
                     </label>
@@ -2223,7 +2223,7 @@ export default function MLSClient() {
                       style={{
                         width: "100%",
                         padding: 10,
-                        border: "1px solid #d1d5db",
+                        border: "1px solid hsl(var(--border))",
                         borderRadius: 6,
                         fontSize: 14,
                         boxSizing: "border-box",
@@ -2232,7 +2232,7 @@ export default function MLSClient() {
                   </div>
                   <div>
                     <label
-                      style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}
+                      style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "hsl(var(--foreground))" }}
                     >
                       State
                     </label>
@@ -2244,7 +2244,7 @@ export default function MLSClient() {
                       style={{
                         width: "100%",
                         padding: 10,
-                        border: "1px solid #d1d5db",
+                        border: "1px solid hsl(var(--border))",
                         borderRadius: 6,
                         fontSize: 14,
                         boxSizing: "border-box",
@@ -2253,7 +2253,7 @@ export default function MLSClient() {
                   </div>
                   <div>
                     <label
-                      style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}
+                      style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "hsl(var(--foreground))" }}
                     >
                       List Price
                     </label>
@@ -2266,7 +2266,7 @@ export default function MLSClient() {
                       style={{
                         width: "100%",
                         padding: 10,
-                        border: "1px solid #d1d5db",
+                        border: "1px solid hsl(var(--border))",
                         borderRadius: 6,
                         fontSize: 14,
                         boxSizing: "border-box",
@@ -2275,7 +2275,7 @@ export default function MLSClient() {
                   </div>
                   <div>
                     <label
-                      style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}
+                      style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "hsl(var(--foreground))" }}
                     >
                       Year Built
                     </label>
@@ -2289,7 +2289,7 @@ export default function MLSClient() {
                       style={{
                         width: "100%",
                         padding: 10,
-                        border: "1px solid #d1d5db",
+                        border: "1px solid hsl(var(--border))",
                         borderRadius: 6,
                         fontSize: 14,
                         boxSizing: "border-box",
@@ -2298,7 +2298,7 @@ export default function MLSClient() {
                   </div>
                   <div>
                     <label
-                      style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}
+                      style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "hsl(var(--foreground))" }}
                     >
                       Lot Size
                     </label>
@@ -2310,7 +2310,7 @@ export default function MLSClient() {
                       style={{
                         width: "100%",
                         padding: 10,
-                        border: "1px solid #d1d5db",
+                        border: "1px solid hsl(var(--border))",
                         borderRadius: 6,
                         fontSize: 14,
                         boxSizing: "border-box",
@@ -2319,14 +2319,14 @@ export default function MLSClient() {
                   </div>
                   <div>
                     <label
-                      style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}
+                      style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "hsl(var(--foreground))" }}
                     >
                       Architectural Style
                     </label>
                     <select
                       value={socialForm.architecturalStyle}
                       onChange={(e) => setSocialForm({ ...socialForm, architecturalStyle: e.target.value })}
-                      style={{ width: "100%", padding: 10, border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14 }}
+                      style={{ width: "100%", padding: 10, border: "1px solid hsl(var(--border))", borderRadius: 6, fontSize: 14 }}
                     >
                       <option value="">Not specified</option>
                       <option>Ranch</option>
@@ -2352,7 +2352,7 @@ export default function MLSClient() {
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
                     <div>
                       <label
-                        style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}
+                        style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "hsl(var(--foreground))" }}
                       >
                         Open House Date
                       </label>
@@ -2363,7 +2363,7 @@ export default function MLSClient() {
                         style={{
                           width: "100%",
                           padding: 10,
-                          border: "1px solid #d1d5db",
+                          border: "1px solid hsl(var(--border))",
                           borderRadius: 6,
                           fontSize: 14,
                           boxSizing: "border-box",
@@ -2372,7 +2372,7 @@ export default function MLSClient() {
                     </div>
                     <div>
                       <label
-                        style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}
+                        style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "hsl(var(--foreground))" }}
                       >
                         Open House Time
                       </label>
@@ -2384,7 +2384,7 @@ export default function MLSClient() {
                         style={{
                           width: "100%",
                           padding: 10,
-                          border: "1px solid #d1d5db",
+                          border: "1px solid hsl(var(--border))",
                           borderRadius: 6,
                           fontSize: 14,
                           boxSizing: "border-box",
@@ -2396,7 +2396,7 @@ export default function MLSClient() {
 
                 {/* Feature checkboxes */}
                 <div style={{ marginBottom: 16 }}>
-                  <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 8, color: "#374151" }}>
+                  <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 8, color: "hsl(var(--foreground))" }}>
                     Key Features (check all that apply)
                   </label>
                   <div
@@ -2410,7 +2410,7 @@ export default function MLSClient() {
                           alignItems: "center",
                           gap: 8,
                           fontSize: 13,
-                          color: "#374151",
+                          color: "hsl(var(--foreground))",
                           cursor: "pointer",
                           padding: "4px 0",
                         }}
@@ -2435,7 +2435,7 @@ export default function MLSClient() {
 
                 {/* Additional notes */}
                 <div style={{ marginBottom: 20 }}>
-                  <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}>
+                  <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "hsl(var(--foreground))" }}>
                     Additional Notes (optional)
                   </label>
                   <textarea
@@ -2446,7 +2446,7 @@ export default function MLSClient() {
                     style={{
                       width: "100%",
                       padding: 10,
-                      border: "1px solid #d1d5db",
+                      border: "1px solid hsl(var(--border))",
                       borderRadius: 6,
                       fontSize: 14,
                       resize: "vertical",
@@ -2539,17 +2539,17 @@ export default function MLSClient() {
                       return (
                         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                           {/* Caption */}
-                          <div style={{ border: "1px solid #e5e7eb", borderRadius: 10, overflow: "hidden" }}>
+                          <div style={{ border: "1px solid hsl(var(--border))", borderRadius: 10, overflow: "hidden" }}>
                             <div
                               style={{
                                 display: "flex",
                                 justifyContent: "space-between",
                                 alignItems: "center",
                                 padding: "10px 16px",
-                                background: "#f9fafb",
+                                background: "hsl(var(--muted))",
                               }}
                             >
-                              <span style={{ fontSize: 13, fontWeight: 700, color: "#374151" }}>Caption</span>
+                              <span style={{ fontSize: 13, fontWeight: 700, color: "hsl(var(--foreground))" }}>Caption</span>
                               <button
                                 onClick={() =>
                                   copySocialText(
@@ -2571,7 +2571,7 @@ export default function MLSClient() {
                                 {socialCopied === `${pKey}-caption` ? "Copied!" : "Copy"}
                               </button>
                             </div>
-                            <div style={{ padding: 16, fontSize: 14, lineHeight: 1.7, color: "#374151" }}>
+                            <div style={{ padding: 16, fontSize: 14, lineHeight: 1.7, color: "hsl(var(--foreground))" }}>
                               {platform.caption}
                             </div>
                             <div style={{ padding: "0 16px 16px", display: "flex", flexWrap: "wrap", gap: 6 }}>
@@ -2594,17 +2594,17 @@ export default function MLSClient() {
                           </div>
 
                           {/* Static Image Text */}
-                          <div style={{ border: "1px solid #e5e7eb", borderRadius: 10, overflow: "hidden" }}>
+                          <div style={{ border: "1px solid hsl(var(--border))", borderRadius: 10, overflow: "hidden" }}>
                             <div
                               style={{
                                 display: "flex",
                                 justifyContent: "space-between",
                                 alignItems: "center",
                                 padding: "10px 16px",
-                                background: "#f9fafb",
+                                background: "hsl(var(--muted))",
                               }}
                             >
-                              <span style={{ fontSize: 13, fontWeight: 700, color: "#374151" }}>Static Image Text</span>
+                              <span style={{ fontSize: 13, fontWeight: 700, color: "hsl(var(--foreground))" }}>Static Image Text</span>
                               <button
                                 onClick={() =>
                                   copySocialText(
@@ -2627,10 +2627,10 @@ export default function MLSClient() {
                               </button>
                             </div>
                             <div style={{ padding: 16 }}>
-                              <div style={{ fontSize: 20, fontWeight: 700, color: "#111827", marginBottom: 6 }}>
+                              <div style={{ fontSize: 20, fontWeight: 700, color: "hsl(var(--foreground))", marginBottom: 6 }}>
                                 {platform.staticImageText.headline}
                               </div>
-                              <div style={{ fontSize: 14, color: "#6b7280", marginBottom: 8 }}>
+                              <div style={{ fontSize: 14, color: "hsl(var(--muted-foreground))", marginBottom: 8 }}>
                                 {platform.staticImageText.subtext}
                               </div>
                               <div
@@ -2650,9 +2650,9 @@ export default function MLSClient() {
                           </div>
 
                           {/* Video Scripts */}
-                          <div style={{ border: "1px solid #e5e7eb", borderRadius: 10, overflow: "hidden" }}>
-                            <div style={{ padding: "10px 16px", background: "#f9fafb" }}>
-                              <span style={{ fontSize: 13, fontWeight: 700, color: "#374151" }}>Video Scripts</span>
+                          <div style={{ border: "1px solid hsl(var(--border))", borderRadius: 10, overflow: "hidden" }}>
+                            <div style={{ padding: "10px 16px", background: "hsl(var(--muted))" }}>
+                              <span style={{ fontSize: 13, fontWeight: 700, color: "hsl(var(--foreground))" }}>Video Scripts</span>
                             </div>
                             {/* Script tabs */}
                             <div style={{ display: "flex", gap: 0, borderBottom: "1px solid #e5e7eb" }}>
@@ -2724,7 +2724,7 @@ export default function MLSClient() {
                                       >
                                         {script.style === "traditional" ? "Traditional" : "Creative"}
                                       </span>
-                                      <span style={{ fontSize: 14, fontWeight: 600, color: "#111827" }}>
+                                      <span style={{ fontSize: 14, fontWeight: 600, color: "hsl(var(--foreground))" }}>
                                         {script.concept}
                                       </span>
                                     </div>
@@ -2766,7 +2766,7 @@ export default function MLSClient() {
                                         key={shotIdx}
                                         style={{
                                           padding: 12,
-                                          background: "#f9fafb",
+                                          background: "hsl(var(--muted))",
                                           borderRadius: 8,
                                           borderLeft: "3px solid #8b5cf6",
                                         }}
@@ -2776,14 +2776,14 @@ export default function MLSClient() {
                                         >
                                           SHOT {shotIdx + 1}
                                         </div>
-                                        <div style={{ fontSize: 13, color: "#374151", marginBottom: 4 }}>
+                                        <div style={{ fontSize: 13, color: "hsl(var(--foreground))", marginBottom: 4 }}>
                                           <strong>Camera:</strong> {shot.direction}
                                         </div>
                                         {shot.spokenLine && (
-                                          <div style={{ fontSize: 13, color: "#374151", marginBottom: 4 }}>
+                                          <div style={{ fontSize: 13, color: "hsl(var(--foreground))", marginBottom: 4 }}>
                                             <strong>Say:</strong> &ldquo;{shot.spokenLine}&rdquo;
                                             {shot.toneCue && (
-                                              <span style={{ color: "#6b7280", fontStyle: "italic" }}>
+                                              <span style={{ color: "hsl(var(--muted-foreground))", fontStyle: "italic" }}>
                                                 {" "}
                                                 {shot.toneCue}
                                               </span>
@@ -2791,7 +2791,7 @@ export default function MLSClient() {
                                           </div>
                                         )}
                                         {shot.textOverlay && (
-                                          <div style={{ fontSize: 13, color: "#374151" }}>
+                                          <div style={{ fontSize: 13, color: "hsl(var(--foreground))" }}>
                                             <strong>Text Overlay:</strong> {shot.textOverlay}
                                           </div>
                                         )}
@@ -2839,18 +2839,18 @@ export default function MLSClient() {
 
           {/* Existing Listings Grid */}
           {isLoadingMyListings ? (
-            <div style={{ textAlign: "center", padding: 40, color: "#6b7280" }}>Loading your listings...</div>
+            <div style={{ textAlign: "center", padding: 40, color: "hsl(var(--muted-foreground))" }}>Loading your listings...</div>
           ) : myListings.length === 0 ? (
             <div
               style={{
                 textAlign: "center",
                 padding: 60,
-                background: "#f9fafb",
+                background: "hsl(var(--muted))",
                 borderRadius: 12,
-                color: "#6b7280",
+                color: "hsl(var(--muted-foreground))",
               }}
             >
-              <p style={{ fontSize: 18, fontWeight: 600, marginBottom: 8, color: "#374151" }}>No Listings Yet</p>
+              <p style={{ fontSize: 18, fontWeight: 600, marginBottom: 8, color: "hsl(var(--foreground))" }}>No Listings Yet</p>
               <p style={{ fontSize: 14, maxWidth: 400, margin: "0 auto" }}>
                 Your listings from the MLS will appear here.
               </p>
@@ -2872,8 +2872,8 @@ export default function MLSClient() {
                   <div
                     key={listing.id as string}
                     style={{
-                      background: "#fff",
-                      border: "1px solid #e5e7eb",
+                      background: "hsl(var(--card))",
+                      border: "1px solid hsl(var(--border))",
                       borderRadius: 12,
                       overflow: "hidden",
                       transition: "box-shadow 0.2s",
@@ -2895,7 +2895,7 @@ export default function MLSClient() {
                             alignItems: "center",
                             justifyContent: "center",
                             height: "100%",
-                            color: "#9ca3af",
+                            color: "hsl(var(--muted-foreground))",
                             fontSize: 14,
                           }}
                         >
@@ -2919,16 +2919,16 @@ export default function MLSClient() {
                       </span>
                     </div>
                     <div style={{ padding: 16 }}>
-                      <div style={{ fontSize: 20, fontWeight: 700, color: "#111827", marginBottom: 4 }}>
+                      <div style={{ fontSize: 20, fontWeight: 700, color: "hsl(var(--foreground))", marginBottom: 4 }}>
                         {formatPrice(listing.list_price as number)}
                       </div>
-                      <div style={{ fontSize: 14, fontWeight: 500, color: "#374151", marginBottom: 4 }}>
+                      <div style={{ fontSize: 14, fontWeight: 500, color: "hsl(var(--foreground))", marginBottom: 4 }}>
                         {address || "Address not set"}
                       </div>
-                      <div style={{ fontSize: 13, color: "#6b7280", marginBottom: 10 }}>
+                      <div style={{ fontSize: 13, color: "hsl(var(--muted-foreground))", marginBottom: 10 }}>
                         {listing.city as string}, {listing.state_or_province as string} {listing.postal_code as string}
                       </div>
-                      <div style={{ display: "flex", gap: 12, fontSize: 13, color: "#6b7280" }}>
+                      <div style={{ display: "flex", gap: 12, fontSize: 13, color: "hsl(var(--muted-foreground))" }}>
                         {listing.bedrooms_total != null && (
                           <span>
                             <strong>{listing.bedrooms_total as number}</strong> bed
@@ -2977,7 +2977,7 @@ export default function MLSClient() {
         >
           <div
             style={{
-              background: "#fff",
+              background: "hsl(var(--card))",
               borderRadius: 16,
               maxWidth: 700,
               width: "100%",
@@ -3001,7 +3001,7 @@ export default function MLSClient() {
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    color: "#9ca3af",
+                    color: "hsl(var(--muted-foreground))",
                   }}
                 >
                   No Photo Available
@@ -3015,13 +3015,13 @@ export default function MLSClient() {
                 style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}
               >
                 <div>
-                  <div style={{ fontSize: 28, fontWeight: 700, color: "#111827" }}>
+                  <div style={{ fontSize: 28, fontWeight: 700, color: "hsl(var(--foreground))" }}>
                     ${selectedProperty.ListPrice?.toLocaleString()}
                   </div>
-                  <div style={{ fontSize: 16, fontWeight: 500, color: "#374151", marginTop: 4 }}>
+                  <div style={{ fontSize: 16, fontWeight: 500, color: "hsl(var(--foreground))", marginTop: 4 }}>
                     {getAddress(selectedProperty)}
                   </div>
-                  <div style={{ fontSize: 14, color: "#6b7280" }}>
+                  <div style={{ fontSize: 14, color: "hsl(var(--muted-foreground))" }}>
                     {selectedProperty.City}, {selectedProperty.StateOrProvince} {selectedProperty.PostalCode}
                   </div>
                 </div>
@@ -3029,9 +3029,9 @@ export default function MLSClient() {
                   onClick={() => setSelectedProperty(null)}
                   style={{
                     padding: "6px 12px",
-                    border: "1px solid #d1d5db",
+                    border: "1px solid hsl(var(--border))",
                     borderRadius: 6,
-                    background: "#fff",
+                    background: "hsl(var(--card))",
                     cursor: "pointer",
                     fontSize: 16,
                   }}
@@ -3088,7 +3088,7 @@ export default function MLSClient() {
                   gridTemplateColumns: "repeat(auto-fit, minmax(100px, 1fr))",
                   gap: 12,
                   padding: 16,
-                  background: "#f9fafb",
+                  background: "hsl(var(--muted))",
                   borderRadius: 8,
                   marginBottom: 16,
                 }}
@@ -3096,31 +3096,31 @@ export default function MLSClient() {
                 {selectedProperty.BedroomsTotal != null && (
                   <div style={{ textAlign: "center" }}>
                     <div style={{ fontSize: 20, fontWeight: 700 }}>{selectedProperty.BedroomsTotal}</div>
-                    <div style={{ fontSize: 12, color: "#6b7280" }}>Bedrooms</div>
+                    <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>Bedrooms</div>
                   </div>
                 )}
                 {selectedProperty.BathroomsTotalInteger != null && (
                   <div style={{ textAlign: "center" }}>
                     <div style={{ fontSize: 20, fontWeight: 700 }}>{selectedProperty.BathroomsTotalInteger}</div>
-                    <div style={{ fontSize: 12, color: "#6b7280" }}>Bathrooms</div>
+                    <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>Bathrooms</div>
                   </div>
                 )}
                 {selectedProperty.LivingArea != null && (
                   <div style={{ textAlign: "center" }}>
                     <div style={{ fontSize: 20, fontWeight: 700 }}>{selectedProperty.LivingArea.toLocaleString()}</div>
-                    <div style={{ fontSize: 12, color: "#6b7280" }}>Sq Ft</div>
+                    <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>Sq Ft</div>
                   </div>
                 )}
                 {selectedProperty.YearBuilt != null && (
                   <div style={{ textAlign: "center" }}>
                     <div style={{ fontSize: 20, fontWeight: 700 }}>{selectedProperty.YearBuilt}</div>
-                    <div style={{ fontSize: 12, color: "#6b7280" }}>Year Built</div>
+                    <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>Year Built</div>
                   </div>
                 )}
                 {selectedProperty.LotSizeArea != null && (
                   <div style={{ textAlign: "center" }}>
                     <div style={{ fontSize: 20, fontWeight: 700 }}>{selectedProperty.LotSizeArea.toLocaleString()}</div>
-                    <div style={{ fontSize: 12, color: "#6b7280" }}>Lot Size</div>
+                    <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>Lot Size</div>
                   </div>
                 )}
                 {(() => {
@@ -3137,7 +3137,7 @@ export default function MLSClient() {
                       >
                         {dom}
                       </div>
-                      <div style={{ fontSize: 12, color: "#6b7280" }}>Days on Market</div>
+                      <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>Days on Market</div>
                     </div>
                   );
                 })()}
@@ -3146,24 +3146,24 @@ export default function MLSClient() {
               {/* Property Details */}
               <div style={{ marginBottom: 16, fontSize: 14, lineHeight: 1.6 }}>
                 <div style={{ display: "grid", gridTemplateColumns: "160px 1fr", gap: "8px 12px" }}>
-                  <span style={{ fontWeight: 600, color: "#374151" }}>MLS #:</span>
-                  <span style={{ color: "#6b7280" }}>{selectedProperty.ListingId || selectedProperty.ListingKey}</span>
-                  <span style={{ fontWeight: 600, color: "#374151" }}>Property Type:</span>
-                  <span style={{ color: "#6b7280" }}>
+                  <span style={{ fontWeight: 600, color: "hsl(var(--foreground))" }}>MLS #:</span>
+                  <span style={{ color: "hsl(var(--muted-foreground))" }}>{selectedProperty.ListingId || selectedProperty.ListingKey}</span>
+                  <span style={{ fontWeight: 600, color: "hsl(var(--foreground))" }}>Property Type:</span>
+                  <span style={{ color: "hsl(var(--muted-foreground))" }}>
                     {selectedProperty.PropertyType}
                     {selectedProperty.PropertySubType ? ` - ${selectedProperty.PropertySubType}` : ""}
                   </span>
                   {/* Subdivision / Neighborhood */}
                   {(selectedProperty as any).SubdivisionName && (
                     <>
-                      <span style={{ fontWeight: 600, color: "#374151" }}>Neighborhood:</span>
-                      <span style={{ color: "#6b7280" }}>{(selectedProperty as any).SubdivisionName}</span>
+                      <span style={{ fontWeight: 600, color: "hsl(var(--foreground))" }}>Neighborhood:</span>
+                      <span style={{ color: "hsl(var(--muted-foreground))" }}>{(selectedProperty as any).SubdivisionName}</span>
                     </>
                   )}
                   {/* Land Tenure — critical for Hawaii */}
                   {selectedProperty.OwnershipType && (
                     <>
-                      <span style={{ fontWeight: 600, color: "#374151" }}>Land Tenure:</span>
+                      <span style={{ fontWeight: 600, color: "hsl(var(--foreground))" }}>Land Tenure:</span>
                       <span
                         style={{
                           fontWeight: 700,
@@ -3177,7 +3177,7 @@ export default function MLSClient() {
                   )}
                   {selectedProperty.LeaseAmount != null && selectedProperty.LeaseAmount > 0 && (
                     <>
-                      <span style={{ fontWeight: 600, color: "#374151" }}>Lease Rent:</span>
+                      <span style={{ fontWeight: 600, color: "hsl(var(--foreground))" }}>Lease Rent:</span>
                       <span style={{ color: "#dc2626", fontWeight: 600 }}>
                         ${selectedProperty.LeaseAmount.toLocaleString()}/
                         {selectedProperty.LeaseAmountFrequency?.toLowerCase() || "mo"}
@@ -3186,7 +3186,7 @@ export default function MLSClient() {
                   )}
                   {selectedProperty.LeaseExpiration && (
                     <>
-                      <span style={{ fontWeight: 600, color: "#374151" }}>Lease Expires:</span>
+                      <span style={{ fontWeight: 600, color: "hsl(var(--foreground))" }}>Lease Expires:</span>
                       <span style={{ color: "#dc2626" }}>
                         {new Date(selectedProperty.LeaseExpiration).toLocaleDateString()}
                       </span>
@@ -3196,8 +3196,8 @@ export default function MLSClient() {
                   {selectedProperty.OriginalListPrice != null &&
                     selectedProperty.OriginalListPrice !== selectedProperty.ListPrice && (
                       <>
-                        <span style={{ fontWeight: 600, color: "#374151" }}>Original Price:</span>
-                        <span style={{ color: "#6b7280" }}>
+                        <span style={{ fontWeight: 600, color: "hsl(var(--foreground))" }}>Original Price:</span>
+                        <span style={{ color: "hsl(var(--muted-foreground))" }}>
                           ${selectedProperty.OriginalListPrice.toLocaleString()}
                           {selectedProperty.ListPrice < selectedProperty.OriginalListPrice && (
                             <span style={{ color: "#dc2626", fontWeight: 600, marginLeft: 6 }}>
@@ -3216,7 +3216,7 @@ export default function MLSClient() {
                   {/* Closed sale info */}
                   {selectedProperty.ClosePrice != null && (
                     <>
-                      <span style={{ fontWeight: 600, color: "#374151" }}>Close Price:</span>
+                      <span style={{ fontWeight: 600, color: "hsl(var(--foreground))" }}>Close Price:</span>
                       <span style={{ fontWeight: 600, color: "#059669" }}>
                         ${selectedProperty.ClosePrice.toLocaleString()}
                       </span>
@@ -3224,8 +3224,8 @@ export default function MLSClient() {
                   )}
                   {selectedProperty.CloseDate && (
                     <>
-                      <span style={{ fontWeight: 600, color: "#374151" }}>Close Date:</span>
-                      <span style={{ color: "#6b7280" }}>
+                      <span style={{ fontWeight: 600, color: "hsl(var(--foreground))" }}>Close Date:</span>
+                      <span style={{ color: "hsl(var(--muted-foreground))" }}>
                         {new Date(selectedProperty.CloseDate).toLocaleDateString()}
                       </span>
                     </>
@@ -3233,8 +3233,8 @@ export default function MLSClient() {
                   {/* Agent Info */}
                   {selectedProperty.ListAgentFullName && (
                     <>
-                      <span style={{ fontWeight: 600, color: "#374151" }}>Listing Agent:</span>
-                      <span style={{ color: "#6b7280" }}>
+                      <span style={{ fontWeight: 600, color: "hsl(var(--foreground))" }}>Listing Agent:</span>
+                      <span style={{ color: "hsl(var(--muted-foreground))" }}>
                         {selectedProperty.ListAgentFullName}
                         {selectedProperty.ListAgentDirectPhone && ` · ${selectedProperty.ListAgentDirectPhone}`}
                         {selectedProperty.ListAgentEmail && ` · ${selectedProperty.ListAgentEmail}`}
@@ -3243,15 +3243,15 @@ export default function MLSClient() {
                   )}
                   {selectedProperty.ListOfficeName && (
                     <>
-                      <span style={{ fontWeight: 600, color: "#374151" }}>Office:</span>
-                      <span style={{ color: "#6b7280" }}>{selectedProperty.ListOfficeName}</span>
+                      <span style={{ fontWeight: 600, color: "hsl(var(--foreground))" }}>Office:</span>
+                      <span style={{ color: "hsl(var(--muted-foreground))" }}>{selectedProperty.ListOfficeName}</span>
                     </>
                   )}
                   {/* Buyer agent (for closed sales) */}
                   {selectedProperty.BuyerAgentFullName && (
                     <>
-                      <span style={{ fontWeight: 600, color: "#374151" }}>Buyer Agent:</span>
-                      <span style={{ color: "#6b7280" }}>
+                      <span style={{ fontWeight: 600, color: "hsl(var(--foreground))" }}>Buyer Agent:</span>
+                      <span style={{ color: "hsl(var(--muted-foreground))" }}>
                         {selectedProperty.BuyerAgentFullName}
                         {selectedProperty.BuyerOfficeName && ` · ${selectedProperty.BuyerOfficeName}`}
                       </span>
@@ -3260,8 +3260,8 @@ export default function MLSClient() {
                   {/* Dates */}
                   {selectedProperty.OnMarketDate && (
                     <>
-                      <span style={{ fontWeight: 600, color: "#374151" }}>On Market:</span>
-                      <span style={{ color: "#6b7280" }}>
+                      <span style={{ fontWeight: 600, color: "hsl(var(--foreground))" }}>On Market:</span>
+                      <span style={{ color: "hsl(var(--muted-foreground))" }}>
                         {new Date(selectedProperty.OnMarketDate).toLocaleDateString()}
                       </span>
                     </>
@@ -3269,7 +3269,7 @@ export default function MLSClient() {
                   {selectedProperty.CumulativeDaysOnMarket != null &&
                     selectedProperty.CumulativeDaysOnMarket !== selectedProperty.DaysOnMarket && (
                       <>
-                        <span style={{ fontWeight: 600, color: "#374151" }}>Cumulative DOM:</span>
+                        <span style={{ fontWeight: 600, color: "hsl(var(--foreground))" }}>Cumulative DOM:</span>
                         <span style={{ color: selectedProperty.CumulativeDaysOnMarket > 60 ? "#dc2626" : "#6b7280" }}>
                           {selectedProperty.CumulativeDaysOnMarket} days (includes re-lists)
                         </span>
@@ -3278,20 +3278,20 @@ export default function MLSClient() {
                   {/* Financial */}
                   {selectedProperty.AssociationFee != null && selectedProperty.AssociationFee > 0 && (
                     <>
-                      <span style={{ fontWeight: 600, color: "#374151" }}>HOA / Maint Fee:</span>
-                      <span style={{ color: "#6b7280" }}>${selectedProperty.AssociationFee.toLocaleString()}/mo</span>
+                      <span style={{ fontWeight: 600, color: "hsl(var(--foreground))" }}>HOA / Maint Fee:</span>
+                      <span style={{ color: "hsl(var(--muted-foreground))" }}>${selectedProperty.AssociationFee.toLocaleString()}/mo</span>
                     </>
                   )}
                   {selectedProperty.TaxAnnualAmount != null && selectedProperty.TaxAnnualAmount > 0 && (
                     <>
-                      <span style={{ fontWeight: 600, color: "#374151" }}>Annual Tax:</span>
-                      <span style={{ color: "#6b7280" }}>${selectedProperty.TaxAnnualAmount.toLocaleString()}</span>
+                      <span style={{ fontWeight: 600, color: "hsl(var(--foreground))" }}>Annual Tax:</span>
+                      <span style={{ color: "hsl(var(--muted-foreground))" }}>${selectedProperty.TaxAnnualAmount.toLocaleString()}</span>
                     </>
                   )}
                   {selectedProperty.NumberOfUnitsTotal != null && selectedProperty.NumberOfUnitsTotal > 1 && (
                     <>
-                      <span style={{ fontWeight: 600, color: "#374151" }}>Total Units:</span>
-                      <span style={{ color: "#6b7280" }}>{selectedProperty.NumberOfUnitsTotal}</span>
+                      <span style={{ fontWeight: 600, color: "hsl(var(--foreground))" }}>Total Units:</span>
+                      <span style={{ color: "hsl(var(--muted-foreground))" }}>{selectedProperty.NumberOfUnitsTotal}</span>
                     </>
                   )}
                 </div>
@@ -3325,8 +3325,8 @@ export default function MLSClient() {
               {/* Remarks */}
               {selectedProperty.PublicRemarks && (
                 <div style={{ marginBottom: 20 }}>
-                  <h4 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8, color: "#374151" }}>Description</h4>
-                  <p style={{ fontSize: 14, color: "#6b7280", lineHeight: 1.6 }}>{selectedProperty.PublicRemarks}</p>
+                  <h4 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8, color: "hsl(var(--foreground))" }}>Description</h4>
+                  <p style={{ fontSize: 14, color: "hsl(var(--muted-foreground))", lineHeight: 1.6 }}>{selectedProperty.PublicRemarks}</p>
                 </div>
               )}
 
@@ -3337,7 +3337,7 @@ export default function MLSClient() {
                   const sortedMedia = [...selectedProperty.Media].sort((a, b) => (a.Order || 0) - (b.Order || 0));
                   return (
                     <div style={{ marginBottom: 20 }}>
-                      <h4 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8, color: "#374151" }}>
+                      <h4 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8, color: "hsl(var(--foreground))" }}>
                         Photos ({sortedMedia.length})
                       </h4>
                       <div
@@ -3394,14 +3394,14 @@ export default function MLSClient() {
                                 flexDirection: "column",
                                 alignItems: "center",
                                 justifyContent: "center",
-                                background: "#f3f4f6",
+                                background: "hsl(var(--muted))",
                                 border: "2px solid #e5e7eb",
                                 cursor: "pointer",
                                 textDecoration: "none",
                               }}
                             >
                               <span style={{ fontSize: 24 }}>📄</span>
-                              <span style={{ fontSize: 9, color: "#6b7280", textAlign: "center", padding: "0 4px" }}>
+                              <span style={{ fontSize: 9, color: "hsl(var(--muted-foreground))", textAlign: "center", padding: "0 4px" }}>
                                 {media.ShortDescription || "Document"}
                               </span>
                             </a>
@@ -3414,7 +3414,7 @@ export default function MLSClient() {
 
               {/* Property Intelligence — Embedded PropertyDetailModal */}
               {attomLoading && (
-                <div style={{ textAlign: "center", padding: 20, color: "#6b7280", fontSize: 13 }}>
+                <div style={{ textAlign: "center", padding: 20, color: "hsl(var(--muted-foreground))", fontSize: 13 }}>
                   Loading property intelligence...
                 </div>
               )}
@@ -3423,10 +3423,10 @@ export default function MLSClient() {
                 <div
                   style={{
                     padding: 10,
-                    background: "#f9fafb",
+                    background: "hsl(var(--muted))",
                     borderRadius: 8,
                     fontSize: 13,
-                    color: "#9ca3af",
+                    color: "hsl(var(--muted-foreground))",
                     marginBottom: 16,
                   }}
                 >
@@ -3551,7 +3551,7 @@ export default function MLSClient() {
         >
           <div
             style={{
-              background: "#fff",
+              background: "hsl(var(--card))",
               borderRadius: 16,
               maxWidth: 500,
               width: "100%",
@@ -3571,9 +3571,9 @@ export default function MLSClient() {
                 }}
                 style={{
                   padding: "4px 10px",
-                  border: "1px solid #d1d5db",
+                  border: "1px solid hsl(var(--border))",
                   borderRadius: 6,
-                  background: "#fff",
+                  background: "hsl(var(--card))",
                   cursor: "pointer",
                 }}
               >
@@ -3585,7 +3585,7 @@ export default function MLSClient() {
             <div
               style={{
                 padding: 12,
-                background: "#f9fafb",
+                background: "hsl(var(--muted))",
                 borderRadius: 8,
                 marginBottom: 16,
                 fontSize: 13,
@@ -3594,7 +3594,7 @@ export default function MLSClient() {
               <div style={{ fontWeight: 600 }}>
                 ${sendProperty.ListPrice?.toLocaleString()} — {getAddress(sendProperty)}
               </div>
-              <div style={{ color: "#6b7280" }}>
+              <div style={{ color: "hsl(var(--muted-foreground))" }}>
                 {sendProperty.City}, {sendProperty.StateOrProvince} | MLS#{" "}
                 {sendProperty.ListingId || sendProperty.ListingKey}
               </div>
@@ -3603,7 +3603,7 @@ export default function MLSClient() {
             {/* Custom email message */}
             {sendMode === "email" && (
               <div style={{ marginBottom: 16 }}>
-                <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 6 }}>
+                <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "hsl(var(--foreground))", marginBottom: 6 }}>
                   Personal Message (optional)
                 </label>
                 <textarea
@@ -3614,7 +3614,7 @@ export default function MLSClient() {
                   style={{
                     width: "100%",
                     padding: "10px 14px",
-                    border: "1px solid #e5e7eb",
+                    border: "1px solid hsl(var(--border))",
                     borderRadius: 8,
                     fontSize: 14,
                     resize: "vertical",
@@ -3651,7 +3651,7 @@ export default function MLSClient() {
                 style={{
                   width: "100%",
                   padding: "10px 14px",
-                  border: "1px solid #e5e7eb",
+                  border: "1px solid hsl(var(--border))",
                   borderRadius: 8,
                   fontSize: 14,
                 }}
@@ -3676,11 +3676,11 @@ export default function MLSClient() {
 
             {/* Contacts list */}
             {isLoadingContacts ? (
-              <div style={{ textAlign: "center", padding: 20, color: "#6b7280", fontSize: 14 }}>
+              <div style={{ textAlign: "center", padding: 20, color: "hsl(var(--muted-foreground))", fontSize: 14 }}>
                 Loading contacts...
               </div>
             ) : contacts.length === 0 && !contactError ? (
-              <div style={{ textAlign: "center", padding: 20, color: "#6b7280", fontSize: 14 }}>
+              <div style={{ textAlign: "center", padding: 20, color: "hsl(var(--muted-foreground))", fontSize: 14 }}>
                 {contactSearch
                   ? "No contacts found. Try a different search."
                   : sendMode === "email"
@@ -3697,14 +3697,14 @@ export default function MLSClient() {
                       justifyContent: "space-between",
                       alignItems: "center",
                       padding: "10px 12px",
-                      border: "1px solid #e5e7eb",
+                      border: "1px solid hsl(var(--border))",
                       borderRadius: 8,
                       gap: 8,
                     }}
                   >
                     <div>
                       <div style={{ fontWeight: 600, fontSize: 14 }}>{getContactDisplayName(contact)}</div>
-                      {contact.email && <div style={{ fontSize: 12, color: "#6b7280" }}>{contact.email}</div>}
+                      {contact.email && <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>{contact.email}</div>}
                     </div>
                     <button
                       onClick={() => sendToContact(contact.id)}
