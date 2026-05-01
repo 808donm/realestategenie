@@ -319,7 +319,6 @@ export default function PropertyDetailModal({
   const [avmData, setAvmData] = useState<any>(null);
   const [avmLoading, setAvmLoading] = useState(false);
   const [genieAvm, setGenieAvm] = useState<any>(null);
-  const [reapiAvm, setReapiAvm] = useState<{ value: number; raw?: any } | null>(null);
   const [reapiData, setReapiData] = useState<any>(null); // Full REAPI enrichment data
   const [reapiError, setReapiError] = useState(false); // True when REAPI fetch failed
   const [mlsSoldPrice, setMlsSoldPrice] = useState<{ price: number; date: string } | null>(null); // From REAPI MLS
@@ -745,7 +744,6 @@ export default function PropertyDetailModal({
         leaseExpiration: (p as any).LeaseExpiration || (p as any).leaseExpiration || mlsLeaseExpiration || undefined,
         subdivision: (p as any).SubdivisionName || (p as any).subdivision,
         hoaFee: (p as any).AssociationFee,
-        propertyAvm: avmVal ? { value: avmVal, low: avmLow, high: avmHigh } : null,
         listPrice: mlsListPrice || (p as any).ListPrice || undefined,
         // REAPI property features for comp adjustments
         pool: rf.pool ?? undefined,
@@ -815,12 +813,6 @@ export default function PropertyDetailModal({
       .then((data) => {
         if (data.property) {
           setReapiData(data.property);
-          if (data.property.avm?.amount?.value || data.raw?.estimatedValue) {
-            setReapiAvm({
-              value: data.property.avm?.amount?.value || data.raw?.estimatedValue,
-              raw: data.raw,
-            });
-          }
         } else {
           console.warn("[REAPI] No property data returned:", data.error || "unknown");
           setReapiError(true);
@@ -1367,7 +1359,7 @@ export default function PropertyDetailModal({
         // Build homeEquity from Realie's pre-calculated data, or fall back to
         // computing it from AVM / assessment values (same cascade the search cards use).
         // Always use Genie AVM as estimated value for equity calculation
-        const genieEstValue = genieAvm?.value || reapiData?.avm?.amount?.value || p.avm?.amount?.value || p.assessment?.market?.mktTtlValue || p.assessment?.appraised?.apprTtlValue;
+        const genieEstValue = genieAvm?.value || p.avm?.amount?.value || p.assessment?.market?.mktTtlValue || p.assessment?.appraised?.apprTtlValue;
         // REAPI mortgage balance is authoritative when available (even if $0 = free & clear)
         const hasReapiEquity = reapiData?.homeEquity != null;
         const reapiMortBal = hasReapiEquity ? Number(reapiData.homeEquity.estimatedMortgageBalance || 0) : null;
@@ -2595,7 +2587,7 @@ export default function PropertyDetailModal({
           const heProp = heResp?.property?.[0] || heResp;
           const he = heProp?.homeEquity || heProp?.valuation || heProp;
           // Genie AVM is always the estimated value
-          const heAvmValue = genieAvm?.value ?? reapiData?.avm?.amount?.value ?? he?.avmValue ?? he?.avm?.amount?.value ?? avm?.amount?.value ?? avmVal;
+          const heAvmValue = genieAvm?.value ?? he?.avmValue ?? he?.avm?.amount?.value ?? avm?.amount?.value ?? avmVal;
           // REAPI mortgage balance is authoritative (even $0 for free & clear)
           const heLoanBalance = hasReapi
             ? Number(reapiData.homeEquity.estimatedMortgageBalance || 0)
@@ -3420,7 +3412,8 @@ export default function PropertyDetailModal({
                 </>
               )}
               <div style={{ fontSize: 10, color: "hsl(var(--muted-foreground))", marginTop: 8 }}>
-                Ensemble: comps, list price, property AVM, assessment
+                Proprietary ensemble: MLS comps (property-type matched), list price, time-adjusted last sale,
+                trend-adjusted assessment, and area median $/sqft sanity blend.
               </div>
             </div>
 
@@ -3465,18 +3458,6 @@ export default function PropertyDetailModal({
               </div>
             </div>
 
-            {/* REAPI AVM */}
-            <div style={{ flex: 1, minWidth: 200, padding: 16, borderRadius: 12, border: "2px solid #dc2626", background: "#fef2f2" }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: "#dc2626", textTransform: "uppercase", marginBottom: 8 }}>
-                REAPI AVM
-              </div>
-              <div style={{ fontSize: 28, fontWeight: 800, color: "#dc2626", marginBottom: 4 }}>
-                {reapiAvm ? fmt(reapiAvm.value) : reapiError ? "N/A" : activeSection === "avm" && !reapiData ? "Loading..." : "N/A"}
-              </div>
-              <div style={{ fontSize: 10, color: "hsl(var(--muted-foreground))", marginTop: 8 }}>
-                Property data valuation
-              </div>
-            </div>
           </div>
 
           {/* Context info */}

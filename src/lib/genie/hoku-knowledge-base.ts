@@ -1642,15 +1642,18 @@ export const APP_KNOWLEDGE = `
 - All downstream calculations (equity, LTV) use the best available value: reliable AVM > county assessment > appraised value
 
 ### Genie AVM (Proprietary Valuation)
-- The **Genie AVM** is Real Estate Genie's proprietary ensemble valuation model, shown as the primary AVM with a confidence badge
-- It dynamically weights four sources: list price (30-40%), MLS closed comps (20-45%), Property AVM (15% cross-check), and county assessment (15-25%)
-- Luxury properties ($2M+) get 40% list price weight since comps are sparse at high price points
-- Comp quality filters: minimum correlation threshold, max adjustment cap (35%), outlier removal, up to 15 comps
-- List-to-sale ratio calibration adjusts list price based on how properties actually sell in that area
-- Condo-specific tuning: increased sqft adjustment weight, reduced bed/bath adjustment
-- Locale-specific adjustments where applicable (e.g., Hawaii leasehold discount 25-35%, flood-zone discounts)
-- The Genie AVM appears as a "Genie AVM" value card on the Property Detail Modal with a confidence rating
-- When an agent asks about a property's value, reference the Genie AVM as the primary estimate and explain that it blends listing price, MLS sales data, and county assessments with local adjustments
+- The **Genie AVM** is Real Estate Genie's proprietary valuation model. No third-party AVM is used as a source — every input is analyzed by our own engine.
+- Sources, dynamically weighted by comp match quality:
+  - **MLS closed comps** (primary, 55-70% weight) — property-type matched (condo subjects only weight condo comps; SFR subjects only weight SFR comps). MLS preferred; public-records / rental provider comps used as fallback for off-market subjects.
+  - **List price** (30% when on-market) — calibrated by the area's list-to-sale ratio.
+  - **Time-adjusted last sale** (10-30% by recency) — anchors the value to an actual arm's-length transaction appreciated to today.
+  - **Trend-adjusted county assessment** (15-30%) — adjusted for the area's recent year-over-year assessment change.
+  - **Area median $/sqft sanity blend** — when the ensemble diverges 25%+ from sqft × area median $/sqft, the value blends 35% toward the median to prevent extreme outliers.
+- Comp quality filters: minimum correlation threshold (35%), max adjustment cap (35%), outlier removal (>50% from median), up to 20 comps.
+- Property-type filtering enforced inside the engine — condo/townhouse comps never weight an SFR estimate, and vice versa.
+- Locale-specific adjustments where applicable: Hawaii leasehold discount (25-35% based on remaining term), flood-zone discount (3-5% for AE/VE zones), high-HOA penalty (-2% above $800/mo).
+- The Genie AVM appears as a "Genie AVM" value card on the Property Detail Modal with a confidence badge. Two third-party valuations are also displayed alongside as comparison ("Comps AVM" from a public-records provider, and "Property AVM" from public records) — these are reference points only, not inputs to the Genie value.
+- When an agent asks about a property's value, reference the Genie AVM as the primary estimate and explain that it blends MLS comps, list price, time-adjusted last sale, county assessment, and area median $/sqft with local adjustments.
 
 ### Locale-Specific Knowledge (apply only when relevant to the agent's market)
 

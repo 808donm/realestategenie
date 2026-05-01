@@ -1227,28 +1227,33 @@ The AVM Reliability Check compares the automated valuation to county assessment 
 
 ### 11.2a Genie AVM (Proprietary Valuation)
 
-The Genie AVM is Real Estate Genie's proprietary valuation model. It appears as a "Genie AVM" value card with a confidence badge on the Property Detail Modal.
+The Genie AVM is Real Estate Genie's proprietary valuation model. **No third-party AVM is used as a source** — every input is analyzed by our own engine. It appears as a "Genie AVM" value card with a confidence badge on the Property Detail Modal.
 
 **How it works:**
 
-The Genie AVM is a proprietary ensemble model that dynamically weights four data sources:
+The Genie AVM weights five proprietary sources, dynamically scaled by comp match quality:
 
-1. **List Price (30-40% weight)** - When a property is actively listed, the agent's asking price is the strongest signal. Luxury properties ($2M+) get 40% weight since comps are sparse at high price points.
-2. **MLS Closed Comps (20-45% weight)** - Recent closed sales from MLS, adjusted for differences in size, beds, baths, and age. Up to 15 comps are used for a broader sample.
-3. **Property AVM (15% weight)** - Third-party valuation used as a minor cross-check, not a primary input.
-4. **County Assessment Trend (15-25% weight)** - Assessed value adjusted for the local assessment-to-market ratio over time.
+1. **MLS Closed Comps (55-70% weight)** — Primary source. Recent closed sales adjusted for size, beds, baths, age, lot size, condition, and features (pool, garage, outdoor space). **Property-type matching is enforced**: condo subjects only weight condo comps, single-family subjects only weight single-family comps. MLS comps are used when available; public-records / rental-data-provider comps are used as a fallback for off-market properties.
+2. **List Price (30% weight when on-market)** — Calibrated by the area's actual list-to-sale ratio so it reflects what properties actually sell for, not what they're listed at.
+3. **Time-Adjusted Last Sale (10-30% by recency)** — Anchors the value to an actual arm's-length transaction appreciated to today using the area's annual appreciation rate.
+4. **Trend-Adjusted County Assessment (15-30%)** — Assessed value adjusted for the area's recent year-over-year assessment change.
+5. **Area Median $/sqft Sanity Blend** — When the ensemble diverges 25%+ from sqft × area median $/sqft, the value blends 35% toward the median to prevent extreme outliers from sparse-comp areas.
 
-The model also uses list-to-sale ratio calibration -- it tracks how properties in each area actually sell relative to their asking price, and adjusts accordingly. Comp quality filters ensure only truly comparable properties influence the value: minimum correlation threshold, maximum adjustment cap (35%), and outlier removal.
+Comp quality filters ensure only truly comparable properties influence the value: minimum 35% correlation, maximum 35% total adjustment cap, outlier removal at 50% from median, up to 20 comps.
 
-**Hawaii-specific adjustments:**
+**Comparison cards on the modal:** Two third-party valuations are shown alongside the Genie AVM as reference points only — they do not influence the Genie value:
+- **Comps AVM** — comp-median valuation from a public-records / rental data provider.
+- **Property AVM** — public-records valuation from the same provider.
 
-- **Leasehold discount (25-35%)**: Leasehold properties are valued lower than Fee Simple. The discount varies based on remaining lease term.
-- **Flood zone discount (3-5%)**: Properties in FEMA flood zones receive a small valuation reduction reflecting insurance costs and risk.
-- **High HOA impact**: Unusually high HOA fees reduce the effective value to reflect ongoing carrying costs.
+**Hawaii-specific adjustments (applied on top of the ensemble):**
+
+- **Leasehold discount (20-35%)**: Leasehold properties are valued lower than Fee Simple. The discount scales with remaining lease term.
+- **Flood zone discount (3-5%)**: Properties in FEMA AE/VE flood zones receive a small valuation reduction reflecting insurance costs and risk.
+- **High HOA penalty (-2%)**: Properties with HOA fees above $800/mo get a small reduction reflecting ongoing carrying costs.
 
 **Why it matters:**
 
-Generic AVMs often miss Hawaii-specific factors like leasehold tenure, which can reduce a property's value by a third. The Genie AVM accounts for these local realities. For methodology details, see this help section. The Property Detail Modal keeps the display clean with just the value and confidence badge.
+The Genie AVM is built from our own analysis of MLS data, public records, and market stats — not by reweighting somebody else's AVM. That makes the methodology transparent (every weight is shown in the methodology breakdown on the AVM tab) and lets us tune for local realities like Hawaii leasehold and condo-vs-SFR differences that generic AVMs miss.
 
 ### 11.2b Property Report (PDF)
 
