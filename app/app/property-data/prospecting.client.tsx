@@ -3,6 +3,7 @@
 import { useState, useRef } from "react";
 import PropertyDetailModal from "./property-detail-modal.client";
 import ProspectAIPanel, { type ProspectAIPanelHandle } from "./prospect-ai-panel.client";
+import ExportToolbar from "../components/export-toolbar";
 import { buildQPublicUrl } from "@/lib/hawaii-zip-county";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -3405,8 +3406,95 @@ export default function Prospecting() {
       {/* Standard list view for all other modes */}
       {!isLoading && mode !== "investor" && results.length > 0 && (
         <>
-          <div style={{ fontSize: 13, color: "hsl(var(--muted-foreground))", marginBottom: 12 }}>
-            {totalCount.toLocaleString()} propert{totalCount === 1 ? "y" : "ies"} found
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 12,
+              marginBottom: 12,
+              flexWrap: "wrap",
+            }}
+          >
+            <div style={{ fontSize: 13, color: "hsl(var(--muted-foreground))" }}>
+              {totalCount.toLocaleString()} propert{totalCount === 1 ? "y" : "ies"} found
+            </div>
+
+            {/* Power-dialer-friendly export. Columns match GHL/CRM bulk-import
+                conventions (First Name, Last Name, Phone, Email, Address,
+                City, State, Zip, plus property context tags). When skip
+                trace data is present (REAPI re-enabled), Phone/Email
+                populate; until then they're blank for downstream skip
+                tracing inside the dialer or via another provider. */}
+            <ExportToolbar
+              title="Prospects (GHL Power Dialer)"
+              filenamePrefix="prospects_power_dialer"
+              compact
+              columns={[
+                { key: "firstName", label: "First Name" },
+                { key: "lastName", label: "Last Name" },
+                { key: "phone", label: "Phone" },
+                { key: "email", label: "Email" },
+                { key: "address", label: "Address" },
+                { key: "city", label: "City" },
+                { key: "state", label: "State" },
+                { key: "zip", label: "Zip" },
+                { key: "mailingAddress", label: "Mailing Address" },
+                { key: "propertyType", label: "Property Type" },
+                { key: "estValue", label: "Est. Value" },
+                { key: "lastSalePrice", label: "Last Sale Price" },
+                { key: "lastSaleDate", label: "Last Sale Date" },
+                { key: "yearsOwned", label: "Years Owned" },
+                { key: "absentee", label: "Absentee" },
+                { key: "tag", label: "Tag" },
+              ]}
+              getData={() => {
+                const splitName = (full: string | null): { first: string; last: string } => {
+                  if (!full) return { first: "", last: "" };
+                  // Public records often store names "LAST, FIRST" — flip them.
+                  if (full.includes(",")) {
+                    const [last, first] = full.split(",").map((s) => s.trim());
+                    return { first: first || "", last: last || "" };
+                  }
+                  const parts = full.trim().split(/\s+/);
+                  if (parts.length === 1) return { first: "", last: parts[0] };
+                  return { first: parts[0], last: parts.slice(1).join(" ") };
+                };
+                const tagByMode: Record<string, string> = {
+                  absentee: "Absentee Owner",
+                  equity: "High Equity",
+                  foreclosure: "Pre-Foreclosure",
+                  radius: "Just Sold Farming",
+                };
+                return results.map((p) => {
+                  const ownerName = getOwnerName(p);
+                  const { first, last } = splitName(ownerName);
+                  const ownershipDate = getOwnershipDate(p);
+                  const yearsOwned = ownershipDate
+                    ? Math.floor((Date.now() - ownershipDate.getTime()) / (365.25 * 86400000))
+                    : "";
+                  const lastSalePrice = getSaleAmount(p);
+                  return {
+                    firstName: first,
+                    lastName: last,
+                    phone: "", // populated when REAPI skip trace is re-enabled
+                    email: "",
+                    address: p.address?.line1 || p.address?.oneLine || "",
+                    city: p.address?.locality || "",
+                    state: p.address?.countrySubd || "",
+                    zip: p.address?.postal1 || "",
+                    mailingAddress: getMailingAddress(p) || "",
+                    propertyType: p.summary?.propType || p.summary?.propSubType || "",
+                    estValue: getPropertyValue(p) ?? "",
+                    lastSalePrice: lastSalePrice ?? "",
+                    lastSaleDate: getSaleDateStr(p) || "",
+                    yearsOwned,
+                    absentee: isAbsenteeOwner(p) ? "Yes" : "No",
+                    tag: tagByMode[mode] || "Prospect",
+                  };
+                });
+              }}
+            />
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
