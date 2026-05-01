@@ -1,4 +1,4 @@
-import { requireAdmin } from "@/lib/auth/admin-check";
+﻿import { requireAdmin } from "@/lib/auth/admin-check";
 import { supabaseServer } from "@/lib/supabase/server";
 import InvitationsClient from "./invitations.client";
 
@@ -31,7 +31,7 @@ export default async function InvitationsPage() {
     <div>
       <div style={{ marginBottom: 32 }}>
         <h1 style={{ fontSize: 32, fontWeight: 800, margin: 0 }}>User Invitations</h1>
-        <p style={{ color: "#6b7280", marginTop: 8 }}>Invite new agents to join Real Estate Genie</p>
+        <p style={{ color: "hsl(var(--muted-foreground))", marginTop: 8 }}>Invite new agents to join Real Estate Genie</p>
       </div>
 
       <InvitationsClient invitations={invitations} adminId={user.id} />

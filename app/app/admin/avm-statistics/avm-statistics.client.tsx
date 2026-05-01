@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect } from "react";
 
@@ -75,7 +75,7 @@ const fmt = (n: number) => "$" + n.toLocaleString();
 const card = {
   background: "white",
   borderRadius: 12,
-  border: "1px solid #e5e7eb",
+  border: "1px solid hsl(var(--border))",
   padding: 20,
   marginBottom: 16,
 };
@@ -106,7 +106,7 @@ export function AvmStatisticsDashboard() {
 
   if (loading)
     return (
-      <div style={{ textAlign: "center", padding: 60, color: "#6b7280" }}>Loading AVM statistics...</div>
+      <div style={{ textAlign: "center", padding: 60, color: "hsl(var(--muted-foreground))" }}>Loading AVM statistics...</div>
     );
   if (error) return <div style={{ color: "#dc2626", padding: 20 }}>Error: {error}</div>;
   if (!stats) return null;
@@ -120,25 +120,25 @@ export function AvmStatisticsDashboard() {
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 20 }}>
         <div style={statBox("#3b82f6")}>
           <div style={{ fontSize: 28, fontWeight: 800, color: "#3b82f6" }}>{stats.predictions.total}</div>
-          <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>Total Predictions</div>
+          <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 4 }}>Total Predictions</div>
         </div>
         <div style={statBox("#10b981")}>
           <div style={{ fontSize: 28, fontWeight: 800, color: "#10b981" }}>
             {la ? `${la.medianError}%` : "N/A"}
           </div>
-          <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>Median Error (vs List)</div>
+          <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 4 }}>Median Error (vs List)</div>
         </div>
         <div style={statBox("#8b5cf6")}>
           <div style={{ fontSize: 28, fontWeight: 800, color: "#8b5cf6" }}>
             {la ? `${Math.round((la.within20 / la.count) * 100)}%` : "N/A"}
           </div>
-          <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>Within 20% of List</div>
+          <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 4 }}>Within 20% of List</div>
         </div>
         <div style={statBox("#f59e0b")}>
           <div style={{ fontSize: 28, fontWeight: 800, color: "#f59e0b" }}>
             {stats.compCache.totalComps.toLocaleString()}
           </div>
-          <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>Cached Comps</div>
+          <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 4 }}>Cached Comps</div>
         </div>
       </div>
 
@@ -151,29 +151,29 @@ export function AvmStatisticsDashboard() {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 12 }}>
             <div style={statBox("#10b981")}>
               <div style={{ fontSize: 22, fontWeight: 700, color: "#10b981" }}>{la.medianError}%</div>
-              <div style={{ fontSize: 11, color: "#6b7280" }}>Median Error</div>
+              <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>Median Error</div>
             </div>
             <div style={statBox("#3b82f6")}>
               <div style={{ fontSize: 22, fontWeight: 700, color: "#3b82f6" }}>{la.meanError}%</div>
-              <div style={{ fontSize: 11, color: "#6b7280" }}>Mean Error</div>
+              <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>Mean Error</div>
             </div>
             <div style={statBox("#8b5cf6")}>
               <div style={{ fontSize: 22, fontWeight: 700, color: "#8b5cf6" }}>
                 {Math.round((la.within10 / la.count) * 100)}%
               </div>
-              <div style={{ fontSize: 11, color: "#6b7280" }}>Within 10%</div>
+              <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>Within 10%</div>
             </div>
             <div style={statBox("#f59e0b")}>
               <div style={{ fontSize: 22, fontWeight: 700, color: "#f59e0b" }}>
                 {Math.round((la.within15 / la.count) * 100)}%
               </div>
-              <div style={{ fontSize: 11, color: "#6b7280" }}>Within 15%</div>
+              <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>Within 15%</div>
             </div>
             <div style={statBox("#059669")}>
               <div style={{ fontSize: 22, fontWeight: 700, color: "#059669" }}>
                 {Math.round((la.within20 / la.count) * 100)}%
               </div>
-              <div style={{ fontSize: 11, color: "#6b7280" }}>Within 20%</div>
+              <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>Within 20%</div>
             </div>
           </div>
         </div>
@@ -188,23 +188,23 @@ export function AvmStatisticsDashboard() {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
             <div style={statBox("#dc2626")}>
               <div style={{ fontSize: 22, fontWeight: 700, color: "#dc2626" }}>{ca.medianError}%</div>
-              <div style={{ fontSize: 11, color: "#6b7280" }}>Median Error</div>
+              <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>Median Error</div>
             </div>
             <div style={statBox("#dc2626")}>
               <div style={{ fontSize: 22, fontWeight: 700, color: "#dc2626" }}>{ca.meanError}%</div>
-              <div style={{ fontSize: 11, color: "#6b7280" }}>Mean Error</div>
+              <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>Mean Error</div>
             </div>
             <div style={statBox("#dc2626")}>
               <div style={{ fontSize: 22, fontWeight: 700, color: "#dc2626" }}>
                 {Math.round((ca.within10 / ca.count) * 100)}%
               </div>
-              <div style={{ fontSize: 11, color: "#6b7280" }}>Within 10%</div>
+              <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>Within 10%</div>
             </div>
             <div style={statBox("#dc2626")}>
               <div style={{ fontSize: 22, fontWeight: 700, color: "#dc2626" }}>
                 {Math.round((ca.within20 / ca.count) * 100)}%
               </div>
-              <div style={{ fontSize: 11, color: "#6b7280" }}>Within 20%</div>
+              <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>Within 20%</div>
             </div>
           </div>
         </div>
@@ -255,7 +255,7 @@ export function AvmStatisticsDashboard() {
               ))}
               {stats.byZip.length === 0 && (
                 <tr>
-                  <td colSpan={5} style={{ padding: 16, textAlign: "center", color: "#9ca3af" }}>
+                  <td colSpan={5} style={{ padding: 16, textAlign: "center", color: "hsl(var(--muted-foreground))" }}>
                     No data yet
                   </td>
                 </tr>
@@ -300,7 +300,7 @@ export function AvmStatisticsDashboard() {
               ))}
               {stats.byType.length === 0 && (
                 <tr>
-                  <td colSpan={5} style={{ padding: 16, textAlign: "center", color: "#9ca3af" }}>
+                  <td colSpan={5} style={{ padding: 16, textAlign: "center", color: "hsl(var(--muted-foreground))" }}>
                     No data yet
                   </td>
                 </tr>
@@ -377,16 +377,16 @@ export function AvmStatisticsDashboard() {
               <div style={{ fontSize: 20, fontWeight: 700, color: "#3b82f6" }}>
                 {stats.compCache.totalComps.toLocaleString()}
               </div>
-              <div style={{ fontSize: 11, color: "#6b7280" }}>Total Cached</div>
+              <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>Total Cached</div>
             </div>
             <div style={statBox("#10b981")}>
               <div style={{ fontSize: 20, fontWeight: 700, color: "#10b981" }}>
                 {stats.compCache.byZip.length}
               </div>
-              <div style={{ fontSize: 11, color: "#6b7280" }}>ZIP Codes</div>
+              <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>ZIP Codes</div>
             </div>
           </div>
-          <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 8 }}>
+          <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginBottom: 8 }}>
             By source:{" "}
             {Object.entries(stats.compCache.bySource)
               .map(([src, count]) => `${src}: ${count.toLocaleString()}`)
@@ -466,7 +466,7 @@ export function AvmStatisticsDashboard() {
             ))}
             {stats.recentPredictions.length === 0 && (
               <tr>
-                <td colSpan={7} style={{ padding: 20, textAlign: "center", color: "#9ca3af" }}>
+                <td colSpan={7} style={{ padding: 20, textAlign: "center", color: "hsl(var(--muted-foreground))" }}>
                   No predictions tracked yet. View properties to start collecting data.
                 </td>
               </tr>

@@ -169,7 +169,7 @@ export default function AdminTrestleForm({ userId, storedConfig, isConnected }: 
           <select
             value={authMethod}
             onChange={(e) => setAuthMethod(e.target.value as "basic" | "oauth2")}
-            style={{ width: "100%", padding: "8px 12px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14 }}
+            style={{ width: "100%", padding: "8px 12px", border: "1px solid hsl(var(--border))", borderRadius: 6, fontSize: 14 }}
           >
             <option value="oauth2">OAuth2 Credentials (client_id + client_secret)</option>
             <option value="basic">Username & Password</option>
@@ -185,7 +185,7 @@ export default function AdminTrestleForm({ userId, storedConfig, isConnected }: 
             style={{
               width: "100%",
               padding: "8px 12px",
-              border: "1px solid #d1d5db",
+              border: "1px solid hsl(var(--border))",
               borderRadius: 6,
               fontSize: 14,
               boxSizing: "border-box",
@@ -205,7 +205,7 @@ export default function AdminTrestleForm({ userId, storedConfig, isConnected }: 
                 style={{
                   width: "100%",
                   padding: "8px 12px",
-                  border: "1px solid #d1d5db",
+                  border: "1px solid hsl(var(--border))",
                   borderRadius: 6,
                   fontSize: 14,
                   boxSizing: "border-box",
@@ -217,7 +217,7 @@ export default function AdminTrestleForm({ userId, storedConfig, isConnected }: 
               <label style={{ display: "block", fontWeight: 600, marginBottom: 4, fontSize: 14 }}>
                 Client Secret{" "}
                 {isConnected && (
-                  <span style={{ fontWeight: 400, color: "#6b7280" }}>(leave blank to keep current)</span>
+                  <span style={{ fontWeight: 400, color: "hsl(var(--muted-foreground))" }}>(leave blank to keep current)</span>
                 )}
               </label>
               <input
@@ -227,7 +227,7 @@ export default function AdminTrestleForm({ userId, storedConfig, isConnected }: 
                 style={{
                   width: "100%",
                   padding: "8px 12px",
-                  border: "1px solid #d1d5db",
+                  border: "1px solid hsl(var(--border))",
                   borderRadius: 6,
                   fontSize: 14,
                   boxSizing: "border-box",
@@ -247,7 +247,7 @@ export default function AdminTrestleForm({ userId, storedConfig, isConnected }: 
                 style={{
                   width: "100%",
                   padding: "8px 12px",
-                  border: "1px solid #d1d5db",
+                  border: "1px solid hsl(var(--border))",
                   borderRadius: 6,
                   fontSize: 14,
                   boxSizing: "border-box",
@@ -258,7 +258,7 @@ export default function AdminTrestleForm({ userId, storedConfig, isConnected }: 
               <label style={{ display: "block", fontWeight: 600, marginBottom: 4, fontSize: 14 }}>
                 Password{" "}
                 {isConnected && (
-                  <span style={{ fontWeight: 400, color: "#6b7280" }}>(leave blank to keep current)</span>
+                  <span style={{ fontWeight: 400, color: "hsl(var(--muted-foreground))" }}>(leave blank to keep current)</span>
                 )}
               </label>
               <input
@@ -268,7 +268,7 @@ export default function AdminTrestleForm({ userId, storedConfig, isConnected }: 
                 style={{
                   width: "100%",
                   padding: "8px 12px",
-                  border: "1px solid #d1d5db",
+                  border: "1px solid hsl(var(--border))",
                   borderRadius: 6,
                   fontSize: 14,
                   boxSizing: "border-box",

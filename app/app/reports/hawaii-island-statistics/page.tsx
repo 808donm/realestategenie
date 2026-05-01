@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import HawaiiIslandStatisticsClient from "./hawaii-island-statistics.client";
 
 export const metadata = { title: "Hawai'i Island Monthly Market Statistics" };
@@ -7,7 +7,7 @@ export default function HawaiiIslandStatisticsPage() {
   return (
     <div>
       <div style={{ marginBottom: 20 }}>
-        <Link href="/app/reports" style={{ fontSize: 13, color: "#6b7280", textDecoration: "none" }}>
+        <Link href="/app/reports" style={{ fontSize: 13, color: "hsl(var(--muted-foreground))", textDecoration: "none" }}>
           &larr; Back to Reports
         </Link>
       </div>

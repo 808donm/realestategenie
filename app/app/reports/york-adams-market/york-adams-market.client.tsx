@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useMemo } from "react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Cell } from "recharts";
@@ -12,15 +12,15 @@ const COLORS = { york: "#1e40af", adams: "#dc2626" };
 
 function StatCard({ label, value, change, sub }: { label: string; value: string; change?: number; sub?: string }) {
   return (
-    <div style={{ padding: "16px 20px", background: "#fff", borderRadius: 10, border: "1px solid #e5e7eb" }}>
-      <div style={{ fontSize: 11, fontWeight: 600, color: "#9ca3af", textTransform: "uppercase", letterSpacing: 0.5 }}>
+    <div style={{ padding: "16px 20px", background: "hsl(var(--card))", borderRadius: 10, border: "1px solid hsl(var(--border))" }}>
+      <div style={{ fontSize: 11, fontWeight: 600, color: "hsl(var(--muted-foreground))", textTransform: "uppercase", letterSpacing: 0.5 }}>
         {label}
       </div>
-      <div style={{ fontSize: 24, fontWeight: 800, color: "#111827", marginTop: 4 }}>{value}</div>
+      <div style={{ fontSize: 24, fontWeight: 800, color: "hsl(var(--foreground))", marginTop: 4 }}>{value}</div>
       {change != null && (
         <div style={{ fontSize: 13, fontWeight: 700, color: pctColor(change), marginTop: 2 }}>{pct(change)} YoY</div>
       )}
-      {sub && <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 2 }}>{sub}</div>}
+      {sub && <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", marginTop: 2 }}>{sub}</div>}
     </div>
   );
 }
@@ -68,7 +68,7 @@ export default function YorkAdamsMarketClient() {
           <select
             value={selectedMonth}
             onChange={(e) => setSelectedMonth(e.target.value)}
-            style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid #d1d5db", fontSize: 13 }}
+            style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid hsl(var(--border))", fontSize: 13 }}
           >
             {YORK_ADAMS_MONTHLY_DATA.map((m) => (
               <option key={m.month} value={m.month}>
@@ -82,7 +82,7 @@ export default function YorkAdamsMarketClient() {
       {/* Headline */}
       <div style={{ padding: 16, background: "#eff6ff", borderRadius: 10, border: "1px solid #bfdbfe" }}>
         <div style={{ fontSize: 14, fontWeight: 600, color: "#1e3a5f" }}>{data.headline}</div>
-        <ul style={{ margin: "8px 0 0 16px", padding: 0, fontSize: 12, color: "#374151" }}>
+        <ul style={{ margin: "8px 0 0 16px", padding: 0, fontSize: 12, color: "hsl(var(--foreground))" }}>
           {data.highlights.map((h, i) => (
             <li key={i} style={{ marginBottom: 3 }}>
               {h}
@@ -132,8 +132,8 @@ export default function YorkAdamsMarketClient() {
       </div>
 
       {/* York School District Median Prices */}
-      <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 16 }}>
-        <h3 style={{ fontSize: 14, fontWeight: 700, color: "#374151", marginBottom: 12 }}>
+      <div style={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 10, padding: 16 }}>
+        <h3 style={{ fontSize: 14, fontWeight: 700, color: "hsl(var(--foreground))", marginBottom: 12 }}>
           York County — Median Sale Price by School District
         </h3>
         <ResponsiveContainer width="100%" height={400}>
@@ -150,8 +150,8 @@ export default function YorkAdamsMarketClient() {
       </div>
 
       {/* York School District Sales Volume */}
-      <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 16 }}>
-        <h3 style={{ fontSize: 14, fontWeight: 700, color: "#374151", marginBottom: 12 }}>
+      <div style={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 10, padding: 16 }}>
+        <h3 style={{ fontSize: 14, fontWeight: 700, color: "hsl(var(--foreground))", marginBottom: 12 }}>
           York County — Homes Sold by School District
         </h3>
         <ResponsiveContainer width="100%" height={400}>
@@ -169,23 +169,23 @@ export default function YorkAdamsMarketClient() {
 
       {/* York School District Table */}
       <div
-        style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 16, overflowX: "auto" }}
+        style={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 10, padding: 16, overflowX: "auto" }}
       >
-        <h3 style={{ fontSize: 14, fontWeight: 700, color: "#374151", marginBottom: 12 }}>
+        <h3 style={{ fontSize: 14, fontWeight: 700, color: "hsl(var(--foreground))", marginBottom: 12 }}>
           York County — Statistics by School District
         </h3>
         <table style={{ width: "100%", fontSize: 12, borderCollapse: "collapse" }}>
           <thead>
             <tr style={{ borderBottom: "2px solid #e5e7eb" }}>
-              <th style={{ textAlign: "left", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>
+              <th style={{ textAlign: "left", padding: "6px 8px", color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>
                 School District
               </th>
-              <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280" }}>2026 Median</th>
-              <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280" }}>2025 Median</th>
-              <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280" }}>% Change</th>
-              <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280" }}>2026 Sold</th>
-              <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280" }}>2025 Sold</th>
-              <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280" }}>% Change</th>
+              <th style={{ textAlign: "right", padding: "6px 8px", color: "hsl(var(--muted-foreground))" }}>2026 Median</th>
+              <th style={{ textAlign: "right", padding: "6px 8px", color: "hsl(var(--muted-foreground))" }}>2025 Median</th>
+              <th style={{ textAlign: "right", padding: "6px 8px", color: "hsl(var(--muted-foreground))" }}>% Change</th>
+              <th style={{ textAlign: "right", padding: "6px 8px", color: "hsl(var(--muted-foreground))" }}>2026 Sold</th>
+              <th style={{ textAlign: "right", padding: "6px 8px", color: "hsl(var(--muted-foreground))" }}>2025 Sold</th>
+              <th style={{ textAlign: "right", padding: "6px 8px", color: "hsl(var(--muted-foreground))" }}>% Change</th>
             </tr>
           </thead>
           <tbody>
@@ -196,14 +196,14 @@ export default function YorkAdamsMarketClient() {
               >
                 <td style={{ padding: "6px 8px", fontWeight: 600 }}>{d.name}</td>
                 <td style={{ padding: "6px 8px", textAlign: "right" }}>{fmt(d.medianPrice2026)}</td>
-                <td style={{ padding: "6px 8px", textAlign: "right", color: "#6b7280" }}>{fmt(d.medianPrice2025)}</td>
+                <td style={{ padding: "6px 8px", textAlign: "right", color: "hsl(var(--muted-foreground))" }}>{fmt(d.medianPrice2025)}</td>
                 <td
                   style={{ padding: "6px 8px", textAlign: "right", fontWeight: 700, color: pctColor(d.priceChangeYoY) }}
                 >
                   {pct(d.priceChangeYoY)}
                 </td>
                 <td style={{ padding: "6px 8px", textAlign: "right" }}>{d.sold2026}</td>
-                <td style={{ padding: "6px 8px", textAlign: "right", color: "#6b7280" }}>{d.sold2025}</td>
+                <td style={{ padding: "6px 8px", textAlign: "right", color: "hsl(var(--muted-foreground))" }}>{d.sold2025}</td>
                 <td
                   style={{ padding: "6px 8px", textAlign: "right", fontWeight: 700, color: pctColor(d.salesChangeYoY) }}
                 >
@@ -214,14 +214,14 @@ export default function YorkAdamsMarketClient() {
             <tr style={{ borderTop: "2px solid #1e40af", fontWeight: 800 }}>
               <td style={{ padding: "6px 8px" }}>Total York County</td>
               <td style={{ padding: "6px 8px", textAlign: "right" }}>{fmt(york.medianSoldPrice)}</td>
-              <td style={{ padding: "6px 8px", textAlign: "right", color: "#6b7280" }}>
+              <td style={{ padding: "6px 8px", textAlign: "right", color: "hsl(var(--muted-foreground))" }}>
                 {fmt(york.medianSoldPricePrevYear)}
               </td>
               <td style={{ padding: "6px 8px", textAlign: "right", color: pctColor(york.priceChangeYoY) }}>
                 {pct(york.priceChangeYoY)}
               </td>
               <td style={{ padding: "6px 8px", textAlign: "right" }}>{york.homesSold}</td>
-              <td style={{ padding: "6px 8px", textAlign: "right", color: "#6b7280" }}>{york.homesSoldPrevYear}</td>
+              <td style={{ padding: "6px 8px", textAlign: "right", color: "hsl(var(--muted-foreground))" }}>{york.homesSoldPrevYear}</td>
               <td style={{ padding: "6px 8px", textAlign: "right", color: pctColor(york.salesChangeYoY) }}>
                 {pct(york.salesChangeYoY)}
               </td>
@@ -271,8 +271,8 @@ export default function YorkAdamsMarketClient() {
       </div>
 
       {/* Adams School District Prices */}
-      <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 16 }}>
-        <h3 style={{ fontSize: 14, fontWeight: 700, color: "#374151", marginBottom: 12 }}>
+      <div style={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 10, padding: 16 }}>
+        <h3 style={{ fontSize: 14, fontWeight: 700, color: "hsl(var(--foreground))", marginBottom: 12 }}>
           Adams County — Median Sale Price by School District
         </h3>
         <ResponsiveContainer width="100%" height={250}>
@@ -290,23 +290,23 @@ export default function YorkAdamsMarketClient() {
 
       {/* Adams School District Table */}
       <div
-        style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 16, overflowX: "auto" }}
+        style={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 10, padding: 16, overflowX: "auto" }}
       >
-        <h3 style={{ fontSize: 14, fontWeight: 700, color: "#374151", marginBottom: 12 }}>
+        <h3 style={{ fontSize: 14, fontWeight: 700, color: "hsl(var(--foreground))", marginBottom: 12 }}>
           Adams County — Statistics by School District
         </h3>
         <table style={{ width: "100%", fontSize: 12, borderCollapse: "collapse" }}>
           <thead>
             <tr style={{ borderBottom: "2px solid #e5e7eb" }}>
-              <th style={{ textAlign: "left", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>
+              <th style={{ textAlign: "left", padding: "6px 8px", color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>
                 School District
               </th>
-              <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280" }}>2026 Median</th>
-              <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280" }}>2025 Median</th>
-              <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280" }}>% Change</th>
-              <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280" }}>2026 Sold</th>
-              <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280" }}>2025 Sold</th>
-              <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280" }}>% Change</th>
+              <th style={{ textAlign: "right", padding: "6px 8px", color: "hsl(var(--muted-foreground))" }}>2026 Median</th>
+              <th style={{ textAlign: "right", padding: "6px 8px", color: "hsl(var(--muted-foreground))" }}>2025 Median</th>
+              <th style={{ textAlign: "right", padding: "6px 8px", color: "hsl(var(--muted-foreground))" }}>% Change</th>
+              <th style={{ textAlign: "right", padding: "6px 8px", color: "hsl(var(--muted-foreground))" }}>2026 Sold</th>
+              <th style={{ textAlign: "right", padding: "6px 8px", color: "hsl(var(--muted-foreground))" }}>2025 Sold</th>
+              <th style={{ textAlign: "right", padding: "6px 8px", color: "hsl(var(--muted-foreground))" }}>% Change</th>
             </tr>
           </thead>
           <tbody>
@@ -317,14 +317,14 @@ export default function YorkAdamsMarketClient() {
               >
                 <td style={{ padding: "6px 8px", fontWeight: 600 }}>{d.name}</td>
                 <td style={{ padding: "6px 8px", textAlign: "right" }}>{fmt(d.medianPrice2026)}</td>
-                <td style={{ padding: "6px 8px", textAlign: "right", color: "#6b7280" }}>{fmt(d.medianPrice2025)}</td>
+                <td style={{ padding: "6px 8px", textAlign: "right", color: "hsl(var(--muted-foreground))" }}>{fmt(d.medianPrice2025)}</td>
                 <td
                   style={{ padding: "6px 8px", textAlign: "right", fontWeight: 700, color: pctColor(d.priceChangeYoY) }}
                 >
                   {pct(d.priceChangeYoY)}
                 </td>
                 <td style={{ padding: "6px 8px", textAlign: "right" }}>{d.sold2026}</td>
-                <td style={{ padding: "6px 8px", textAlign: "right", color: "#6b7280" }}>{d.sold2025}</td>
+                <td style={{ padding: "6px 8px", textAlign: "right", color: "hsl(var(--muted-foreground))" }}>{d.sold2025}</td>
                 <td
                   style={{ padding: "6px 8px", textAlign: "right", fontWeight: 700, color: pctColor(d.salesChangeYoY) }}
                 >
@@ -335,14 +335,14 @@ export default function YorkAdamsMarketClient() {
             <tr style={{ borderTop: "2px solid #dc2626", fontWeight: 800 }}>
               <td style={{ padding: "6px 8px" }}>Total Adams County</td>
               <td style={{ padding: "6px 8px", textAlign: "right" }}>{fmt(adams.medianSoldPrice)}</td>
-              <td style={{ padding: "6px 8px", textAlign: "right", color: "#6b7280" }}>
+              <td style={{ padding: "6px 8px", textAlign: "right", color: "hsl(var(--muted-foreground))" }}>
                 {fmt(adams.medianSoldPricePrevYear)}
               </td>
               <td style={{ padding: "6px 8px", textAlign: "right", color: pctColor(adams.priceChangeYoY) }}>
                 {pct(adams.priceChangeYoY)}
               </td>
               <td style={{ padding: "6px 8px", textAlign: "right" }}>{adams.homesSold}</td>
-              <td style={{ padding: "6px 8px", textAlign: "right", color: "#6b7280" }}>{adams.homesSoldPrevYear}</td>
+              <td style={{ padding: "6px 8px", textAlign: "right", color: "hsl(var(--muted-foreground))" }}>{adams.homesSoldPrevYear}</td>
               <td style={{ padding: "6px 8px", textAlign: "right", color: pctColor(adams.salesChangeYoY) }}>
                 {pct(adams.salesChangeYoY)}
               </td>
@@ -356,7 +356,7 @@ export default function YorkAdamsMarketClient() {
         style={{
           fontSize: 20,
           fontWeight: 800,
-          color: "#374151",
+          color: "hsl(var(--foreground))",
           margin: "10px 0 0 0",
           borderBottom: "3px solid #374151",
           paddingBottom: 6,
@@ -365,8 +365,8 @@ export default function YorkAdamsMarketClient() {
         County Comparison
       </h2>
 
-      <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 16 }}>
-        <h3 style={{ fontSize: 14, fontWeight: 700, color: "#374151", marginBottom: 12 }}>
+      <div style={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 10, padding: 16 }}>
+        <h3 style={{ fontSize: 14, fontWeight: 700, color: "hsl(var(--foreground))", marginBottom: 12 }}>
           York vs Adams — Key Metrics
         </h3>
         <ResponsiveContainer width="100%" height={300}>
@@ -383,7 +383,7 @@ export default function YorkAdamsMarketClient() {
       </div>
 
       {/* Source */}
-      <div style={{ fontSize: 11, color: "#9ca3af", textAlign: "center", padding: 8 }}>
+      <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", textAlign: "center", padding: 8 }}>
         Data source: RAYAC (REALTORS Association of York &amp; Adams Counties) &bull; Bright MLS &bull; {data.label}
       </div>
     </div>

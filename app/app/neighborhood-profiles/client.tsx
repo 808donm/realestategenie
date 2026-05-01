@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState, lazy, Suspense } from "react";
 import { Button } from "@/components/ui/button";
@@ -236,7 +236,7 @@ export default function NeighborhoodProfilesClient() {
             left: 0,
             right: 0,
             bottom: 0,
-            background: "#fff",
+            background: "hsl(var(--card))",
             zIndex: 2000,
             overflowY: "auto",
           }}
@@ -247,7 +247,7 @@ export default function NeighborhoodProfilesClient() {
               position: "sticky",
               top: 0,
               zIndex: 2001,
-              background: "#fff",
+              background: "hsl(var(--card))",
               borderBottom: "1px solid #e5e7eb",
               padding: "8px 16px",
               display: "flex",
@@ -255,13 +255,13 @@ export default function NeighborhoodProfilesClient() {
               alignItems: "center",
             }}
           >
-            <span style={{ fontSize: 13, fontWeight: 600, color: "#374151" }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: "hsl(var(--foreground))" }}>
               Neighborhood Report: {viewingReportProfile.neighborhood_name}
             </span>
             <div style={{ display: "flex", gap: 8 }}>
               <button
                 onClick={() => window.print()}
-                style={{ padding: "5px 12px", fontSize: 12, fontWeight: 600, borderRadius: 6, border: "1px solid #d1d5db", background: "#fff", color: "#374151", cursor: "pointer" }}
+                style={{ padding: "5px 12px", fontSize: 12, fontWeight: 600, borderRadius: 6, border: "1px solid hsl(var(--border))", background: "hsl(var(--card))", color: "hsl(var(--foreground))", cursor: "pointer" }}
               >
                 Print
               </button>
@@ -273,7 +273,7 @@ export default function NeighborhoodProfilesClient() {
               </button>
               <button
                 onClick={() => { setViewingReportProfile(null); setReportEnrichedData(null); }}
-                style={{ padding: "5px 12px", fontSize: 12, fontWeight: 600, borderRadius: 6, border: "1px solid #d1d5db", background: "#fff", color: "#374151", cursor: "pointer" }}
+                style={{ padding: "5px 12px", fontSize: 12, fontWeight: 600, borderRadius: 6, border: "1px solid hsl(var(--border))", background: "hsl(var(--card))", color: "hsl(var(--foreground))", cursor: "pointer" }}
               >
                 Close
               </button>
@@ -281,9 +281,9 @@ export default function NeighborhoodProfilesClient() {
           </div>
 
           {reportLoading ? (
-            <div style={{ padding: 60, textAlign: "center", color: "#6b7280" }}>Loading report data...</div>
+            <div style={{ padding: 60, textAlign: "center", color: "hsl(var(--muted-foreground))" }}>Loading report data...</div>
           ) : (
-            <Suspense fallback={<div style={{ padding: 40, textAlign: "center", color: "#6b7280" }}>Loading report...</div>}>
+            <Suspense fallback={<div style={{ padding: 40, textAlign: "center", color: "hsl(var(--muted-foreground))" }}>Loading report...</div>}>
               <NeighborhoodReportView
                 data={{
                   neighborhoodName: viewingReportProfile.neighborhood_name,

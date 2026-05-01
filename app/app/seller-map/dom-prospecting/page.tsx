@@ -1,4 +1,4 @@
-import { redirect } from "next/navigation";
+﻿import { redirect } from "next/navigation";
 import { supabaseServer } from "@/lib/supabase/server";
 import { DomProspectingClient } from "./dom-prospecting.client";
 
@@ -29,12 +29,12 @@ export default async function DomProspectingPage() {
           href="/app/seller-map"
           style={{
             padding: "6px 14px",
-            background: "#f3f4f6",
+            background: "hsl(var(--muted))",
             borderRadius: 6,
             fontSize: 13,
             fontWeight: 500,
             textDecoration: "none",
-            color: "#374151",
+            color: "hsl(var(--foreground))",
           }}
         >
           Seller Map

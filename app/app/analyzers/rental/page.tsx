@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import RentalCalculatorClient from "./rental-calculator.client";
 
 export default function RentalCalculatorPage() {
@@ -13,7 +13,7 @@ export default function RentalCalculatorPage() {
             href="/app/analyzers/investment"
             style={{
               padding: "6px 12px",
-              background: "#f3f4f6",
+              background: "hsl(var(--muted))",
               borderRadius: 6,
               fontSize: 13,
               textDecoration: "none",
@@ -26,7 +26,7 @@ export default function RentalCalculatorPage() {
             href="/app/analyzers/brrr"
             style={{
               padding: "6px 12px",
-              background: "#f3f4f6",
+              background: "hsl(var(--muted))",
               borderRadius: 6,
               fontSize: 13,
               textDecoration: "none",
@@ -39,7 +39,7 @@ export default function RentalCalculatorPage() {
             href="/app/analyzers/mortgage"
             style={{
               padding: "6px 12px",
-              background: "#f3f4f6",
+              background: "hsl(var(--muted))",
               borderRadius: 6,
               fontSize: 13,
               textDecoration: "none",

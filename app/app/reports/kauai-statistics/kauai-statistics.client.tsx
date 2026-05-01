@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useMemo } from "react";
 import jsPDF from "jspdf";
@@ -179,8 +179,8 @@ export default function KauaiStatisticsClient() {
 
   const cardStyle: React.CSSProperties = {
     padding: 20,
-    background: "#fff",
-    border: "1px solid #e5e7eb",
+    background: "hsl(var(--card))",
+    border: "1px solid hsl(var(--border))",
     borderRadius: 12,
   };
 
@@ -237,10 +237,10 @@ export default function KauaiStatisticsClient() {
             padding: "6px 14px",
             fontSize: 12,
             fontWeight: 600,
-            border: "1px solid #d1d5db",
+            border: "1px solid hsl(var(--border))",
             borderRadius: 6,
-            background: "#fff",
-            color: "#374151",
+            background: "hsl(var(--card))",
+            color: "hsl(var(--foreground))",
             cursor: "pointer",
           }}
         >
@@ -273,21 +273,21 @@ export default function KauaiStatisticsClient() {
         }}
       >
         <div style={{ ...cardStyle, borderLeft: `4px solid ${COLORS.sf}` }}>
-          <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 600 }}>SF Median Price</div>
+          <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>SF Median Price</div>
           <div style={{ fontSize: 26, fontWeight: 800 }}>{fmt(sf.medianPrice)}</div>
           <div style={{ fontSize: 13, color: "#059669", fontWeight: 600 }}>
             {sf.dom} days on market ({sf.domDirection === "up" ? "rising" : "falling"})
           </div>
         </div>
         <div style={{ ...cardStyle, borderLeft: `4px solid ${COLORS.condo}` }}>
-          <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 600 }}>Condo Median Price</div>
+          <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>Condo Median Price</div>
           <div style={{ fontSize: 26, fontWeight: 800 }}>{fmt(cd.medianPrice)}</div>
           <div style={{ fontSize: 13, color: "#059669", fontWeight: 600 }}>
             {cd.dom} days on market ({cd.domDirection === "up" ? "rising" : "falling"})
           </div>
         </div>
         <div style={{ ...cardStyle, borderLeft: `4px solid ${COLORS.land}` }}>
-          <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 600 }}>Land Median Price</div>
+          <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>Land Median Price</div>
           <div style={{ fontSize: 26, fontWeight: 800 }}>{fmt(ld.medianPrice)}</div>
           <div style={{ fontSize: 13, color: "#059669", fontWeight: 600 }}>
             {ld.dom} days on market ({ld.domDirection === "up" ? "rising" : "falling"})
@@ -305,25 +305,25 @@ export default function KauaiStatisticsClient() {
         }}
       >
         <div style={{ ...cardStyle, borderLeft: `4px solid ${COLORS.amber}` }}>
-          <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 600 }}>Total Sold Listings</div>
+          <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>Total Sold Listings</div>
           <div style={{ fontSize: 26, fontWeight: 800 }}>{sf.soldListings + cd.soldListings + ld.soldListings}</div>
-          <div style={{ fontSize: 12, color: "#6b7280" }}>
+          <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>
             SF: {sf.soldListings} | Condo: {cd.soldListings} | Land: {ld.soldListings}
           </div>
         </div>
         <div style={{ ...cardStyle, borderLeft: `4px solid ${COLORS.green}` }}>
-          <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 600 }}>Total New Listings</div>
+          <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>Total New Listings</div>
           <div style={{ fontSize: 26, fontWeight: 800 }}>{sf.newListings + cd.newListings + ld.newListings}</div>
-          <div style={{ fontSize: 12, color: "#6b7280" }}>
+          <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>
             SF: {sf.newListings} | Condo: {cd.newListings} | Land: {ld.newListings}
           </div>
         </div>
         <div style={{ ...cardStyle, borderLeft: "4px solid #6366f1" }}>
-          <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 600 }}>Total Active Listings</div>
+          <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>Total Active Listings</div>
           <div style={{ fontSize: 26, fontWeight: 800 }}>
             {sf.activeListings + cd.activeListings + ld.activeListings}
           </div>
-          <div style={{ fontSize: 12, color: "#6b7280" }}>
+          <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>
             SF: {sf.activeListings} | Condo: {cd.activeListings} | Land: {ld.activeListings}
           </div>
         </div>
@@ -332,7 +332,7 @@ export default function KauaiStatisticsClient() {
       {/* Market Highlights */}
       <div style={{ ...cardStyle, marginBottom: 24 }}>
         <h3 style={{ margin: "0 0 16px 0", fontSize: 16, fontWeight: 700 }}>Market Highlights</h3>
-        <ul style={{ margin: 0, padding: "0 0 0 20px", fontSize: 14, lineHeight: 2, color: "#374151" }}>
+        <ul style={{ margin: 0, padding: "0 0 0 20px", fontSize: 14, lineHeight: 2, color: "hsl(var(--foreground))" }}>
           {data.highlights.map((h, i) => (
             <li key={i}>{h}</li>
           ))}
@@ -547,7 +547,7 @@ export default function KauaiStatisticsClient() {
               <Tooltip />
             </PieChart>
           </ResponsiveContainer>
-          <div style={{ textAlign: "center", fontSize: 13, color: "#6b7280" }}>
+          <div style={{ textAlign: "center", fontSize: 13, color: "hsl(var(--muted-foreground))" }}>
             Total: {sf.activeListings + cd.activeListings + ld.activeListings} active listings
           </div>
         </div>
@@ -559,7 +559,7 @@ export default function KauaiStatisticsClient() {
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
           <thead>
             <tr style={{ borderBottom: "2px solid #e5e7eb" }}>
-              <th style={{ padding: "10px 12px", textAlign: "left", fontWeight: 700, fontSize: 12, color: "#6b7280" }}>
+              <th style={{ padding: "10px 12px", textAlign: "left", fontWeight: 700, fontSize: 12, color: "hsl(var(--muted-foreground))" }}>
                 Metric
               </th>
               <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 700, fontSize: 12, color: COLORS.sf }}>
@@ -662,7 +662,7 @@ export default function KauaiStatisticsClient() {
       </div>
 
       {/* Source */}
-      <div style={{ fontSize: 12, color: "#9ca3af", textAlign: "center", padding: "12px 0" }}>
+      <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", textAlign: "center", padding: "12px 0" }}>
         Source: Hawaii Information Service &middot; Information is deemed reliable but not guaranteed
       </div>
     </div>

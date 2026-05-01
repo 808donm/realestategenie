@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useRef, useEffect } from "react";
 
@@ -31,10 +31,10 @@ export default function PageHelp({ title, description, tips }: PageHelpProps) {
           padding: "4px 10px",
           fontSize: 12,
           fontWeight: 600,
-          border: "1px solid #d1d5db",
+          border: "1px solid hsl(var(--border))",
           borderRadius: 6,
           background: isOpen ? "#f3f4f6" : "#fff",
-          color: "#6b7280",
+          color: "hsl(var(--muted-foreground))",
           cursor: "pointer",
           display: "flex",
           alignItems: "center",
@@ -51,19 +51,19 @@ export default function PageHelp({ title, description, tips }: PageHelpProps) {
             right: 0,
             width: 320,
             padding: 16,
-            background: "#fff",
-            border: "1px solid #e5e7eb",
+            background: "hsl(var(--card))",
+            border: "1px solid hsl(var(--border))",
             borderRadius: 10,
             boxShadow: "0 4px 16px rgba(0,0,0,0.1)",
             zIndex: 40,
             fontSize: 13,
           }}
         >
-          <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 8, color: "#111827" }}>{title}</div>
+          <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 8, color: "hsl(var(--foreground))" }}>{title}</div>
           <p style={{ color: "#4b5563", lineHeight: 1.6, margin: "0 0 12px" }}>{description}</p>
           {tips && tips.length > 0 && (
             <>
-              <div style={{ fontWeight: 600, fontSize: 12, color: "#6b7280", marginBottom: 6 }}>Tips:</div>
+              <div style={{ fontWeight: 600, fontSize: 12, color: "hsl(var(--muted-foreground))", marginBottom: 6 }}>Tips:</div>
               <ul style={{ margin: 0, paddingLeft: 16 }}>
                 {tips.map((tip, i) => (
                   <li key={i} style={{ color: "#4b5563", lineHeight: 1.6, marginBottom: 4, fontSize: 12 }}>

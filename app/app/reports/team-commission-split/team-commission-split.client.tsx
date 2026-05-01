@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useMemo, useEffect, useCallback } from "react";
 import Link from "next/link";
@@ -299,9 +299,9 @@ export default function TeamCommissionSplitClient() {
             onClick={exportToExcel}
             style={{
               padding: "8px 20px",
-              background: "#fff",
-              color: "#374151",
-              border: "1px solid #d1d5db",
+              background: "hsl(var(--card))",
+              color: "hsl(var(--foreground))",
+              border: "1px solid hsl(var(--border))",
               borderRadius: 8,
               fontWeight: 600,
               cursor: "pointer",
@@ -317,50 +317,50 @@ export default function TeamCommissionSplitClient() {
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, marginBottom: 24 }}>
         <div
           style={{
-            background: "#fff",
-            border: "1px solid #e5e7eb",
+            background: "hsl(var(--card))",
+            border: "1px solid hsl(var(--border))",
             borderRadius: 10,
             padding: 16,
             borderTop: "3px solid #8b5cf6",
           }}
         >
-          <div style={{ fontSize: 11, fontWeight: 600, color: "#6b7280", marginBottom: 4 }}>Total Commission</div>
+          <div style={{ fontSize: 11, fontWeight: 600, color: "hsl(var(--muted-foreground))", marginBottom: 4 }}>Total Commission</div>
           <div style={{ fontSize: 20, fontWeight: 800 }}>{fmt.format(totals.totalComm)}</div>
         </div>
         <div
           style={{
-            background: "#fff",
-            border: "1px solid #e5e7eb",
+            background: "hsl(var(--card))",
+            border: "1px solid hsl(var(--border))",
             borderRadius: 10,
             padding: 16,
             borderTop: "3px solid #10b981",
           }}
         >
-          <div style={{ fontSize: 11, fontWeight: 600, color: "#6b7280", marginBottom: 4 }}>Agent Portion</div>
+          <div style={{ fontSize: 11, fontWeight: 600, color: "hsl(var(--muted-foreground))", marginBottom: 4 }}>Agent Portion</div>
           <div style={{ fontSize: 20, fontWeight: 800, color: "#059669" }}>{fmt.format(totals.totalAgent)}</div>
         </div>
         <div
           style={{
-            background: "#fff",
-            border: "1px solid #e5e7eb",
+            background: "hsl(var(--card))",
+            border: "1px solid hsl(var(--border))",
             borderRadius: 10,
             padding: 16,
             borderTop: "3px solid #3b82f6",
           }}
         >
-          <div style={{ fontSize: 11, fontWeight: 600, color: "#6b7280", marginBottom: 4 }}>House Portion</div>
+          <div style={{ fontSize: 11, fontWeight: 600, color: "hsl(var(--muted-foreground))", marginBottom: 4 }}>House Portion</div>
           <div style={{ fontSize: 20, fontWeight: 800, color: "#2563eb" }}>{fmt.format(totals.totalHouse)}</div>
         </div>
         <div
           style={{
-            background: "#fff",
-            border: "1px solid #e5e7eb",
+            background: "hsl(var(--card))",
+            border: "1px solid hsl(var(--border))",
             borderRadius: 10,
             padding: 16,
             borderTop: "3px solid #f59e0b",
           }}
         >
-          <div style={{ fontSize: 11, fontWeight: 600, color: "#6b7280", marginBottom: 4 }}>House %</div>
+          <div style={{ fontSize: 11, fontWeight: 600, color: "hsl(var(--muted-foreground))", marginBottom: 4 }}>House %</div>
           <div style={{ fontSize: 20, fontWeight: 800, color: "#d97706" }}>{totals.housePct.toFixed(1)}%</div>
         </div>
       </div>
@@ -368,7 +368,7 @@ export default function TeamCommissionSplitClient() {
       {/* Commission Split Charts */}
       <div style={{ display: "flex", gap: 16, marginBottom: 20, flexWrap: "wrap" }}>
         <div
-          style={{ flex: "1 1 280px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 20 }}
+          style={{ flex: "1 1 280px", background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 10, padding: 20 }}
         >
           <h3 style={{ margin: "0 0 12px 0", fontSize: 15, fontWeight: 700 }}>Agent vs House Split</h3>
           {(() => {
@@ -400,7 +400,7 @@ export default function TeamCommissionSplitClient() {
           })()}
         </div>
         <div
-          style={{ flex: "2 1 400px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 20 }}
+          style={{ flex: "2 1 400px", background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 10, padding: 20 }}
         >
           <h3 style={{ margin: "0 0 12px 0", fontSize: 15, fontWeight: 700 }}>Commission by Deal</h3>
           <ResponsiveContainer width="100%" height={220}>
@@ -447,7 +447,7 @@ export default function TeamCommissionSplitClient() {
       )}
 
       {/* Deals Table */}
-      <div style={{ overflowX: "auto", background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10 }}>
+      <div style={{ overflowX: "auto", background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 10 }}>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr>
@@ -535,7 +535,7 @@ export default function TeamCommissionSplitClient() {
               <tr key={deal.propertyAddress} style={{ background: i % 2 === 0 ? "#fff" : "#fafafa" }}>
                 <td style={{ padding: "10px 12px", fontSize: 13, borderBottom: "1px solid #f3f4f6" }}>
                   <strong>{deal.propertyAddress}</strong>
-                  <div style={{ fontSize: 11, color: "#9ca3af" }}>{deal.closeDate}</div>
+                  <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>{deal.closeDate}</div>
                 </td>
                 <td
                   style={{ padding: "10px 12px", textAlign: "right", fontSize: 13, borderBottom: "1px solid #f3f4f6" }}
@@ -589,7 +589,7 @@ export default function TeamCommissionSplitClient() {
             ))}
           </tbody>
           <tfoot>
-            <tr style={{ background: "#f9fafb", fontWeight: 700 }}>
+            <tr style={{ background: "hsl(var(--muted))", fontWeight: 700 }}>
               <td style={{ padding: "12px 12px", fontSize: 13, borderTop: "2px solid #e5e7eb" }}>
                 Totals ({data.length} deals)
               </td>

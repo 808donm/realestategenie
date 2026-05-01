@@ -271,8 +271,8 @@ export default function PropertyDetailsForm({ eventId, initialData }: PropertyDe
                 fontWeight: 600,
                 borderRadius: 6,
                 cursor: "pointer",
-                background: mlsSearchMode === "mlsNumber" ? "#3b82f6" : "#f3f4f6",
-                color: mlsSearchMode === "mlsNumber" ? "#fff" : "#374151",
+                background: mlsSearchMode === "mlsNumber" ? "#3b82f6" : "hsl(var(--muted))",
+                color: mlsSearchMode === "mlsNumber" ? "#fff" : "hsl(var(--foreground))",
                 border: "none",
               }}
             >
@@ -291,8 +291,8 @@ export default function PropertyDetailsForm({ eventId, initialData }: PropertyDe
                 fontWeight: 600,
                 borderRadius: 6,
                 cursor: "pointer",
-                background: mlsSearchMode === "address" ? "#3b82f6" : "#f3f4f6",
-                color: mlsSearchMode === "address" ? "#fff" : "#374151",
+                background: mlsSearchMode === "address" ? "#3b82f6" : "hsl(var(--muted))",
+                color: mlsSearchMode === "address" ? "#fff" : "hsl(var(--foreground))",
                 border: "none",
               }}
             >
@@ -332,7 +332,7 @@ export default function PropertyDetailsForm({ eventId, initialData }: PropertyDe
           {mlsCandidates.length > 0 && (
             <div style={{ border: "1px solid #e5e7eb", borderRadius: 8, overflow: "hidden" }}>
               <div
-                style={{ padding: "8px 12px", background: "#f9fafb", fontSize: 12, color: "#6b7280", fontWeight: 600 }}
+                style={{ padding: "8px 12px", background: "hsl(var(--muted))", fontSize: 12, color: "hsl(var(--muted-foreground))", fontWeight: 600 }}
               >
                 {mlsCandidates.length} matches — select one:
               </div>
@@ -346,7 +346,7 @@ export default function PropertyDetailsForm({ eventId, initialData }: PropertyDe
                     width: "100%",
                     textAlign: "left",
                     padding: "10px 12px",
-                    background: "#fff",
+                    background: "hsl(var(--card))",
                     border: "none",
                     borderTop: "1px solid #f3f4f6",
                     cursor: "pointer",
@@ -354,12 +354,12 @@ export default function PropertyDetailsForm({ eventId, initialData }: PropertyDe
                   }}
                 >
                   <span style={{ fontWeight: 600 }}>{c.address}</span>
-                  {c.listingId && <span style={{ color: "#6b7280", marginLeft: 8 }}>MLS# {c.listingId}</span>}
+                  {c.listingId && <span style={{ color: "hsl(var(--muted-foreground))", marginLeft: 8 }}>MLS# {c.listingId}</span>}
                   {c.price && (
                     <span style={{ color: "#059669", marginLeft: 8 }}>${Number(c.price).toLocaleString()}</span>
                   )}
-                  {c.beds && <span style={{ color: "#6b7280", marginLeft: 8 }}>{c.beds}bd</span>}
-                  {c.baths && <span style={{ color: "#6b7280", marginLeft: 4 }}>{c.baths}ba</span>}
+                  {c.beds && <span style={{ color: "hsl(var(--muted-foreground))", marginLeft: 8 }}>{c.beds}bd</span>}
+                  {c.baths && <span style={{ color: "hsl(var(--muted-foreground))", marginLeft: 4 }}>{c.baths}ba</span>}
                 </button>
               ))}
             </div>

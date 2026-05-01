@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useMemo, useEffect, useCallback } from "react";
 import Link from "next/link";
@@ -322,9 +322,9 @@ export default function AgentLeaderboardClient() {
             onClick={exportToExcel}
             style={{
               padding: "8px 20px",
-              background: "#fff",
-              color: "#374151",
-              border: "1px solid #d1d5db",
+              background: "hsl(var(--card))",
+              color: "hsl(var(--foreground))",
+              border: "1px solid hsl(var(--border))",
               borderRadius: 8,
               fontWeight: 600,
               cursor: "pointer",
@@ -340,47 +340,47 @@ export default function AgentLeaderboardClient() {
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, marginBottom: 24 }}>
         <div
           style={{
-            background: "#fff",
-            border: "1px solid #e5e7eb",
+            background: "hsl(var(--card))",
+            border: "1px solid hsl(var(--border))",
             borderRadius: 10,
             padding: 18,
             borderLeft: "4px solid #10b981",
           }}
         >
-          <div style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", marginBottom: 4 }}>Top Producer</div>
+          <div style={{ fontSize: 12, fontWeight: 600, color: "hsl(var(--muted-foreground))", marginBottom: 4 }}>Top Producer</div>
           <div style={{ fontSize: 18, fontWeight: 800 }}>{topProducer.name}</div>
-          <div style={{ fontSize: 13, color: "#6b7280", marginTop: 2 }}>
+          <div style={{ fontSize: 13, color: "hsl(var(--muted-foreground))", marginTop: 2 }}>
             {topProducer.closings} closings -- {fmt.format(topProducer.totalVolume)} volume
           </div>
         </div>
         <div
           style={{
-            background: "#fff",
-            border: "1px solid #e5e7eb",
+            background: "hsl(var(--card))",
+            border: "1px solid hsl(var(--border))",
             borderRadius: 10,
             padding: 18,
             borderLeft: "4px solid #3b82f6",
           }}
         >
-          <div style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", marginBottom: 4 }}>Most Active</div>
+          <div style={{ fontSize: 12, fontWeight: 600, color: "hsl(var(--muted-foreground))", marginBottom: 4 }}>Most Active</div>
           <div style={{ fontSize: 18, fontWeight: 800 }}>{mostActive.name}</div>
-          <div style={{ fontSize: 13, color: "#6b7280", marginTop: 2 }}>
+          <div style={{ fontSize: 13, color: "hsl(var(--muted-foreground))", marginTop: 2 }}>
             {mostActive.callsMade} calls + {mostActive.smsSent} SMS = {mostActive.callsMade + mostActive.smsSent}{" "}
             touches
           </div>
         </div>
         <div
           style={{
-            background: "#fff",
-            border: "1px solid #e5e7eb",
+            background: "hsl(var(--card))",
+            border: "1px solid hsl(var(--border))",
             borderRadius: 10,
             padding: 18,
             borderLeft: "4px solid #f59e0b",
           }}
         >
-          <div style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", marginBottom: 4 }}>Highest Conversion</div>
+          <div style={{ fontSize: 12, fontWeight: 600, color: "hsl(var(--muted-foreground))", marginBottom: 4 }}>Highest Conversion</div>
           <div style={{ fontSize: 18, fontWeight: 800 }}>{highestConversion.name}</div>
-          <div style={{ fontSize: 13, color: "#6b7280", marginTop: 2 }}>
+          <div style={{ fontSize: 13, color: "hsl(var(--muted-foreground))", marginTop: 2 }}>
             {highestConversion.showingsBooked > 0
               ? ((highestConversion.closings / highestConversion.showingsBooked) * 100).toFixed(1)
               : "0"}
@@ -390,7 +390,7 @@ export default function AgentLeaderboardClient() {
       </div>
 
       {/* Closings & Volume Chart */}
-      <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 20, marginBottom: 20 }}>
+      <div style={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 10, padding: 20, marginBottom: 20 }}>
         <h3 style={{ margin: "0 0 16px 0", fontSize: 15, fontWeight: 700 }}>Closings & Commission by Agent</h3>
         <ResponsiveContainer width="100%" height={300}>
           <BarChart data={sorted} margin={{ top: 5, right: 20, bottom: 5, left: 20 }}>
@@ -412,7 +412,7 @@ export default function AgentLeaderboardClient() {
       </div>
 
       {/* Activity Comparison Chart */}
-      <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 20, marginBottom: 20 }}>
+      <div style={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 10, padding: 20, marginBottom: 20 }}>
         <h3 style={{ margin: "0 0 16px 0", fontSize: 15, fontWeight: 700 }}>Activity Comparison</h3>
         <ResponsiveContainer width="100%" height={300}>
           <BarChart data={sorted} margin={{ top: 5, right: 20, bottom: 5, left: 20 }}>
@@ -429,7 +429,7 @@ export default function AgentLeaderboardClient() {
       </div>
 
       {/* Data Table */}
-      <div style={{ overflowX: "auto", background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10 }}>
+      <div style={{ overflowX: "auto", background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 10 }}>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr>

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 
@@ -237,7 +237,7 @@ export default function OpenHouseForm({ startDefault, endDefault, onSubmit }: Op
                 padding: "8px 16px",
                 fontSize: 13,
                 fontWeight: 600,
-                border: "1px solid #d1d5db",
+                border: "1px solid hsl(var(--border))",
                 borderRight: opt.value === "both" ? "1px solid #d1d5db" : "none",
                 borderRadius: opt.value === "sales" ? "8px 0 0 8px" : opt.value === "both" ? "0 8px 8px 0" : "0",
                 background: eventType === opt.value ? "#4f46e5" : "#fff",
@@ -271,7 +271,7 @@ export default function OpenHouseForm({ startDefault, endDefault, onSubmit }: Op
         }}
       >
         <div style={{ fontWeight: 700, fontSize: 14, color: "#0369a1", marginBottom: 8 }}>Import from MLS</div>
-        <p style={{ fontSize: 12, color: "#6b7280", margin: "0 0 10px 0" }}>
+        <p style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", margin: "0 0 10px 0" }}>
           Look up a listing by MLS number or address to auto-fill property details.
         </p>
 
@@ -288,7 +288,7 @@ export default function OpenHouseForm({ startDefault, endDefault, onSubmit }: Op
                 padding: "6px 16px",
                 fontSize: 12,
                 fontWeight: 600,
-                border: "1px solid #d1d5db",
+                border: "1px solid hsl(var(--border))",
                 borderRight: "none",
                 borderRadius: "6px 0 0 6px",
                 background: searchMode === "mls" ? "#0284c7" : "#fff",
@@ -308,7 +308,7 @@ export default function OpenHouseForm({ startDefault, endDefault, onSubmit }: Op
                 padding: "6px 16px",
                 fontSize: 12,
                 fontWeight: 600,
-                border: "1px solid #d1d5db",
+                border: "1px solid hsl(var(--border))",
                 borderRadius: "0 6px 6px 0",
                 background: searchMode === "address" ? "#0284c7" : "#fff",
                 color: searchMode === "address" ? "#fff" : "#374151",
@@ -338,7 +338,7 @@ export default function OpenHouseForm({ startDefault, endDefault, onSubmit }: Op
                 width: "100%",
                 padding: "9px 12px",
                 fontSize: 14,
-                border: "1px solid #d1d5db",
+                border: "1px solid hsl(var(--border))",
                 borderRadius: 6,
                 background: mlsResult ? "#f0fdf4" : "#fff",
               }}
@@ -373,7 +373,7 @@ export default function OpenHouseForm({ startDefault, endDefault, onSubmit }: Op
                 padding: "9px 18px",
                 fontWeight: 600,
                 fontSize: 13,
-                background: "#fff",
+                background: "hsl(var(--card))",
                 color: "#dc2626",
                 border: "1px solid #fecaca",
                 borderRadius: 6,
@@ -391,7 +391,7 @@ export default function OpenHouseForm({ startDefault, endDefault, onSubmit }: Op
         {/* Address search — multiple results to pick from */}
         {candidates.length > 0 && !mlsResult && (
           <div style={{ marginTop: 12 }}>
-            <div style={{ fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 8 }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: "hsl(var(--foreground))", marginBottom: 8 }}>
               {candidates.length} listing{candidates.length === 1 ? "" : "s"} found — select one:
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -406,8 +406,8 @@ export default function OpenHouseForm({ startDefault, endDefault, onSubmit }: Op
                     gap: 10,
                     alignItems: "center",
                     padding: 10,
-                    background: "#fff",
-                    border: "1px solid #e5e7eb",
+                    background: "hsl(var(--card))",
+                    border: "1px solid hsl(var(--border))",
                     borderRadius: 8,
                     cursor: selectingCandidate ? "wait" : "pointer",
                     textAlign: "left",
@@ -428,14 +428,14 @@ export default function OpenHouseForm({ startDefault, endDefault, onSubmit }: Op
                         height: 42,
                         objectFit: "cover",
                         borderRadius: 4,
-                        border: "1px solid #e5e7eb",
+                        border: "1px solid hsl(var(--border))",
                         flexShrink: 0,
                       }}
                     />
                   )}
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 1 }}>{c.address}</div>
-                    <div style={{ fontSize: 11, color: "#6b7280" }}>
+                    <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>
                       {[
                         c.beds != null ? `${c.beds} bed` : null,
                         c.baths != null ? `${c.baths} bath` : null,
@@ -447,7 +447,7 @@ export default function OpenHouseForm({ startDefault, endDefault, onSubmit }: Op
                     </div>
                   </div>
                   <div style={{ textAlign: "right", flexShrink: 0 }}>
-                    <div style={{ fontSize: 10, color: "#9ca3af" }}>MLS# {c.listingId}</div>
+                    <div style={{ fontSize: 10, color: "hsl(var(--muted-foreground))" }}>MLS# {c.listingId}</div>
                     <div
                       style={{
                         fontSize: 10,
@@ -469,7 +469,7 @@ export default function OpenHouseForm({ startDefault, endDefault, onSubmit }: Op
           <div
             style={{
               marginTop: 12,
-              background: "#fff",
+              background: "hsl(var(--card))",
               border: "1px solid #d1fae5",
               borderRadius: 8,
               padding: 14,
@@ -485,14 +485,14 @@ export default function OpenHouseForm({ startDefault, endDefault, onSubmit }: Op
                     height: 75,
                     objectFit: "cover",
                     borderRadius: 6,
-                    border: "1px solid #e5e7eb",
+                    border: "1px solid hsl(var(--border))",
                     flexShrink: 0,
                   }}
                 />
               )}
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 2 }}>{mlsResult.mappedFields.address}</div>
-                <div style={{ fontSize: 12, color: "#6b7280", display: "flex", flexWrap: "wrap", gap: 8 }}>
+                <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", display: "flex", flexWrap: "wrap", gap: 8 }}>
                   {mlsResult.mappedFields.beds != null && <span>{mlsResult.mappedFields.beds} bed</span>}
                   {mlsResult.mappedFields.baths != null && <span>{mlsResult.mappedFields.baths} bath</span>}
                   {mlsResult.mappedFields.sqft != null && (
@@ -502,7 +502,7 @@ export default function OpenHouseForm({ startDefault, endDefault, onSubmit }: Op
                     <span style={{ color: "#059669", fontWeight: 600 }}>{fmt(mlsResult.mappedFields.price)}</span>
                   )}
                 </div>
-                <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 4 }}>
+                <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", marginTop: 4 }}>
                   MLS# {mlsResult.property.listingId} · {mlsResult.property.status}
                   {mlsResult.property.listAgentName && ` · ${mlsResult.property.listAgentName}`}
                 </div>

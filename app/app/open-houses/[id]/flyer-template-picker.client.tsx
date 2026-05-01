@@ -158,7 +158,7 @@ export default function FlyerTemplatePicker({ eventId, currentTemplateId }: Prop
       {/* Image upload section for templates that need multiple images */}
       {imageSlots && (
         <div
-          style={{ marginTop: 24, padding: 20, background: "#f9fafb", borderRadius: 10, border: "1px solid #e5e7eb" }}
+          style={{ marginTop: 24, padding: 20, background: "hsl(var(--muted))", borderRadius: 10, border: "1px solid hsl(var(--border))" }}
         >
           <h3 style={{ fontSize: 16, fontWeight: 700, marginTop: 0, marginBottom: 4 }}>Flyer Images</h3>
           <p style={{ fontSize: 12, opacity: 0.7, marginTop: 0, marginBottom: 16 }}>
@@ -174,9 +174,9 @@ export default function FlyerTemplatePicker({ eventId, currentTemplateId }: Prop
                   alignItems: "center",
                   gap: 14,
                   padding: 12,
-                  background: "#fff",
+                  background: "hsl(var(--card))",
                   borderRadius: 8,
-                  border: "1px solid #e5e7eb",
+                  border: "1px solid hsl(var(--border))",
                 }}
               >
                 <div style={{ flex: 1 }}>

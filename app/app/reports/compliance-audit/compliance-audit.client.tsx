@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
@@ -314,7 +314,7 @@ export default function ComplianceAuditClient() {
     border: "1px solid #ddd",
     fontSize: 13,
     fontWeight: 500,
-    background: "#fff",
+    background: "hsl(var(--card))",
     cursor: "pointer",
   };
 
@@ -374,7 +374,7 @@ export default function ComplianceAuditClient() {
       {/* Status + Event Type Charts */}
       <div style={{ display: "flex", gap: 16, marginBottom: 24, flexWrap: "wrap" }}>
         <div
-          style={{ flex: "1 1 280px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, padding: 20 }}
+          style={{ flex: "1 1 280px", background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12, padding: 20 }}
         >
           <h3 style={{ margin: "0 0 12px 0", fontSize: 15, fontWeight: 700 }}>Status Breakdown</h3>
           {(() => {
@@ -407,7 +407,7 @@ export default function ComplianceAuditClient() {
           })()}
         </div>
         <div
-          style={{ flex: "2 1 400px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, padding: 20 }}
+          style={{ flex: "2 1 400px", background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12, padding: 20 }}
         >
           <h3 style={{ margin: "0 0 12px 0", fontSize: 15, fontWeight: 700 }}>Events by Type</h3>
           {(() => {
@@ -476,7 +476,7 @@ export default function ComplianceAuditClient() {
               padding: "7px 18px",
               borderRadius: 8,
               border: "1px solid #ddd",
-              background: "#fff",
+              background: "hsl(var(--card))",
               fontWeight: 600,
               fontSize: 13,
               cursor: "pointer",
@@ -488,9 +488,9 @@ export default function ComplianceAuditClient() {
             onClick={exportToExcel}
             style={{
               padding: "8px 20px",
-              background: "#fff",
-              color: "#374151",
-              border: "1px solid #d1d5db",
+              background: "hsl(var(--card))",
+              color: "hsl(var(--foreground))",
+              border: "1px solid hsl(var(--border))",
               borderRadius: 8,
               fontWeight: 600,
               cursor: "pointer",

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useMemo, useCallback } from "react";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
@@ -350,7 +350,7 @@ export default function NetSheetCalculatorClient() {
   const inputStyle: React.CSSProperties = {
     width: "100%",
     padding: "10px 12px",
-    border: "1px solid #d1d5db",
+    border: "1px solid hsl(var(--border))",
     borderRadius: 6,
     fontSize: 16,
   };
@@ -370,7 +370,7 @@ export default function NetSheetCalculatorClient() {
 
         {/* Sale Price */}
         <div
-          style={{ padding: 24, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, marginBottom: 20 }}
+          style={{ padding: 24, background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12, marginBottom: 20 }}
         >
           <h2 style={{ margin: "0 0 20px 0", fontSize: 18, fontWeight: 700 }}>Sale Details</h2>
 
@@ -392,7 +392,7 @@ export default function NetSheetCalculatorClient() {
               onChange={(e) => handleChange("mortgagePayoff", Number(e.target.value))}
               style={inputStyle}
             />
-            <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>
+            <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 4 }}>
               Remaining balance on existing mortgage(s)
             </div>
           </div>
@@ -400,11 +400,11 @@ export default function NetSheetCalculatorClient() {
 
         {/* Commissions */}
         <div
-          style={{ padding: 24, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, marginBottom: 20 }}
+          style={{ padding: 24, background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12, marginBottom: 20 }}
         >
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
             <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>Commissions</h2>
-            <div style={{ display: "flex", gap: 0, background: "#f3f4f6", borderRadius: 6, overflow: "hidden" }}>
+            <div style={{ display: "flex", gap: 0, background: "hsl(var(--muted))", borderRadius: 6, overflow: "hidden" }}>
               <button
                 onClick={() => handleChange("commissionMode", "total")}
                 style={{
@@ -446,7 +446,7 @@ export default function NetSheetCalculatorClient() {
                 onChange={(e) => handleChange("totalCommissionPercent", Number(e.target.value))}
                 style={inputStyle}
               />
-              <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>
+              <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 4 }}>
                 = {fmt(analysis.totalCommission)} ({fmt(analysis.listingAgentCommission)} each side)
               </div>
             </div>
@@ -461,7 +461,7 @@ export default function NetSheetCalculatorClient() {
                   onChange={(e) => handleChange("listingAgentPercent", Number(e.target.value))}
                   style={inputStyle}
                 />
-                <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>
+                <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 4 }}>
                   = {fmt(analysis.listingAgentCommission)}
                 </div>
               </div>
@@ -474,7 +474,7 @@ export default function NetSheetCalculatorClient() {
                   onChange={(e) => handleChange("buyerAgentPercent", Number(e.target.value))}
                   style={inputStyle}
                 />
-                <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>
+                <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 4 }}>
                   = {fmt(analysis.buyerAgentCommission)}
                 </div>
               </div>
@@ -484,11 +484,11 @@ export default function NetSheetCalculatorClient() {
 
         {/* Closing Costs */}
         <div
-          style={{ padding: 24, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, marginBottom: 20 }}
+          style={{ padding: 24, background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12, marginBottom: 20 }}
         >
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
             <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>Closing Costs</h2>
-            <div style={{ display: "flex", gap: 0, background: "#f3f4f6", borderRadius: 6, overflow: "hidden" }}>
+            <div style={{ display: "flex", gap: 0, background: "hsl(var(--muted))", borderRadius: 6, overflow: "hidden" }}>
               <button
                 onClick={() => handleChange("closingCostMode", "percent")}
                 style={{
@@ -530,7 +530,7 @@ export default function NetSheetCalculatorClient() {
                 onChange={(e) => handleChange("closingCostPercent", Number(e.target.value))}
                 style={inputStyle}
               />
-              <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>= {fmt(analysis.totalClosingCosts)}</div>
+              <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 4 }}>= {fmt(analysis.totalClosingCosts)}</div>
             </div>
           ) : (
             <div>
@@ -573,19 +573,19 @@ export default function NetSheetCalculatorClient() {
                 style={{
                   width: "100%",
                   padding: "8px 12px",
-                  background: "#f3f4f6",
+                  background: "hsl(var(--muted))",
                   border: "1px dashed #d1d5db",
                   borderRadius: 6,
                   cursor: "pointer",
                   fontSize: 13,
                   fontWeight: 600,
-                  color: "#6b7280",
+                  color: "hsl(var(--muted-foreground))",
                   marginTop: 4,
                 }}
               >
                 + Add Line Item
               </button>
-              <div style={{ fontSize: 12, color: "#6b7280", marginTop: 8, textAlign: "right" }}>
+              <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 8, textAlign: "right" }}>
                 Total: {fmt(analysis.totalClosingCosts)}
               </div>
             </div>
@@ -593,7 +593,7 @@ export default function NetSheetCalculatorClient() {
         </div>
 
         {/* Repairs / Credits / Concessions */}
-        <div style={{ padding: 24, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12 }}>
+        <div style={{ padding: 24, background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12 }}>
           <h2 style={{ margin: "0 0 20px 0", fontSize: 18, fontWeight: 700 }}>Repairs, Credits & Other</h2>
 
           <div style={{ marginBottom: 16 }}>
@@ -604,7 +604,7 @@ export default function NetSheetCalculatorClient() {
               onChange={(e) => handleChange("repairsCredits", Number(e.target.value))}
               style={inputStyle}
             />
-            <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>Agreed-upon repairs or buyer credits</div>
+            <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 4 }}>Agreed-upon repairs or buyer credits</div>
           </div>
 
           <div style={{ marginBottom: 16 }}>
@@ -615,7 +615,7 @@ export default function NetSheetCalculatorClient() {
               onChange={(e) => handleChange("sellerConcessions", Number(e.target.value))}
               style={inputStyle}
             />
-            <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>
+            <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 4 }}>
               Closing cost assistance, home warranty, etc.
             </div>
           </div>
@@ -628,7 +628,7 @@ export default function NetSheetCalculatorClient() {
               onChange={(e) => handleChange("additionalPayoffs", Number(e.target.value))}
               style={inputStyle}
             />
-            <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>
+            <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 4 }}>
               HELOCs, liens, judgments, or other payoffs
             </div>
           </div>
@@ -659,7 +659,7 @@ export default function NetSheetCalculatorClient() {
 
         {/* Deductions Breakdown */}
         <div
-          style={{ padding: 24, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, marginBottom: 20 }}
+          style={{ padding: 24, background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12, marginBottom: 20 }}
         >
           <h3 style={{ margin: "0 0 16px 0", fontSize: 16, fontWeight: 700 }}>Deductions Breakdown</h3>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
@@ -679,7 +679,7 @@ export default function NetSheetCalculatorClient() {
               <tr style={{ borderBottom: "1px solid #e5e7eb" }}>
                 <td style={{ padding: "10px 0" }}>
                   Total Commission
-                  <span style={{ fontSize: 12, color: "#6b7280", marginLeft: 6 }}>
+                  <span style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginLeft: 6 }}>
                     (
                     {inputs.commissionMode === "total"
                       ? `${inputs.totalCommissionPercent}%`
@@ -695,7 +695,7 @@ export default function NetSheetCalculatorClient() {
                 <td style={{ padding: "10px 0" }}>
                   Closing Costs
                   {inputs.closingCostMode === "percent" && (
-                    <span style={{ fontSize: 12, color: "#6b7280", marginLeft: 6 }}>
+                    <span style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginLeft: 6 }}>
                       ({inputs.closingCostPercent}%)
                     </span>
                   )}
@@ -728,7 +728,7 @@ export default function NetSheetCalculatorClient() {
                   </td>
                 </tr>
               )}
-              <tr style={{ background: "#f9fafb" }}>
+              <tr style={{ background: "hsl(var(--muted))" }}>
                 <td style={{ padding: "12px 0", fontWeight: 700 }}>Total Deductions</td>
                 <td style={{ padding: "12px 0", textAlign: "right", fontWeight: 700, fontSize: 18, color: "#dc2626" }}>
                   -{fmt(analysis.totalDeductions)}
@@ -740,7 +740,7 @@ export default function NetSheetCalculatorClient() {
 
         {/* Visual Breakdown */}
         <div
-          style={{ padding: 24, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, marginBottom: 20 }}
+          style={{ padding: 24, background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12, marginBottom: 20 }}
         >
           <h3 style={{ margin: "0 0 16px 0", fontSize: 16, fontWeight: 700 }}>Where the Money Goes</h3>
           <ProceedsBar analysis={analysis} fmt={fmt} />
@@ -749,7 +749,7 @@ export default function NetSheetCalculatorClient() {
         {/* Closing Cost Breakdown Pie Chart */}
         {pieData.length > 0 && (
           <div
-            style={{ padding: 24, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, marginBottom: 20 }}
+            style={{ padding: 24, background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12, marginBottom: 20 }}
           >
             <h3 style={{ margin: "0 0 16px 0", fontSize: 16, fontWeight: 700 }}>Closing Cost Breakdown</h3>
             <ResponsiveContainer width="100%" height={250}>
@@ -785,7 +785,7 @@ export default function NetSheetCalculatorClient() {
         {/* Itemized Closing Costs (when in itemized mode) */}
         {inputs.closingCostMode === "itemized" && analysis.closingCostBreakdown.length > 0 && (
           <div
-            style={{ padding: 24, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, marginBottom: 20 }}
+            style={{ padding: 24, background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12, marginBottom: 20 }}
           >
             <h3 style={{ margin: "0 0 16px 0", fontSize: 16, fontWeight: 700 }}>Closing Cost Details</h3>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
@@ -798,7 +798,7 @@ export default function NetSheetCalculatorClient() {
                     </td>
                   </tr>
                 ))}
-                <tr style={{ background: "#f9fafb" }}>
+                <tr style={{ background: "hsl(var(--muted))" }}>
                   <td style={{ padding: "10px 0", fontWeight: 700 }}>Total</td>
                   <td style={{ padding: "10px 0", textAlign: "right", fontWeight: 700 }}>
                     {fmt(analysis.totalClosingCosts)}
@@ -811,22 +811,22 @@ export default function NetSheetCalculatorClient() {
 
         {/* Summary Cards */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 20 }}>
-          <div style={{ padding: 16, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 8 }}>
-            <div style={{ fontSize: 12, color: "#6b7280" }}>Equity in Home</div>
+          <div style={{ padding: 16, background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }}>
+            <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>Equity in Home</div>
             <div style={{ fontSize: 20, fontWeight: 600 }}>{fmt(inputs.salePrice - inputs.mortgagePayoff)}</div>
-            <div style={{ fontSize: 12, color: "#6b7280" }}>
+            <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>
               {inputs.salePrice > 0
                 ? `${(((inputs.salePrice - inputs.mortgagePayoff) / inputs.salePrice) * 100).toFixed(1)}%`
                 : "0%"}{" "}
               equity
             </div>
           </div>
-          <div style={{ padding: 16, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 8 }}>
-            <div style={{ fontSize: 12, color: "#6b7280" }}>Cost to Sell</div>
+          <div style={{ padding: 16, background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }}>
+            <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>Cost to Sell</div>
             <div style={{ fontSize: 20, fontWeight: 600, color: "#dc2626" }}>
               {fmt(analysis.totalDeductions - analysis.mortgagePayoff)}
             </div>
-            <div style={{ fontSize: 12, color: "#6b7280" }}>
+            <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>
               {inputs.salePrice > 0
                 ? `${(((analysis.totalDeductions - analysis.mortgagePayoff) / inputs.salePrice) * 100).toFixed(1)}%`
                 : "0%"}{" "}
@@ -959,7 +959,7 @@ function ProceedsBar({
         {segments.map((seg, i) => (
           <div key={i} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12 }}>
             <div style={{ width: 10, height: 10, borderRadius: 2, background: seg.color }} />
-            <span style={{ color: "#6b7280" }}>{seg.label}:</span>
+            <span style={{ color: "hsl(var(--muted-foreground))" }}>{seg.label}:</span>
             <span style={{ fontWeight: 600 }}>{fmt(seg.value)}</span>
           </div>
         ))}

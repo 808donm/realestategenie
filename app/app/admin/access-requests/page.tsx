@@ -1,4 +1,4 @@
-import { requireAdmin } from "@/lib/auth/admin-check";
+﻿import { requireAdmin } from "@/lib/auth/admin-check";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import AccessRequestsClient from "./access-requests-client";
 
@@ -18,7 +18,7 @@ export default async function AccessRequestsPage() {
     <div>
       <div style={{ marginBottom: 32 }}>
         <h1 style={{ fontSize: 32, fontWeight: 800, margin: 0 }}>Access Requests</h1>
-        <p style={{ color: "#6b7280", marginTop: 8 }}>Review and approve applications from potential users</p>
+        <p style={{ color: "hsl(var(--muted-foreground))", marginTop: 8 }}>Review and approve applications from potential users</p>
       </div>
 
       <AccessRequestsClient initialRequests={accessRequests || []} />

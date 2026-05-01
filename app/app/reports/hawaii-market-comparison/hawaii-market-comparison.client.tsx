@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useMemo } from "react";
 import jsPDF from "jspdf";
@@ -239,8 +239,8 @@ export default function HawaiiMarketComparisonClient() {
 
   const cardStyle: React.CSSProperties = {
     padding: 20,
-    background: "#fff",
-    border: "1px solid #e5e7eb",
+    background: "hsl(var(--card))",
+    border: "1px solid hsl(var(--border))",
     borderRadius: 12,
   };
 
@@ -318,10 +318,10 @@ export default function HawaiiMarketComparisonClient() {
             padding: "6px 14px",
             fontSize: 12,
             fontWeight: 600,
-            border: "1px solid #d1d5db",
+            border: "1px solid hsl(var(--border))",
             borderRadius: 6,
-            background: "#fff",
-            color: "#374151",
+            background: "hsl(var(--card))",
+            color: "hsl(var(--foreground))",
             cursor: "pointer",
           }}
         >
@@ -354,28 +354,28 @@ export default function HawaiiMarketComparisonClient() {
         }}
       >
         <div style={{ ...cardStyle, borderTop: "4px solid #1e293b" }}>
-          <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 600 }}>Statewide SF Median</div>
+          <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>Statewide SF Median</div>
           <div style={{ fontSize: 26, fontWeight: 800 }}>{fmt(sw.singleFamily.totalMedianPrice2026)}</div>
           <div style={{ fontSize: 13, color: yoyColor(sw.singleFamily.totalMedianPriceChange), fontWeight: 600 }}>
             {yoyText(sw.singleFamily.totalMedianPriceChange)} YoY
           </div>
         </div>
         <div style={{ ...cardStyle, borderTop: "4px solid #475569" }}>
-          <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 600 }}>Statewide Condo Median</div>
+          <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>Statewide Condo Median</div>
           <div style={{ fontSize: 26, fontWeight: 800 }}>{fmt(sw.condo.totalMedianPrice2026)}</div>
           <div style={{ fontSize: 13, color: yoyColor(sw.condo.totalMedianPriceChange), fontWeight: 600 }}>
             {yoyText(sw.condo.totalMedianPriceChange)} YoY
           </div>
         </div>
         <div style={{ ...cardStyle, borderTop: "4px solid #64748b" }}>
-          <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 600 }}>Total SF Sales</div>
+          <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>Total SF Sales</div>
           <div style={{ fontSize: 26, fontWeight: 800 }}>{sw.singleFamily.totalSales2026}</div>
           <div style={{ fontSize: 13, color: yoyColor(sw.singleFamily.totalSalesChange), fontWeight: 600 }}>
             {yoyText(sw.singleFamily.totalSalesChange)} YoY ({sw.singleFamily.totalSales2025} prev)
           </div>
         </div>
         <div style={{ ...cardStyle, borderTop: "4px solid #94a3b8" }}>
-          <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 600 }}>Total Condo Sales</div>
+          <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>Total Condo Sales</div>
           <div style={{ fontSize: 26, fontWeight: 800 }}>{sw.condo.totalSales2026}</div>
           <div style={{ fontSize: 13, color: yoyColor(sw.condo.totalSalesChange), fontWeight: 600 }}>
             {yoyText(sw.condo.totalSalesChange)} YoY ({sw.condo.totalSales2025} prev)
@@ -398,23 +398,23 @@ export default function HawaiiMarketComparisonClient() {
           return (
             <div key={sfCounty.county} style={{ ...cardStyle, borderTop: `4px solid ${color}` }}>
               <div style={{ fontSize: 16, fontWeight: 800, marginBottom: 12, color }}>{sfCounty.county}</div>
-              <div style={{ fontSize: 11, color: "#6b7280", marginBottom: 2 }}>SF Median</div>
+              <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", marginBottom: 2 }}>SF Median</div>
               <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
                 <div style={{ fontSize: 20, fontWeight: 800 }}>{fmt(sfCounty.medianPrice2026)}</div>
                 <div style={{ fontSize: 12, fontWeight: 600, color: yoyColor(sfCounty.medianPriceChange) }}>
                   {yoyText(sfCounty.medianPriceChange)}
                 </div>
               </div>
-              <div style={{ fontSize: 11, color: "#6b7280", marginTop: 8, marginBottom: 2 }}>Condo Median</div>
+              <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", marginTop: 8, marginBottom: 2 }}>Condo Median</div>
               <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
                 <div style={{ fontSize: 20, fontWeight: 800 }}>{fmt(cdCounty.medianPrice2026)}</div>
                 <div style={{ fontSize: 12, fontWeight: 600, color: yoyColor(cdCounty.medianPriceChange) }}>
                   {yoyText(cdCounty.medianPriceChange)}
                 </div>
               </div>
-              <div style={{ display: "flex", gap: 16, marginTop: 12, fontSize: 12, color: "#6b7280" }}>
+              <div style={{ display: "flex", gap: 16, marginTop: 12, fontSize: 12, color: "hsl(var(--muted-foreground))" }}>
                 <div>
-                  <div style={{ fontWeight: 700, color: "#374151" }}>
+                  <div style={{ fontWeight: 700, color: "hsl(var(--foreground))" }}>
                     {sfCounty.sales2026} / {cdCounty.sales2026}
                   </div>
                   <div>SF / Condo Sales</div>
@@ -434,7 +434,7 @@ export default function HawaiiMarketComparisonClient() {
       {/* Market Highlights */}
       <div style={{ ...cardStyle, marginBottom: 24 }}>
         <h3 style={{ margin: "0 0 16px 0", fontSize: 16, fontWeight: 700 }}>Market Highlights</h3>
-        <ul style={{ margin: 0, padding: "0 0 0 20px", fontSize: 14, lineHeight: 2, color: "#374151" }}>
+        <ul style={{ margin: 0, padding: "0 0 0 20px", fontSize: 14, lineHeight: 2, color: "hsl(var(--foreground))" }}>
           {statewide.highlights.map((h, i) => (
             <li key={i}>{h}</li>
           ))}
@@ -595,7 +595,7 @@ export default function HawaiiMarketComparisonClient() {
               <Tooltip />
             </PieChart>
           </ResponsiveContainer>
-          <div style={{ textAlign: "center", fontSize: 13, color: "#6b7280" }}>
+          <div style={{ textAlign: "center", fontSize: 13, color: "hsl(var(--muted-foreground))" }}>
             Total: {sw.singleFamily.totalSales2026} SF sales statewide
           </div>
         </div>
@@ -621,7 +621,7 @@ export default function HawaiiMarketComparisonClient() {
               <Tooltip />
             </PieChart>
           </ResponsiveContainer>
-          <div style={{ textAlign: "center", fontSize: 13, color: "#6b7280" }}>
+          <div style={{ textAlign: "center", fontSize: 13, color: "hsl(var(--muted-foreground))" }}>
             Total: {sw.condo.totalSales2026} condo sales statewide
           </div>
         </div>
@@ -734,22 +734,22 @@ export default function HawaiiMarketComparisonClient() {
       {/* Official Statewide Data Tables */}
       <div style={{ ...cardStyle, marginBottom: 24, overflowX: "auto" }}>
         <h3 style={{ margin: "0 0 4px 0", fontSize: 16, fontWeight: 700 }}>Single-Family Homes — {statewide.label}</h3>
-        <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 16 }}>
+        <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginBottom: 16 }}>
           Source: Hawai&apos;i Realtors® Statewide Real Estate Statistics
         </div>
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
           <thead>
             <tr style={{ borderBottom: "2px solid #e5e7eb" }}>
-              <th style={{ padding: "10px 12px", textAlign: "left", fontWeight: 700, fontSize: 12, color: "#6b7280" }}>
+              <th style={{ padding: "10px 12px", textAlign: "left", fontWeight: 700, fontSize: 12, color: "hsl(var(--muted-foreground))" }}>
                 County
               </th>
               <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 700, fontSize: 12 }}>2026 Sales</th>
-              <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 700, fontSize: 12, color: "#6b7280" }}>
+              <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 700, fontSize: 12, color: "hsl(var(--muted-foreground))" }}>
                 2025 Sales
               </th>
               <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 700, fontSize: 12 }}>% Change</th>
               <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 700, fontSize: 12 }}>2026 Median</th>
-              <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 700, fontSize: 12, color: "#6b7280" }}>
+              <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 700, fontSize: 12, color: "hsl(var(--muted-foreground))" }}>
                 2025 Median
               </th>
               <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 700, fontSize: 12 }}>% Change</th>
@@ -763,14 +763,14 @@ export default function HawaiiMarketComparisonClient() {
               >
                 <td style={{ padding: "10px 12px", fontWeight: 600, color: colorForCounty(c.county) }}>{c.county}</td>
                 <td style={{ padding: "10px 12px", textAlign: "right", fontWeight: 600 }}>{c.sales2026}</td>
-                <td style={{ padding: "10px 12px", textAlign: "right", color: "#6b7280" }}>{c.sales2025}</td>
+                <td style={{ padding: "10px 12px", textAlign: "right", color: "hsl(var(--muted-foreground))" }}>{c.sales2025}</td>
                 <td
                   style={{ padding: "10px 12px", textAlign: "right", fontWeight: 600, color: yoyColor(c.salesChange) }}
                 >
                   {yoyText(c.salesChange)}
                 </td>
                 <td style={{ padding: "10px 12px", textAlign: "right", fontWeight: 600 }}>{fmt(c.medianPrice2026)}</td>
-                <td style={{ padding: "10px 12px", textAlign: "right", color: "#6b7280" }}>{fmt(c.medianPrice2025)}</td>
+                <td style={{ padding: "10px 12px", textAlign: "right", color: "hsl(var(--muted-foreground))" }}>{fmt(c.medianPrice2025)}</td>
                 <td
                   style={{
                     padding: "10px 12px",
@@ -786,7 +786,7 @@ export default function HawaiiMarketComparisonClient() {
             <tr style={{ borderTop: "2px solid #e5e7eb", fontWeight: 800, background: "#f8fafc" }}>
               <td style={{ padding: "10px 12px" }}>Total</td>
               <td style={{ padding: "10px 12px", textAlign: "right" }}>{sw.singleFamily.totalSales2026}</td>
-              <td style={{ padding: "10px 12px", textAlign: "right", color: "#6b7280" }}>
+              <td style={{ padding: "10px 12px", textAlign: "right", color: "hsl(var(--muted-foreground))" }}>
                 {sw.singleFamily.totalSales2025}
               </td>
               <td
@@ -795,7 +795,7 @@ export default function HawaiiMarketComparisonClient() {
                 {yoyText(sw.singleFamily.totalSalesChange)}
               </td>
               <td style={{ padding: "10px 12px", textAlign: "right" }}>{fmt(sw.singleFamily.totalMedianPrice2026)}</td>
-              <td style={{ padding: "10px 12px", textAlign: "right", color: "#6b7280" }}>
+              <td style={{ padding: "10px 12px", textAlign: "right", color: "hsl(var(--muted-foreground))" }}>
                 {fmt(sw.singleFamily.totalMedianPrice2025)}
               </td>
               <td
@@ -814,22 +814,22 @@ export default function HawaiiMarketComparisonClient() {
 
       <div style={{ ...cardStyle, marginBottom: 24, overflowX: "auto" }}>
         <h3 style={{ margin: "0 0 4px 0", fontSize: 16, fontWeight: 700 }}>Condominiums — {statewide.label}</h3>
-        <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 16 }}>
+        <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginBottom: 16 }}>
           Source: Hawai&apos;i Realtors® Statewide Real Estate Statistics
         </div>
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
           <thead>
             <tr style={{ borderBottom: "2px solid #e5e7eb" }}>
-              <th style={{ padding: "10px 12px", textAlign: "left", fontWeight: 700, fontSize: 12, color: "#6b7280" }}>
+              <th style={{ padding: "10px 12px", textAlign: "left", fontWeight: 700, fontSize: 12, color: "hsl(var(--muted-foreground))" }}>
                 County
               </th>
               <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 700, fontSize: 12 }}>2026 Sales</th>
-              <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 700, fontSize: 12, color: "#6b7280" }}>
+              <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 700, fontSize: 12, color: "hsl(var(--muted-foreground))" }}>
                 2025 Sales
               </th>
               <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 700, fontSize: 12 }}>% Change</th>
               <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 700, fontSize: 12 }}>2026 Median</th>
-              <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 700, fontSize: 12, color: "#6b7280" }}>
+              <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 700, fontSize: 12, color: "hsl(var(--muted-foreground))" }}>
                 2025 Median
               </th>
               <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 700, fontSize: 12 }}>% Change</th>
@@ -843,14 +843,14 @@ export default function HawaiiMarketComparisonClient() {
               >
                 <td style={{ padding: "10px 12px", fontWeight: 600, color: colorForCounty(c.county) }}>{c.county}</td>
                 <td style={{ padding: "10px 12px", textAlign: "right", fontWeight: 600 }}>{c.sales2026}</td>
-                <td style={{ padding: "10px 12px", textAlign: "right", color: "#6b7280" }}>{c.sales2025}</td>
+                <td style={{ padding: "10px 12px", textAlign: "right", color: "hsl(var(--muted-foreground))" }}>{c.sales2025}</td>
                 <td
                   style={{ padding: "10px 12px", textAlign: "right", fontWeight: 600, color: yoyColor(c.salesChange) }}
                 >
                   {yoyText(c.salesChange)}
                 </td>
                 <td style={{ padding: "10px 12px", textAlign: "right", fontWeight: 600 }}>{fmt(c.medianPrice2026)}</td>
-                <td style={{ padding: "10px 12px", textAlign: "right", color: "#6b7280" }}>{fmt(c.medianPrice2025)}</td>
+                <td style={{ padding: "10px 12px", textAlign: "right", color: "hsl(var(--muted-foreground))" }}>{fmt(c.medianPrice2025)}</td>
                 <td
                   style={{
                     padding: "10px 12px",
@@ -866,12 +866,12 @@ export default function HawaiiMarketComparisonClient() {
             <tr style={{ borderTop: "2px solid #e5e7eb", fontWeight: 800, background: "#f8fafc" }}>
               <td style={{ padding: "10px 12px" }}>Total</td>
               <td style={{ padding: "10px 12px", textAlign: "right" }}>{sw.condo.totalSales2026}</td>
-              <td style={{ padding: "10px 12px", textAlign: "right", color: "#6b7280" }}>{sw.condo.totalSales2025}</td>
+              <td style={{ padding: "10px 12px", textAlign: "right", color: "hsl(var(--muted-foreground))" }}>{sw.condo.totalSales2025}</td>
               <td style={{ padding: "10px 12px", textAlign: "right", color: yoyColor(sw.condo.totalSalesChange) }}>
                 {yoyText(sw.condo.totalSalesChange)}
               </td>
               <td style={{ padding: "10px 12px", textAlign: "right" }}>{fmt(sw.condo.totalMedianPrice2026)}</td>
-              <td style={{ padding: "10px 12px", textAlign: "right", color: "#6b7280" }}>
+              <td style={{ padding: "10px 12px", textAlign: "right", color: "hsl(var(--muted-foreground))" }}>
                 {fmt(sw.condo.totalMedianPrice2025)}
               </td>
               <td
@@ -888,14 +888,14 @@ export default function HawaiiMarketComparisonClient() {
       {sw.ytd && (
         <div style={{ ...cardStyle, marginBottom: 24, overflowX: "auto" }}>
           <h3 style={{ margin: "0 0 4px 0", fontSize: 16, fontWeight: 700 }}>Year-to-Date Through {statewide.label}</h3>
-          <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 16 }}>
+          <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginBottom: 16 }}>
             Cumulative sales and median prices for 2026 vs 2025
           </div>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
             <thead>
               <tr style={{ borderBottom: "2px solid #e5e7eb" }}>
                 <th
-                  style={{ padding: "10px 12px", textAlign: "left", fontWeight: 700, fontSize: 12, color: "#6b7280" }}
+                  style={{ padding: "10px 12px", textAlign: "left", fontWeight: 700, fontSize: 12, color: "hsl(var(--muted-foreground))" }}
                 >
                   County
                 </th>
@@ -984,7 +984,7 @@ export default function HawaiiMarketComparisonClient() {
       )}
 
       {/* Source Attribution */}
-      <div style={{ fontSize: 12, color: "#9ca3af", textAlign: "center", padding: "12px 0", lineHeight: 1.8 }}>
+      <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", textAlign: "center", padding: "12px 0", lineHeight: 1.8 }}>
         Source: Hawai&apos;i Realtors® &middot; Statewide Real Estate Statistics
         <br />
         &ldquo;Total&rdquo; price reflects a statewide median sales price based on a calculation of sales prices for all

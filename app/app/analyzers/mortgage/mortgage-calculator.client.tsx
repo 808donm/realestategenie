@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useMemo, useCallback } from "react";
 import * as XLSX from "xlsx";
@@ -739,7 +739,7 @@ export default function MortgageCalculatorClient() {
         <>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32 }}>
           {/* Input Form */}
-          <div style={{ padding: 24, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12 }}>
+          <div style={{ padding: 24, background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12 }}>
             <h2 style={{ margin: "0 0 20px 0", fontSize: 18, fontWeight: 700 }}>Loan Details</h2>
 
             {/* Purchase Price */}
@@ -749,7 +749,7 @@ export default function MortgageCalculatorClient() {
                 type="number"
                 value={inputs.purchasePrice}
                 onChange={(e) => handleInputChange("purchasePrice", Number(e.target.value))}
-                style={{ width: "100%", padding: 10, border: "1px solid #d1d5db", borderRadius: 6, fontSize: 16 }}
+                style={{ width: "100%", padding: 10, border: "1px solid hsl(var(--border))", borderRadius: 6, fontSize: 16 }}
               />
             </div>
 
@@ -763,8 +763,8 @@ export default function MortgageCalculatorClient() {
                     marginLeft: 8,
                     padding: "2px 8px",
                     fontSize: 11,
-                    background: "#f3f4f6",
-                    border: "1px solid #d1d5db",
+                    background: "hsl(var(--muted))",
+                    border: "1px solid hsl(var(--border))",
                     borderRadius: 4,
                     cursor: "pointer",
                   }}
@@ -783,7 +783,7 @@ export default function MortgageCalculatorClient() {
                         width: "100%",
                         padding: 10,
                         paddingRight: 30,
-                        border: "1px solid #d1d5db",
+                        border: "1px solid hsl(var(--border))",
                         borderRadius: 6,
                         fontSize: 16,
                       }}
@@ -794,7 +794,7 @@ export default function MortgageCalculatorClient() {
                         right: 10,
                         top: "50%",
                         transform: "translateY(-50%)",
-                        color: "#6b7280",
+                        color: "hsl(var(--muted-foreground))",
                       }}
                     >
                       %
@@ -805,11 +805,11 @@ export default function MortgageCalculatorClient() {
                     type="number"
                     value={inputs.downPaymentAmount}
                     onChange={(e) => handleInputChange("downPaymentAmount", Number(e.target.value))}
-                    style={{ flex: 1, padding: 10, border: "1px solid #d1d5db", borderRadius: 6, fontSize: 16 }}
+                    style={{ flex: 1, padding: 10, border: "1px solid hsl(var(--border))", borderRadius: 6, fontSize: 16 }}
                   />
                 )}
               </div>
-              <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>
+              <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 4 }}>
                 {usePercentDownPayment
                   ? `= ${fmt(inputs.downPaymentAmount)}`
                   : `= ${calculation.downPaymentPercent.toFixed(1)}%`}
@@ -827,7 +827,7 @@ export default function MortgageCalculatorClient() {
                   step="0.125"
                   value={inputs.interestRate}
                   onChange={(e) => handleInputChange("interestRate", Number(e.target.value))}
-                  style={{ width: "100%", padding: 10, border: "1px solid #d1d5db", borderRadius: 6, fontSize: 16 }}
+                  style={{ width: "100%", padding: 10, border: "1px solid hsl(var(--border))", borderRadius: 6, fontSize: 16 }}
                 />
               </div>
               <div>
@@ -835,7 +835,7 @@ export default function MortgageCalculatorClient() {
                 <select
                   value={inputs.loanTermYears}
                   onChange={(e) => handleInputChange("loanTermYears", Number(e.target.value))}
-                  style={{ width: "100%", padding: 10, border: "1px solid #d1d5db", borderRadius: 6, fontSize: 16 }}
+                  style={{ width: "100%", padding: 10, border: "1px solid hsl(var(--border))", borderRadius: 6, fontSize: 16 }}
                 >
                   <option value={30}>30 years</option>
                   <option value={20}>20 years</option>
@@ -866,9 +866,9 @@ export default function MortgageCalculatorClient() {
                 type="number"
                 value={inputs.propertyTaxAnnual}
                 onChange={(e) => handleInputChange("propertyTaxAnnual", Number(e.target.value))}
-                style={{ width: "100%", padding: 10, border: "1px solid #d1d5db", borderRadius: 6, fontSize: 16 }}
+                style={{ width: "100%", padding: 10, border: "1px solid hsl(var(--border))", borderRadius: 6, fontSize: 16 }}
               />
-              <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>
+              <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 4 }}>
                 = {fmt(inputs.propertyTaxAnnual / 12)}/month
               </div>
             </div>
@@ -882,9 +882,9 @@ export default function MortgageCalculatorClient() {
                 type="number"
                 value={inputs.insuranceAnnual}
                 onChange={(e) => handleInputChange("insuranceAnnual", Number(e.target.value))}
-                style={{ width: "100%", padding: 10, border: "1px solid #d1d5db", borderRadius: 6, fontSize: 16 }}
+                style={{ width: "100%", padding: 10, border: "1px solid hsl(var(--border))", borderRadius: 6, fontSize: 16 }}
               />
-              <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>
+              <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 4 }}>
                 = {fmt(inputs.insuranceAnnual / 12)}/month
               </div>
             </div>
@@ -898,7 +898,7 @@ export default function MortgageCalculatorClient() {
                 type="number"
                 value={inputs.hoaMonthly}
                 onChange={(e) => handleInputChange("hoaMonthly", Number(e.target.value))}
-                style={{ width: "100%", padding: 10, border: "1px solid #d1d5db", borderRadius: 6, fontSize: 16 }}
+                style={{ width: "100%", padding: 10, border: "1px solid hsl(var(--border))", borderRadius: 6, fontSize: 16 }}
               />
             </div>
 
@@ -923,7 +923,7 @@ export default function MortgageCalculatorClient() {
                       step="0.1"
                       value={inputs.pmiRate}
                       onChange={(e) => handleInputChange("pmiRate", Number(e.target.value))}
-                      style={{ width: 100, padding: 6, border: "1px solid #d1d5db", borderRadius: 4 }}
+                      style={{ width: 100, padding: 6, border: "1px solid hsl(var(--border))", borderRadius: 4 }}
                     />
                     <span style={{ marginLeft: 8, fontSize: 12, color: "#92400e" }}>
                       = {fmt(calculation.monthlyPMI)}/month
@@ -957,8 +957,8 @@ export default function MortgageCalculatorClient() {
             <div
               style={{
                 padding: 24,
-                background: "#fff",
-                border: "1px solid #e5e7eb",
+                background: "hsl(var(--card))",
+                border: "1px solid hsl(var(--border))",
                 borderRadius: 12,
                 marginBottom: 20,
               }}
@@ -1000,7 +1000,7 @@ export default function MortgageCalculatorClient() {
                       </td>
                     </tr>
                   )}
-                  <tr style={{ background: "#f9fafb" }}>
+                  <tr style={{ background: "hsl(var(--muted))" }}>
                     <td style={{ padding: "12px 0", fontWeight: 700 }}>Total</td>
                     <td style={{ padding: "12px 0", textAlign: "right", fontWeight: 700, fontSize: 18 }}>
                       {fmtDecimal(calculation.totalMonthly)}
@@ -1014,8 +1014,8 @@ export default function MortgageCalculatorClient() {
             <div
               style={{
                 padding: 24,
-                background: "#fff",
-                border: "1px solid #e5e7eb",
+                background: "hsl(var(--card))",
+                border: "1px solid hsl(var(--border))",
                 borderRadius: 12,
                 marginBottom: 20,
               }}
@@ -1023,21 +1023,21 @@ export default function MortgageCalculatorClient() {
               <h3 style={{ margin: "0 0 16px 0", fontSize: 16, fontWeight: 700 }}>Loan Summary</h3>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
                 <div>
-                  <div style={{ fontSize: 12, color: "#6b7280" }}>Loan Amount</div>
+                  <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>Loan Amount</div>
                   <div style={{ fontSize: 18, fontWeight: 600 }}>{fmt(calculation.loanAmount)}</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: 12, color: "#6b7280" }}>Down Payment</div>
+                  <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>Down Payment</div>
                   <div style={{ fontSize: 18, fontWeight: 600 }}>{fmt(inputs.downPaymentAmount)}</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: 12, color: "#6b7280" }}>Total Interest Paid</div>
+                  <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>Total Interest Paid</div>
                   <div style={{ fontSize: 18, fontWeight: 600, color: "#dc2626" }}>
                     {fmt(calculation.totalInterestPaid)}
                   </div>
                 </div>
                 <div>
-                  <div style={{ fontSize: 12, color: "#6b7280" }}>Total Cost of Loan</div>
+                  <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>Total Cost of Loan</div>
                   <div style={{ fontSize: 18, fontWeight: 600 }}>
                     {fmt(calculation.loanAmount + calculation.totalInterestPaid)}
                   </div>
@@ -1052,8 +1052,8 @@ export default function MortgageCalculatorClient() {
                 style={{
                   flex: "1 1 45%",
                   padding: "12px 20px",
-                  background: "#f3f4f6",
-                  border: "1px solid #d1d5db",
+                  background: "hsl(var(--muted))",
+                  border: "1px solid hsl(var(--border))",
                   borderRadius: 8,
                   fontWeight: 600,
                   cursor: "pointer",
@@ -1121,8 +1121,8 @@ export default function MortgageCalculatorClient() {
           <div
             style={{
               padding: 24,
-              background: "#fff",
-              border: "1px solid #e5e7eb",
+              background: "hsl(var(--card))",
+              border: "1px solid hsl(var(--border))",
               borderRadius: 12,
             }}
           >
@@ -1161,8 +1161,8 @@ export default function MortgageCalculatorClient() {
           <div
             style={{
               padding: 24,
-              background: "#fff",
-              border: "1px solid #e5e7eb",
+              background: "hsl(var(--card))",
+              border: "1px solid hsl(var(--border))",
               borderRadius: 12,
             }}
           >
@@ -1198,40 +1198,40 @@ export default function MortgageCalculatorClient() {
         {/* Equity Accumulation & Sale Analysis */}
         <div style={{ display: "grid", gridTemplateColumns: "auto auto", gap: 16, marginTop: 24, marginBottom: 8 }}>
           <div>
-            <label style={{ fontSize: 12, fontWeight: 600, color: "#374151", marginRight: 8 }}>Annual Appreciation (%)</label>
+            <label style={{ fontSize: 12, fontWeight: 600, color: "hsl(var(--foreground))", marginRight: 8 }}>Annual Appreciation (%)</label>
             <input
               type="number"
               value={appreciationRate}
               onChange={(e) => setAppreciationRate(parseFloat(e.target.value) || 0)}
               step={0.5}
-              style={{ width: 70, padding: "4px 8px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 13 }}
+              style={{ width: 70, padding: "4px 8px", border: "1px solid hsl(var(--border))", borderRadius: 6, fontSize: 13 }}
             />
           </div>
           <div>
-            <label style={{ fontSize: 12, fontWeight: 600, color: "#374151", marginRight: 8 }}>Selling Costs (%)</label>
+            <label style={{ fontSize: 12, fontWeight: 600, color: "hsl(var(--foreground))", marginRight: 8 }}>Selling Costs (%)</label>
             <input
               type="number"
               value={sellingCostPercent}
               onChange={(e) => setSellingCostPercent(parseFloat(e.target.value) || 0)}
               step={0.5}
-              style={{ width: 70, padding: "4px 8px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 13 }}
+              style={{ width: 70, padding: "4px 8px", border: "1px solid hsl(var(--border))", borderRadius: 6, fontSize: 13 }}
             />
           </div>
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
           {/* Equity Accumulation */}
-          <div style={{ padding: 24, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12 }}>
+          <div style={{ padding: 24, background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12 }}>
             <h3 style={{ margin: "0 0 16px 0", fontSize: 14, fontWeight: 700, color: "#2563eb", letterSpacing: 0.5 }}>
               EQUITY ACCUMULATION
             </h3>
             <table style={{ width: "100%", fontSize: 12, borderCollapse: "collapse" }}>
               <thead>
                 <tr style={{ borderBottom: "2px solid #e5e7eb" }}>
-                  <th style={{ textAlign: "left", padding: "6px 4px", color: "#6b7280" }}>Year</th>
-                  <th style={{ textAlign: "right", padding: "6px 4px", color: "#6b7280" }}>Property Value</th>
-                  <th style={{ textAlign: "right", padding: "6px 4px", color: "#6b7280" }}>Loan Balance</th>
-                  <th style={{ textAlign: "right", padding: "6px 4px", color: "#6b7280" }}>LTV</th>
+                  <th style={{ textAlign: "left", padding: "6px 4px", color: "hsl(var(--muted-foreground))" }}>Year</th>
+                  <th style={{ textAlign: "right", padding: "6px 4px", color: "hsl(var(--muted-foreground))" }}>Property Value</th>
+                  <th style={{ textAlign: "right", padding: "6px 4px", color: "hsl(var(--muted-foreground))" }}>Loan Balance</th>
+                  <th style={{ textAlign: "right", padding: "6px 4px", color: "hsl(var(--muted-foreground))" }}>LTV</th>
                   <th style={{ textAlign: "right", padding: "6px 4px", color: "#2563eb", fontWeight: 700 }}>Equity</th>
                 </tr>
               </thead>
@@ -1247,23 +1247,23 @@ export default function MortgageCalculatorClient() {
                 ))}
               </tbody>
             </table>
-            <div style={{ marginTop: 8, fontSize: 11, color: "#9ca3af" }}>
+            <div style={{ marginTop: 8, fontSize: 11, color: "hsl(var(--muted-foreground))" }}>
               Based on {appreciationRate}% annual appreciation
             </div>
           </div>
 
           {/* Sale Analysis */}
-          <div style={{ padding: 24, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12 }}>
+          <div style={{ padding: 24, background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12 }}>
             <h3 style={{ margin: "0 0 16px 0", fontSize: 14, fontWeight: 700, color: "#2563eb", letterSpacing: 0.5 }}>
               SALE ANALYSIS
             </h3>
             <table style={{ width: "100%", fontSize: 12, borderCollapse: "collapse" }}>
               <thead>
                 <tr style={{ borderBottom: "2px solid #e5e7eb" }}>
-                  <th style={{ textAlign: "left", padding: "6px 4px", color: "#6b7280" }}>Year</th>
-                  <th style={{ textAlign: "right", padding: "6px 4px", color: "#6b7280" }}>Sale Price</th>
-                  <th style={{ textAlign: "right", padding: "6px 4px", color: "#6b7280" }}>Selling Costs</th>
-                  <th style={{ textAlign: "right", padding: "6px 4px", color: "#6b7280" }}>Net Proceeds</th>
+                  <th style={{ textAlign: "left", padding: "6px 4px", color: "hsl(var(--muted-foreground))" }}>Year</th>
+                  <th style={{ textAlign: "right", padding: "6px 4px", color: "hsl(var(--muted-foreground))" }}>Sale Price</th>
+                  <th style={{ textAlign: "right", padding: "6px 4px", color: "hsl(var(--muted-foreground))" }}>Selling Costs</th>
+                  <th style={{ textAlign: "right", padding: "6px 4px", color: "hsl(var(--muted-foreground))" }}>Net Proceeds</th>
                   <th style={{ textAlign: "right", padding: "6px 4px", color: "#16a34a", fontWeight: 700 }}>Profit</th>
                 </tr>
               </thead>
@@ -1281,7 +1281,7 @@ export default function MortgageCalculatorClient() {
                 ))}
               </tbody>
             </table>
-            <div style={{ marginTop: 8, fontSize: 11, color: "#9ca3af" }}>
+            <div style={{ marginTop: 8, fontSize: 11, color: "hsl(var(--muted-foreground))" }}>
               Profit = net proceeds minus down payment ({fmt(inputs.purchasePrice - calculation.loanAmount)}). Selling costs at {sellingCostPercent}%.
             </div>
           </div>
@@ -1291,12 +1291,12 @@ export default function MortgageCalculatorClient() {
 
       {/* Amortization Schedule */}
       {showAmortization && activeTab === "calculator" && (
-        <div style={{ marginTop: 32, padding: 24, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12 }}>
+        <div style={{ marginTop: 32, padding: 24, background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12 }}>
           <h2 style={{ margin: "0 0 16px 0", fontSize: 20, fontWeight: 700 }}>Amortization Schedule</h2>
           <div style={{ maxHeight: 500, overflowY: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
               <thead>
-                <tr style={{ background: "#f9fafb", position: "sticky", top: 0 }}>
+                <tr style={{ background: "hsl(var(--muted))", position: "sticky", top: 0 }}>
                   <th style={{ padding: 10, textAlign: "left", borderBottom: "2px solid #e5e7eb" }}>Month</th>
                   <th style={{ padding: 10, textAlign: "right", borderBottom: "2px solid #e5e7eb" }}>Payment</th>
                   <th style={{ padding: 10, textAlign: "right", borderBottom: "2px solid #e5e7eb" }}>Principal</th>
@@ -1322,7 +1322,7 @@ export default function MortgageCalculatorClient() {
 
       {/* Quick Comparison */}
       {activeTab === "calculator" && (
-        <div style={{ marginTop: 32, padding: 24, background: "#f9fafb", borderRadius: 12 }}>
+        <div style={{ marginTop: 32, padding: 24, background: "hsl(var(--muted))", borderRadius: 12 }}>
           <h2 style={{ margin: "0 0 16px 0", fontSize: 18, fontWeight: 700 }}>Loan Term Comparison</h2>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
             {[15, 20, 30].map((term) => {
@@ -1351,9 +1351,9 @@ export default function MortgageCalculatorClient() {
                   <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 8 }}>
                     {term}-Year Loan {isCurrent && "(Current)"}
                   </div>
-                  <div style={{ fontSize: 12, color: "#6b7280" }}>Monthly P&I</div>
+                  <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>Monthly P&I</div>
                   <div style={{ fontSize: 18, fontWeight: 600 }}>{fmtDecimal(monthlyPI)}</div>
-                  <div style={{ fontSize: 12, color: "#6b7280", marginTop: 8 }}>Total Interest</div>
+                  <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 8 }}>Total Interest</div>
                   <div style={{ fontSize: 14, fontWeight: 600, color: "#dc2626" }}>{fmt(totalInterest)}</div>
                 </div>
               );
@@ -1376,7 +1376,7 @@ export default function MortgageCalculatorClient() {
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32 }}>
             {/* Affordability Inputs */}
-            <div style={{ padding: 24, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12 }}>
+            <div style={{ padding: 24, background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12 }}>
               <h2 style={{ margin: "0 0 20px 0", fontSize: 18, fontWeight: 700 }}>Your Budget</h2>
 
               {/* Monthly Budget */}
@@ -1391,7 +1391,7 @@ export default function MortgageCalculatorClient() {
                       left: 12,
                       top: "50%",
                       transform: "translateY(-50%)",
-                      color: "#6b7280",
+                      color: "hsl(var(--muted-foreground))",
                     }}
                   >
                     $
@@ -1410,7 +1410,7 @@ export default function MortgageCalculatorClient() {
                     }}
                   />
                 </div>
-                <p style={{ margin: "8px 0 0 0", fontSize: 12, color: "#6b7280" }}>
+                <p style={{ margin: "8px 0 0 0", fontSize: 12, color: "hsl(var(--muted-foreground))" }}>
                   Total amount you can spend on housing each month (PITI + HOA)
                 </p>
               </div>
@@ -1438,7 +1438,7 @@ export default function MortgageCalculatorClient() {
                     step="0.125"
                     value={affordInputs.interestRate}
                     onChange={(e) => setAffordInputs((prev) => ({ ...prev, interestRate: Number(e.target.value) }))}
-                    style={{ width: "100%", padding: 10, border: "1px solid #d1d5db", borderRadius: 6, fontSize: 16 }}
+                    style={{ width: "100%", padding: 10, border: "1px solid hsl(var(--border))", borderRadius: 6, fontSize: 16 }}
                   />
                 </div>
                 <div>
@@ -1446,7 +1446,7 @@ export default function MortgageCalculatorClient() {
                   <select
                     value={affordInputs.loanTermYears}
                     onChange={(e) => setAffordInputs((prev) => ({ ...prev, loanTermYears: Number(e.target.value) }))}
-                    style={{ width: "100%", padding: 10, border: "1px solid #d1d5db", borderRadius: 6, fontSize: 16 }}
+                    style={{ width: "100%", padding: 10, border: "1px solid hsl(var(--border))", borderRadius: 6, fontSize: 16 }}
                   >
                     <option value={30}>30 years</option>
                     <option value={20}>20 years</option>
@@ -1472,7 +1472,7 @@ export default function MortgageCalculatorClient() {
                       includePmi: dp < 20,
                     }));
                   }}
-                  style={{ width: "100%", padding: 10, border: "1px solid #d1d5db", borderRadius: 6, fontSize: 16 }}
+                  style={{ width: "100%", padding: 10, border: "1px solid hsl(var(--border))", borderRadius: 6, fontSize: 16 }}
                 />
               </div>
 
@@ -1499,9 +1499,9 @@ export default function MortgageCalculatorClient() {
                     step="0.1"
                     value={affordInputs.propertyTaxRate}
                     onChange={(e) => setAffordInputs((prev) => ({ ...prev, propertyTaxRate: Number(e.target.value) }))}
-                    style={{ width: "100%", padding: 10, border: "1px solid #d1d5db", borderRadius: 6, fontSize: 16 }}
+                    style={{ width: "100%", padding: 10, border: "1px solid hsl(var(--border))", borderRadius: 6, fontSize: 16 }}
                   />
-                  <div style={{ fontSize: 11, color: "#6b7280", marginTop: 4 }}>Annual % of home value</div>
+                  <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", marginTop: 4 }}>Annual % of home value</div>
                 </div>
                 <div>
                   <label style={{ display: "block", fontSize: 13, fontWeight: 600, marginBottom: 6 }}>
@@ -1512,9 +1512,9 @@ export default function MortgageCalculatorClient() {
                     step="0.1"
                     value={affordInputs.insuranceRate}
                     onChange={(e) => setAffordInputs((prev) => ({ ...prev, insuranceRate: Number(e.target.value) }))}
-                    style={{ width: "100%", padding: 10, border: "1px solid #d1d5db", borderRadius: 6, fontSize: 16 }}
+                    style={{ width: "100%", padding: 10, border: "1px solid hsl(var(--border))", borderRadius: 6, fontSize: 16 }}
                   />
-                  <div style={{ fontSize: 11, color: "#6b7280", marginTop: 4 }}>Annual % of home value</div>
+                  <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", marginTop: 4 }}>Annual % of home value</div>
                 </div>
               </div>
 
@@ -1527,7 +1527,7 @@ export default function MortgageCalculatorClient() {
                   type="number"
                   value={affordInputs.hoaMonthly}
                   onChange={(e) => setAffordInputs((prev) => ({ ...prev, hoaMonthly: Number(e.target.value) }))}
-                  style={{ width: "100%", padding: 10, border: "1px solid #d1d5db", borderRadius: 6, fontSize: 16 }}
+                  style={{ width: "100%", padding: 10, border: "1px solid hsl(var(--border))", borderRadius: 6, fontSize: 16 }}
                 />
               </div>
 
@@ -1552,7 +1552,7 @@ export default function MortgageCalculatorClient() {
                         step="0.1"
                         value={affordInputs.pmiRate}
                         onChange={(e) => setAffordInputs((prev) => ({ ...prev, pmiRate: Number(e.target.value) }))}
-                        style={{ width: 100, padding: 6, border: "1px solid #d1d5db", borderRadius: 4 }}
+                        style={{ width: 100, padding: 6, border: "1px solid hsl(var(--border))", borderRadius: 4 }}
                       />
                     </div>
                   )}
@@ -1581,15 +1581,15 @@ export default function MortgageCalculatorClient() {
 
               {/* Key Numbers */}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 20 }}>
-                <div style={{ padding: 16, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 8 }}>
-                  <div style={{ fontSize: 12, color: "#6b7280" }}>Down Payment Needed</div>
+                <div style={{ padding: 16, background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }}>
+                  <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>Down Payment Needed</div>
                   <div style={{ fontSize: 20, fontWeight: 600 }}>{fmt(affordabilityCalc.requiredDownPayment)}</div>
-                  <div style={{ fontSize: 12, color: "#6b7280" }}>({affordInputs.downPaymentPercent}%)</div>
+                  <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>({affordInputs.downPaymentPercent}%)</div>
                 </div>
-                <div style={{ padding: 16, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 8 }}>
-                  <div style={{ fontSize: 12, color: "#6b7280" }}>Loan Amount</div>
+                <div style={{ padding: 16, background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }}>
+                  <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>Loan Amount</div>
                   <div style={{ fontSize: 20, fontWeight: 600 }}>{fmt(affordabilityCalc.maxLoanAmount)}</div>
-                  <div style={{ fontSize: 12, color: "#6b7280" }}>
+                  <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>
                     ({100 - affordInputs.downPaymentPercent}% financed)
                   </div>
                 </div>
@@ -1599,8 +1599,8 @@ export default function MortgageCalculatorClient() {
               <div
                 style={{
                   padding: 24,
-                  background: "#fff",
-                  border: "1px solid #e5e7eb",
+                  background: "hsl(var(--card))",
+                  border: "1px solid hsl(var(--border))",
                   borderRadius: 12,
                   marginBottom: 20,
                 }}
@@ -1642,7 +1642,7 @@ export default function MortgageCalculatorClient() {
                         </td>
                       </tr>
                     )}
-                    <tr style={{ background: "#f9fafb" }}>
+                    <tr style={{ background: "hsl(var(--muted))" }}>
                       <td style={{ padding: "12px 0", fontWeight: 700 }}>Total</td>
                       <td style={{ padding: "12px 0", textAlign: "right", fontWeight: 700, fontSize: 18 }}>
                         {fmtDecimal(affordabilityCalc.totalMonthly)}
@@ -1690,27 +1690,27 @@ export default function MortgageCalculatorClient() {
           </div>
 
           {/* Affordability Tips */}
-          <div style={{ marginTop: 32, padding: 24, background: "#f9fafb", borderRadius: 12 }}>
+          <div style={{ marginTop: 32, padding: 24, background: "hsl(var(--muted))", borderRadius: 12 }}>
             <h3 style={{ margin: "0 0 16px 0", fontSize: 16, fontWeight: 700 }}>Tips for Affordability</h3>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
-              <div style={{ padding: 16, background: "#fff", borderRadius: 8, border: "1px solid #e5e7eb" }}>
+              <div style={{ padding: 16, background: "hsl(var(--card))", borderRadius: 8, border: "1px solid hsl(var(--border))" }}>
                 <div style={{ fontSize: 24, marginBottom: 8 }}>28%</div>
                 <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 4 }}>Front-End Ratio</div>
-                <p style={{ fontSize: 12, color: "#6b7280", margin: 0 }}>
+                <p style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", margin: 0 }}>
                   Housing costs should be less than 28% of gross monthly income
                 </p>
               </div>
-              <div style={{ padding: 16, background: "#fff", borderRadius: 8, border: "1px solid #e5e7eb" }}>
+              <div style={{ padding: 16, background: "hsl(var(--card))", borderRadius: 8, border: "1px solid hsl(var(--border))" }}>
                 <div style={{ fontSize: 24, marginBottom: 8 }}>36%</div>
                 <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 4 }}>Back-End Ratio</div>
-                <p style={{ fontSize: 12, color: "#6b7280", margin: 0 }}>
+                <p style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", margin: 0 }}>
                   Total debt payments should be less than 36% of gross monthly income
                 </p>
               </div>
-              <div style={{ padding: 16, background: "#fff", borderRadius: 8, border: "1px solid #e5e7eb" }}>
+              <div style={{ padding: 16, background: "hsl(var(--card))", borderRadius: 8, border: "1px solid hsl(var(--border))" }}>
                 <div style={{ fontSize: 24, marginBottom: 8 }}>3-6 mo</div>
                 <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 4 }}>Emergency Fund</div>
-                <p style={{ fontSize: 12, color: "#6b7280", margin: 0 }}>
+                <p style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", margin: 0 }}>
                   Keep 3-6 months of expenses saved after down payment
                 </p>
               </div>

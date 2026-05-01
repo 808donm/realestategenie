@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import MortgageCalculatorClient from "./mortgage-calculator.client";
 
 export default function MortgageCalculatorPage() {
@@ -14,7 +14,7 @@ export default function MortgageCalculatorPage() {
             href="/app/analyzers/investment"
             style={{
               padding: "6px 12px",
-              background: "#f3f4f6",
+              background: "hsl(var(--muted))",
               borderRadius: 6,
               fontSize: 13,
               textDecoration: "none",
@@ -27,7 +27,7 @@ export default function MortgageCalculatorPage() {
             href="/app/analyzers/brrr"
             style={{
               padding: "6px 12px",
-              background: "#f3f4f6",
+              background: "hsl(var(--muted))",
               borderRadius: 6,
               fontSize: 13,
               textDecoration: "none",
@@ -40,7 +40,7 @@ export default function MortgageCalculatorPage() {
             href="/app/analyzers/flip"
             style={{
               padding: "6px 12px",
-              background: "#f3f4f6",
+              background: "hsl(var(--muted))",
               borderRadius: 6,
               fontSize: 13,
               textDecoration: "none",

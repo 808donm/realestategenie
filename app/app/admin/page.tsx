@@ -1,4 +1,4 @@
-import { requireAdmin } from "@/lib/auth/admin-check";
+﻿import { requireAdmin } from "@/lib/auth/admin-check";
 import { supabaseServer } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import AdminUsageBanner from "../components/admin-usage-banner";
@@ -82,7 +82,7 @@ export default async function AdminOverviewPage() {
     <div>
       <div style={{ marginBottom: 32 }}>
         <h1 style={{ fontSize: 32, fontWeight: 800, margin: 0 }}>Admin Overview</h1>
-        <p style={{ color: "#6b7280", marginTop: 8 }}>Real Estate Genie system statistics</p>
+        <p style={{ color: "hsl(var(--muted-foreground))", marginTop: 8 }}>Real Estate Genie system statistics</p>
       </div>
 
       {/* Sales Opportunities */}
@@ -133,7 +133,7 @@ export default async function AdminOverviewPage() {
         />
       </div>
 
-      <div style={{ background: "white", borderRadius: 12, padding: 24, border: "1px solid #e5e7eb" }}>
+      <div style={{ background: "white", borderRadius: 12, padding: 24, border: "1px solid hsl(var(--border))" }}>
         <h2 style={{ fontSize: 18, fontWeight: 700, margin: "0 0 16px 0" }}>Quick Actions</h2>
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
           <QuickActionButton href="/app/admin/users">Manage Users</QuickActionButton>
@@ -156,7 +156,7 @@ function StatCard({ title, value, icon, color }: { title: string; value: number;
         background: "white",
         borderRadius: 12,
         padding: 24,
-        border: "1px solid #e5e7eb",
+        border: "1px solid hsl(var(--border))",
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
@@ -175,7 +175,7 @@ function StatCard({ title, value, icon, color }: { title: string; value: number;
           {icon}
         </div>
         <div>
-          <div style={{ fontSize: 12, color: "#6b7280", fontWeight: 500 }}>{title}</div>
+          <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", fontWeight: 500 }}>{title}</div>
           <div style={{ fontSize: 28, fontWeight: 800, color }}>{value}</div>
         </div>
       </div>

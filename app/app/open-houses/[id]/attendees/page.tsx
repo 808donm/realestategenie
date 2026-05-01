@@ -44,7 +44,7 @@ export default async function EventAttendeesPage({ params }: { params: Promise<{
 
       {error && <p style={{ color: "crimson" }}>{error.message}</p>}
 
-      <div style={{ marginTop: 16, padding: 12, border: "1px solid #e6e6e6", borderRadius: 14, background: "#fff" }}>
+      <div style={{ marginTop: 16, padding: 12, border: "1px solid #e6e6e6", borderRadius: 14, background: "hsl(var(--card))" }}>
         <strong>Total check-ins:</strong> {(leads ?? []).length}
       </div>
 
@@ -52,7 +52,7 @@ export default async function EventAttendeesPage({ params }: { params: Promise<{
         {(leads ?? []).map((l) => {
           const p: any = l.payload ?? {};
           return (
-            <div key={l.id} style={{ padding: 12, border: "1px solid #e6e6e6", borderRadius: 14, background: "#fff" }}>
+            <div key={l.id} style={{ padding: 12, border: "1px solid #e6e6e6", borderRadius: 14, background: "hsl(var(--card))" }}>
               <div style={{ fontWeight: 900 }}>
                 {p.name || "Lead"}{" "}
                 <span style={{ fontWeight: 600, opacity: 0.7, fontSize: 12 }}>

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useMemo, useCallback } from "react";
 import * as XLSX from "xlsx";
@@ -203,7 +203,7 @@ export default function CommissionSplitClient() {
   const inputStyle: React.CSSProperties = {
     width: "100%",
     padding: "10px 12px",
-    border: "1px solid #d1d5db",
+    border: "1px solid hsl(var(--border))",
     borderRadius: 6,
     fontSize: 16,
   };
@@ -216,7 +216,7 @@ export default function CommissionSplitClient() {
         <MLSImport onImport={handleMLSImport} />
 
         <div
-          style={{ padding: 24, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, marginBottom: 20 }}
+          style={{ padding: 24, background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12, marginBottom: 20 }}
         >
           <h2 style={{ margin: "0 0 20px 0", fontSize: 18, fontWeight: 700 }}>Deal Details</h2>
 
@@ -239,14 +239,14 @@ export default function CommissionSplitClient() {
               onChange={(e) => handleChange("commissionPercent", Number(e.target.value))}
               style={inputStyle}
             />
-            <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>
+            <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 4 }}>
               Your side only = {fmt(analysis.grossCommission)}
             </div>
           </div>
         </div>
 
         <div
-          style={{ padding: 24, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, marginBottom: 20 }}
+          style={{ padding: 24, background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12, marginBottom: 20 }}
         >
           <h2 style={{ margin: "0 0 20px 0", fontSize: 18, fontWeight: 700 }}>Split & Cap</h2>
 
@@ -278,7 +278,7 @@ export default function CommissionSplitClient() {
               onChange={(e) => handleChange("agentSplitPercent", Number(e.target.value))}
               style={inputStyle}
             />
-            <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>
+            <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 4 }}>
               Agent gets {inputs.agentSplitPercent}%, brokerage gets {100 - inputs.agentSplitPercent}%
             </div>
           </div>
@@ -292,7 +292,7 @@ export default function CommissionSplitClient() {
                 onChange={(e) => handleChange("brokerageCap", Number(e.target.value))}
                 style={inputStyle}
               />
-              <div style={{ fontSize: 11, color: "#6b7280", marginTop: 4 }}>0 = no cap</div>
+              <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", marginTop: 4 }}>0 = no cap</div>
             </div>
             <div>
               <label style={labelStyle}>Already Paid to Cap ($)</label>
@@ -302,12 +302,12 @@ export default function CommissionSplitClient() {
                 onChange={(e) => handleChange("capAlreadyPaid", Number(e.target.value))}
                 style={inputStyle}
               />
-              <div style={{ fontSize: 11, color: "#6b7280", marginTop: 4 }}>YTD toward cap</div>
+              <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", marginTop: 4 }}>YTD toward cap</div>
             </div>
           </div>
         </div>
 
-        <div style={{ padding: 24, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12 }}>
+        <div style={{ padding: 24, background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12 }}>
           <h2 style={{ margin: "0 0 20px 0", fontSize: 18, fontWeight: 700 }}>Fees & Overrides</h2>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
@@ -340,7 +340,7 @@ export default function CommissionSplitClient() {
               onChange={(e) => handleChange("teamOverridePercent", Number(e.target.value))}
               style={inputStyle}
             />
-            <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>
+            <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 4 }}>
               % of agent share that goes to team lead
               {inputs.teamOverridePercent > 0 ? ` = ${fmt(analysis.teamOverrideAmount)}` : ""}
             </div>
@@ -372,19 +372,19 @@ export default function CommissionSplitClient() {
         <div
           style={{
             padding: 20,
-            background: "#f9fafb",
-            border: "1px solid #e5e7eb",
+            background: "hsl(var(--muted))",
+            border: "1px solid hsl(var(--border))",
             borderRadius: 12,
             marginBottom: 20,
           }}
         >
-          <div style={{ fontSize: 13, color: "#6b7280" }}>Brokerage Gross</div>
+          <div style={{ fontSize: 13, color: "hsl(var(--muted-foreground))" }}>Brokerage Gross</div>
           <div style={{ fontSize: 28, fontWeight: 700 }}>{fmt(analysis.brokerageGross)}</div>
         </div>
 
         {/* Waterfall Breakdown */}
         <div
-          style={{ padding: 24, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, marginBottom: 20 }}
+          style={{ padding: 24, background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12, marginBottom: 20 }}
         >
           <h3 style={{ margin: "0 0 16px 0", fontSize: 16, fontWeight: 700 }}>Commission Waterfall</h3>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
@@ -418,7 +418,7 @@ export default function CommissionSplitClient() {
                 <tr style={{ borderBottom: "1px solid #e5e7eb" }}>
                   <td style={{ padding: "10px 0" }}>
                     Fees
-                    <span style={{ fontSize: 12, color: "#6b7280", marginLeft: 6 }}>
+                    <span style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginLeft: 6 }}>
                       ({fmt(inputs.transactionFee)} txn + {fmt(inputs.otherFees)} other)
                     </span>
                   </td>
@@ -439,7 +439,7 @@ export default function CommissionSplitClient() {
 
         {/* Visual Split Bar */}
         <div
-          style={{ padding: 24, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, marginBottom: 20 }}
+          style={{ padding: 24, background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12, marginBottom: 20 }}
         >
           <h3 style={{ margin: "0 0 16px 0", fontSize: 16, fontWeight: 700 }}>Split Visualization</h3>
           <div style={{ display: "flex", borderRadius: 8, overflow: "hidden", height: 32, marginBottom: 12 }}>
@@ -559,7 +559,7 @@ export default function CommissionSplitClient() {
               />
             </div>
             {analysis.capRemaining > 0 && (
-              <div style={{ fontSize: 12, color: "#6b7280", marginTop: 6 }}>
+              <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 6 }}>
                 {fmt(analysis.capRemaining)} remaining until cap
               </div>
             )}

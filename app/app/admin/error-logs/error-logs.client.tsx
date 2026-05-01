@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useMemo } from "react";
 
@@ -118,10 +118,10 @@ export default function ErrorLogsClient({ errorLogs }: { errorLogs: ErrorLog[] }
             padding: 20,
             background: "white",
             borderRadius: 8,
-            border: "1px solid #e5e7eb",
+            border: "1px solid hsl(var(--border))",
           }}
         >
-          <div style={{ fontSize: 14, color: "#6b7280", marginBottom: 4 }}>Total Logs</div>
+          <div style={{ fontSize: 14, color: "hsl(var(--muted-foreground))", marginBottom: 4 }}>Total Logs</div>
           <div style={{ fontSize: 28, fontWeight: 700 }}>{stats.total}</div>
         </div>
 
@@ -130,10 +130,10 @@ export default function ErrorLogsClient({ errorLogs }: { errorLogs: ErrorLog[] }
             padding: 20,
             background: "white",
             borderRadius: 8,
-            border: "1px solid #e5e7eb",
+            border: "1px solid hsl(var(--border))",
           }}
         >
-          <div style={{ fontSize: 14, color: "#6b7280", marginBottom: 4 }}>Critical</div>
+          <div style={{ fontSize: 14, color: "hsl(var(--muted-foreground))", marginBottom: 4 }}>Critical</div>
           <div style={{ fontSize: 28, fontWeight: 700, color: "#dc2626" }}>{stats.critical}</div>
         </div>
 
@@ -142,10 +142,10 @@ export default function ErrorLogsClient({ errorLogs }: { errorLogs: ErrorLog[] }
             padding: 20,
             background: "white",
             borderRadius: 8,
-            border: "1px solid #e5e7eb",
+            border: "1px solid hsl(var(--border))",
           }}
         >
-          <div style={{ fontSize: 14, color: "#6b7280", marginBottom: 4 }}>Errors</div>
+          <div style={{ fontSize: 14, color: "hsl(var(--muted-foreground))", marginBottom: 4 }}>Errors</div>
           <div style={{ fontSize: 28, fontWeight: 700, color: "#ef4444" }}>{stats.error}</div>
         </div>
 
@@ -154,10 +154,10 @@ export default function ErrorLogsClient({ errorLogs }: { errorLogs: ErrorLog[] }
             padding: 20,
             background: "white",
             borderRadius: 8,
-            border: "1px solid #e5e7eb",
+            border: "1px solid hsl(var(--border))",
           }}
         >
-          <div style={{ fontSize: 14, color: "#6b7280", marginBottom: 4 }}>Warnings</div>
+          <div style={{ fontSize: 14, color: "hsl(var(--muted-foreground))", marginBottom: 4 }}>Warnings</div>
           <div style={{ fontSize: 28, fontWeight: 700, color: "#f59e0b" }}>{stats.warning}</div>
         </div>
       </div>
@@ -168,7 +168,7 @@ export default function ErrorLogsClient({ errorLogs }: { errorLogs: ErrorLog[] }
           background: "white",
           borderRadius: 8,
           padding: 20,
-          border: "1px solid #e5e7eb",
+          border: "1px solid hsl(var(--border))",
           marginBottom: 20,
         }}
       >
@@ -190,7 +190,7 @@ export default function ErrorLogsClient({ errorLogs }: { errorLogs: ErrorLog[] }
                 width: "100%",
                 padding: "10px 14px",
                 borderRadius: 6,
-                border: "1px solid #d1d5db",
+                border: "1px solid hsl(var(--border))",
                 fontSize: 14,
               }}
             />
@@ -202,7 +202,7 @@ export default function ErrorLogsClient({ errorLogs }: { errorLogs: ErrorLog[] }
             style={{
               padding: "10px 14px",
               borderRadius: 6,
-              border: "1px solid #d1d5db",
+              border: "1px solid hsl(var(--border))",
               fontSize: 14,
               background: "white",
             }}
@@ -232,7 +232,7 @@ export default function ErrorLogsClient({ errorLogs }: { errorLogs: ErrorLog[] }
             Auto-refresh (30s)
           </label>
 
-          <div style={{ fontSize: 14, color: "#6b7280" }}>
+          <div style={{ fontSize: 14, color: "hsl(var(--muted-foreground))" }}>
             Showing {filteredLogs.length} of {stats.total} logs
           </div>
         </div>
@@ -243,26 +243,26 @@ export default function ErrorLogsClient({ errorLogs }: { errorLogs: ErrorLog[] }
         style={{
           background: "white",
           borderRadius: 8,
-          border: "1px solid #e5e7eb",
+          border: "1px solid hsl(var(--border))",
           overflow: "hidden",
         }}
       >
         {filteredLogs.length === 0 ? (
-          <div style={{ padding: 40, textAlign: "center", color: "#6b7280" }}>
+          <div style={{ padding: 40, textAlign: "center", color: "hsl(var(--muted-foreground))" }}>
             {searchQuery || severityFilter !== "all" ? "No logs match your filters" : "No error logs found"}
           </div>
         ) : (
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
-                <tr style={{ background: "#f9fafb", borderBottom: "1px solid #e5e7eb" }}>
+                <tr style={{ background: "hsl(var(--muted))", borderBottom: "1px solid #e5e7eb" }}>
                   <th
                     style={{
                       padding: "12px 16px",
                       textAlign: "left",
                       fontSize: 12,
                       fontWeight: 600,
-                      color: "#6b7280",
+                      color: "hsl(var(--muted-foreground))",
                       textTransform: "uppercase",
                     }}
                   >
@@ -274,7 +274,7 @@ export default function ErrorLogsClient({ errorLogs }: { errorLogs: ErrorLog[] }
                       textAlign: "left",
                       fontSize: 12,
                       fontWeight: 600,
-                      color: "#6b7280",
+                      color: "hsl(var(--muted-foreground))",
                       textTransform: "uppercase",
                     }}
                   >
@@ -286,7 +286,7 @@ export default function ErrorLogsClient({ errorLogs }: { errorLogs: ErrorLog[] }
                       textAlign: "left",
                       fontSize: 12,
                       fontWeight: 600,
-                      color: "#6b7280",
+                      color: "hsl(var(--muted-foreground))",
                       textTransform: "uppercase",
                     }}
                   >
@@ -298,7 +298,7 @@ export default function ErrorLogsClient({ errorLogs }: { errorLogs: ErrorLog[] }
                       textAlign: "left",
                       fontSize: 12,
                       fontWeight: 600,
-                      color: "#6b7280",
+                      color: "hsl(var(--muted-foreground))",
                       textTransform: "uppercase",
                     }}
                   >
@@ -310,7 +310,7 @@ export default function ErrorLogsClient({ errorLogs }: { errorLogs: ErrorLog[] }
                       textAlign: "left",
                       fontSize: 12,
                       fontWeight: 600,
-                      color: "#6b7280",
+                      color: "hsl(var(--muted-foreground))",
                       textTransform: "uppercase",
                     }}
                   >
@@ -322,7 +322,7 @@ export default function ErrorLogsClient({ errorLogs }: { errorLogs: ErrorLog[] }
                       textAlign: "left",
                       fontSize: 12,
                       fontWeight: 600,
-                      color: "#6b7280",
+                      color: "hsl(var(--muted-foreground))",
                       textTransform: "uppercase",
                     }}
                   ></th>
@@ -358,7 +358,7 @@ export default function ErrorLogsClient({ errorLogs }: { errorLogs: ErrorLog[] }
                         style={{
                           padding: "12px 16px",
                           fontSize: 14,
-                          color: "#6b7280",
+                          color: "hsl(var(--muted-foreground))",
                           whiteSpace: "nowrap",
                         }}
                       >
@@ -389,7 +389,7 @@ export default function ErrorLogsClient({ errorLogs }: { errorLogs: ErrorLog[] }
                         style={{
                           padding: "12px 16px",
                           fontSize: 14,
-                          color: "#6b7280",
+                          color: "hsl(var(--muted-foreground))",
                         }}
                       >
                         {log.agent?.display_name || "-"}
@@ -407,7 +407,7 @@ export default function ErrorLogsClient({ errorLogs }: { errorLogs: ErrorLog[] }
 
                     {/* Expanded Details */}
                     {expandedLog === log.id && (
-                      <tr style={{ background: "#f9fafb" }}>
+                      <tr style={{ background: "hsl(var(--muted))" }}>
                         <td colSpan={6} style={{ padding: 20 }}>
                           <div style={{ display: "grid", gap: 16 }}>
                             <div>
@@ -415,7 +415,7 @@ export default function ErrorLogsClient({ errorLogs }: { errorLogs: ErrorLog[] }
                                 style={{
                                   fontSize: 12,
                                   fontWeight: 600,
-                                  color: "#6b7280",
+                                  color: "hsl(var(--muted-foreground))",
                                   marginBottom: 4,
                                 }}
                               >
@@ -442,7 +442,7 @@ export default function ErrorLogsClient({ errorLogs }: { errorLogs: ErrorLog[] }
                                   style={{
                                     fontSize: 12,
                                     fontWeight: 600,
-                                    color: "#6b7280",
+                                    color: "hsl(var(--muted-foreground))",
                                     marginBottom: 4,
                                   }}
                                 >
@@ -468,7 +468,7 @@ export default function ErrorLogsClient({ errorLogs }: { errorLogs: ErrorLog[] }
                                   style={{
                                     fontSize: 12,
                                     fontWeight: 600,
-                                    color: "#6b7280",
+                                    color: "hsl(var(--muted-foreground))",
                                     marginBottom: 4,
                                   }}
                                 >
@@ -498,7 +498,7 @@ export default function ErrorLogsClient({ errorLogs }: { errorLogs: ErrorLog[] }
                                   style={{
                                     fontSize: 12,
                                     fontWeight: 600,
-                                    color: "#6b7280",
+                                    color: "hsl(var(--muted-foreground))",
                                     marginBottom: 4,
                                   }}
                                 >
@@ -524,7 +524,7 @@ export default function ErrorLogsClient({ errorLogs }: { errorLogs: ErrorLog[] }
                                 style={{
                                   fontSize: 12,
                                   fontWeight: 600,
-                                  color: "#6b7280",
+                                  color: "hsl(var(--muted-foreground))",
                                   marginBottom: 4,
                                 }}
                               >

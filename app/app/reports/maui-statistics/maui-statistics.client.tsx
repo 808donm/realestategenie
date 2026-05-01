@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useMemo } from "react";
 import jsPDF from "jspdf";
@@ -211,8 +211,8 @@ export default function MauiStatisticsClient() {
 
   const cardStyle: React.CSSProperties = {
     padding: 20,
-    background: "#fff",
-    border: "1px solid #e5e7eb",
+    background: "hsl(var(--card))",
+    border: "1px solid hsl(var(--border))",
     borderRadius: 12,
   };
 
@@ -271,10 +271,10 @@ export default function MauiStatisticsClient() {
             padding: "6px 14px",
             fontSize: 12,
             fontWeight: 600,
-            border: "1px solid #d1d5db",
+            border: "1px solid hsl(var(--border))",
             borderRadius: 6,
-            background: "#fff",
-            color: "#374151",
+            background: "hsl(var(--card))",
+            color: "hsl(var(--foreground))",
             cursor: "pointer",
           }}
         >
@@ -307,28 +307,28 @@ export default function MauiStatisticsClient() {
         }}
       >
         <div style={{ ...cardStyle, borderLeft: `4px solid ${COLORS.sf}` }}>
-          <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 600 }}>SF Median Price</div>
+          <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>SF Median Price</div>
           <div style={{ fontSize: 26, fontWeight: 800 }}>{fmt(sf.medianPrice)}</div>
           <div style={{ fontSize: 13, color: yoyColor(sf.medianPriceYoY), fontWeight: 600 }}>
             {yoyText(sf.medianPriceYoY)} YoY
           </div>
         </div>
         <div style={{ ...cardStyle, borderLeft: `4px solid ${COLORS.condo}` }}>
-          <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 600 }}>Condo Median Price</div>
+          <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>Condo Median Price</div>
           <div style={{ fontSize: 26, fontWeight: 800 }}>{fmt(cd.medianPrice)}</div>
           <div style={{ fontSize: 13, color: yoyColor(cd.medianPriceYoY), fontWeight: 600 }}>
             {yoyText(cd.medianPriceYoY)} YoY
           </div>
         </div>
         <div style={{ ...cardStyle, borderLeft: `4px solid ${COLORS.green}` }}>
-          <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 600 }}>Total Closed Sales</div>
+          <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>Total Closed Sales</div>
           <div style={{ fontSize: 26, fontWeight: 800 }}>{sf.closedSales + cd.closedSales}</div>
-          <div style={{ fontSize: 12, color: "#6b7280" }}>
+          <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>
             SF: {sf.closedSales} | Condo: {cd.closedSales}
           </div>
         </div>
         <div style={{ ...cardStyle, borderLeft: `4px solid ${COLORS.purple}` }}>
-          <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 600 }}>Total Pending Sales</div>
+          <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>Total Pending Sales</div>
           <div style={{ fontSize: 26, fontWeight: 800 }}>{sf.pendingSales + cd.pendingSales}</div>
           <div style={{ fontSize: 13, fontWeight: 600 }}>
             <span style={{ color: yoyColor(sf.pendingSalesYoY) }}>SF {yoyText(sf.pendingSalesYoY)}</span>
@@ -348,24 +348,24 @@ export default function MauiStatisticsClient() {
         }}
       >
         <div style={{ ...cardStyle, borderLeft: `4px solid ${COLORS.amber}` }}>
-          <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 600 }}>SF Days on Market</div>
+          <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>SF Days on Market</div>
           <div style={{ fontSize: 26, fontWeight: 800 }}>{sf.dom} days</div>
           <div style={{ fontSize: 13, color: yoyColor(sf.domYoY), fontWeight: 600 }}>{yoyText(sf.domYoY)} YoY</div>
         </div>
         <div style={{ ...cardStyle, borderLeft: `4px solid ${COLORS.amber}` }}>
-          <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 600 }}>Condo Days on Market</div>
+          <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>Condo Days on Market</div>
           <div style={{ fontSize: 26, fontWeight: 800 }}>{cd.dom} days</div>
           <div style={{ fontSize: 13, color: yoyColor(cd.domYoY), fontWeight: 600 }}>{yoyText(cd.domYoY)} YoY</div>
         </div>
         <div style={{ ...cardStyle, borderLeft: "4px solid #6366f1" }}>
-          <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 600 }}>SF Months Supply</div>
+          <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>SF Months Supply</div>
           <div style={{ fontSize: 26, fontWeight: 800 }}>{sf.monthsSupply}</div>
           <div style={{ fontSize: 13, color: yoyColor(sf.monthsSupplyYoY), fontWeight: 600 }}>
             {yoyText(sf.monthsSupplyYoY)} YoY
           </div>
         </div>
         <div style={{ ...cardStyle, borderLeft: "4px solid #6366f1" }}>
-          <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 600 }}>Condo Months Supply</div>
+          <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>Condo Months Supply</div>
           <div style={{ fontSize: 26, fontWeight: 800 }}>{cd.monthsSupply}</div>
           <div style={{ fontSize: 13, color: yoyColor(cd.monthsSupplyYoY), fontWeight: 600 }}>
             {yoyText(cd.monthsSupplyYoY)} YoY
@@ -376,7 +376,7 @@ export default function MauiStatisticsClient() {
       {/* Market Highlights */}
       <div style={{ ...cardStyle, marginBottom: 24 }}>
         <h3 style={{ margin: "0 0 16px 0", fontSize: 16, fontWeight: 700 }}>Market Highlights</h3>
-        <ul style={{ margin: 0, padding: "0 0 0 20px", fontSize: 14, lineHeight: 2, color: "#374151" }}>
+        <ul style={{ margin: 0, padding: "0 0 0 20px", fontSize: 14, lineHeight: 2, color: "hsl(var(--foreground))" }}>
           {data.highlights.map((h, i) => (
             <li key={i}>{h}</li>
           ))}
@@ -586,7 +586,7 @@ export default function MauiStatisticsClient() {
               <Tooltip />
             </PieChart>
           </ResponsiveContainer>
-          <div style={{ textAlign: "center", fontSize: 13, color: "#6b7280" }}>
+          <div style={{ textAlign: "center", fontSize: 13, color: "hsl(var(--muted-foreground))" }}>
             Total: {(sf.inventory + cd.inventory).toLocaleString()} active listings
           </div>
         </div>
@@ -605,7 +605,7 @@ export default function MauiStatisticsClient() {
               </Bar>
             </BarChart>
           </ResponsiveContainer>
-          <div style={{ textAlign: "center", fontSize: 12, color: "#6b7280" }}>6 months = balanced market</div>
+          <div style={{ textAlign: "center", fontSize: 12, color: "hsl(var(--muted-foreground))" }}>6 months = balanced market</div>
         </div>
         <div style={{ ...cardStyle, flex: "1 1 300px" }}>
           <h3 style={{ margin: "0 0 16px 0", fontSize: 16, fontWeight: 700 }}>% of List Price Received</h3>
@@ -622,7 +622,7 @@ export default function MauiStatisticsClient() {
               </Bar>
             </BarChart>
           </ResponsiveContainer>
-          <div style={{ textAlign: "center", fontSize: 12, color: "#6b7280" }}>
+          <div style={{ textAlign: "center", fontSize: 12, color: "hsl(var(--muted-foreground))" }}>
             SF {yoyText(sf.pctListPriceReceivedYoY)} | Condo {yoyText(cd.pctListPriceReceivedYoY)} YoY
           </div>
         </div>
@@ -631,7 +631,7 @@ export default function MauiStatisticsClient() {
       {/* Affordability Index Trend */}
       <div style={{ ...cardStyle, marginBottom: 24 }}>
         <h3 style={{ margin: "0 0 4px 0", fontSize: 16, fontWeight: 700 }}>Housing Affordability Index Trend</h3>
-        <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 16 }}>
+        <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginBottom: 16 }}>
           Higher = more affordable. An index of 120 means median household income is 120% of what&apos;s needed to
           qualify.
         </div>
@@ -718,7 +718,7 @@ export default function MauiStatisticsClient() {
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
           <thead>
             <tr style={{ borderBottom: "2px solid #e5e7eb" }}>
-              <th style={{ padding: "10px 12px", textAlign: "left", fontWeight: 700, fontSize: 12, color: "#6b7280" }}>
+              <th style={{ padding: "10px 12px", textAlign: "left", fontWeight: 700, fontSize: 12, color: "hsl(var(--muted-foreground))" }}>
                 Area
               </th>
               <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 700, fontSize: 12, color: COLORS.sf }}>
@@ -730,13 +730,13 @@ export default function MauiStatisticsClient() {
               <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 700, fontSize: 12, color: COLORS.sf }}>
                 Feb Median
               </th>
-              <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 700, fontSize: 12, color: "#6b7280" }}>
+              <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 700, fontSize: 12, color: "hsl(var(--muted-foreground))" }}>
                 Jan Units
               </th>
-              <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 700, fontSize: 12, color: "#6b7280" }}>
+              <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 700, fontSize: 12, color: "hsl(var(--muted-foreground))" }}>
                 Jan Volume
               </th>
-              <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 700, fontSize: 12, color: "#6b7280" }}>
+              <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 700, fontSize: 12, color: "hsl(var(--muted-foreground))" }}>
                 Jan Median
               </th>
             </tr>
@@ -796,7 +796,7 @@ export default function MauiStatisticsClient() {
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
           <thead>
             <tr style={{ borderBottom: "2px solid #e5e7eb" }}>
-              <th style={{ padding: "10px 12px", textAlign: "left", fontWeight: 700, fontSize: 12, color: "#6b7280" }}>
+              <th style={{ padding: "10px 12px", textAlign: "left", fontWeight: 700, fontSize: 12, color: "hsl(var(--muted-foreground))" }}>
                 Area
               </th>
               <th
@@ -814,13 +814,13 @@ export default function MauiStatisticsClient() {
               >
                 Feb Median
               </th>
-              <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 700, fontSize: 12, color: "#6b7280" }}>
+              <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 700, fontSize: 12, color: "hsl(var(--muted-foreground))" }}>
                 Jan Units
               </th>
-              <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 700, fontSize: 12, color: "#6b7280" }}>
+              <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 700, fontSize: 12, color: "hsl(var(--muted-foreground))" }}>
                 Jan Volume
               </th>
-              <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 700, fontSize: 12, color: "#6b7280" }}>
+              <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 700, fontSize: 12, color: "hsl(var(--muted-foreground))" }}>
                 Jan Median
               </th>
             </tr>
@@ -858,13 +858,13 @@ export default function MauiStatisticsClient() {
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
           <thead>
             <tr style={{ borderBottom: "2px solid #e5e7eb" }}>
-              <th style={{ padding: "10px 12px", textAlign: "left", fontWeight: 700, fontSize: 12, color: "#6b7280" }}>
+              <th style={{ padding: "10px 12px", textAlign: "left", fontWeight: 700, fontSize: 12, color: "hsl(var(--muted-foreground))" }}>
                 Metric
               </th>
               <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 700, fontSize: 12, color: COLORS.sf }}>
                 Single-Family
               </th>
-              <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 700, fontSize: 12, color: "#6b7280" }}>
+              <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 700, fontSize: 12, color: "hsl(var(--muted-foreground))" }}>
                 YoY
               </th>
               <th
@@ -872,7 +872,7 @@ export default function MauiStatisticsClient() {
               >
                 Condo
               </th>
-              <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 700, fontSize: 12, color: "#6b7280" }}>
+              <th style={{ padding: "10px 12px", textAlign: "right", fontWeight: 700, fontSize: 12, color: "hsl(var(--muted-foreground))" }}>
                 YoY
               </th>
             </tr>
@@ -963,7 +963,7 @@ export default function MauiStatisticsClient() {
       </div>
 
       {/* Source Attribution */}
-      <div style={{ fontSize: 12, color: "#9ca3af", textAlign: "center", padding: "12px 0" }}>
+      <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", textAlign: "center", padding: "12px 0" }}>
         Source: REALTORS® Association of Maui, Inc. &middot; All data from RAM MLS &middot; Report &copy; 2026
         ShowingTime Plus, LLC &middot; Current as of March 2, 2026
       </div>

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useMemo, useEffect, useCallback } from "react";
 import Link from "next/link";
@@ -251,8 +251,8 @@ export default function TaxSavingsReserveClient() {
 
   const cardStyle: React.CSSProperties = {
     padding: 20,
-    background: "#fff",
-    border: "1px solid #e5e7eb",
+    background: "hsl(var(--card))",
+    border: "1px solid hsl(var(--border))",
     borderRadius: 12,
   };
 
@@ -318,7 +318,7 @@ export default function TaxSavingsReserveClient() {
       {/* Month Selector & Controls */}
       <div style={{ display: "flex", gap: 12, marginBottom: 24, flexWrap: "wrap", alignItems: "center" }}>
         <div>
-          <label style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", display: "block", marginBottom: 4 }}>
+          <label style={{ fontSize: 12, fontWeight: 600, color: "hsl(var(--muted-foreground))", display: "block", marginBottom: 4 }}>
             Month
           </label>
           <select
@@ -326,11 +326,11 @@ export default function TaxSavingsReserveClient() {
             onChange={(e) => setSelectedMonth(e.target.value)}
             style={{
               padding: "8px 12px",
-              border: "1px solid #d1d5db",
+              border: "1px solid hsl(var(--border))",
               borderRadius: 8,
               fontSize: 14,
               fontWeight: 600,
-              background: "#fff",
+              background: "hsl(var(--card))",
               cursor: "pointer",
             }}
           >
@@ -342,7 +342,7 @@ export default function TaxSavingsReserveClient() {
           </select>
         </div>
         <div>
-          <label style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", display: "block", marginBottom: 4 }}>
+          <label style={{ fontSize: 12, fontWeight: 600, color: "hsl(var(--muted-foreground))", display: "block", marginBottom: 4 }}>
             Tax Rate
           </label>
           <div style={{ display: "flex", gap: 6 }}>
@@ -391,9 +391,9 @@ export default function TaxSavingsReserveClient() {
             onClick={exportToExcel}
             style={{
               padding: "8px 20px",
-              background: "#fff",
-              color: "#374151",
-              border: "1px solid #d1d5db",
+              background: "hsl(var(--card))",
+              color: "hsl(var(--foreground))",
+              border: "1px solid hsl(var(--border))",
               borderRadius: 8,
               fontWeight: 600,
               cursor: "pointer",
@@ -408,16 +408,16 @@ export default function TaxSavingsReserveClient() {
       {/* Monthly Summary Cards */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 16, marginBottom: 24 }}>
         <div style={{ ...cardStyle, borderLeft: "4px solid #3b82f6" }}>
-          <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Gross Commission Income</div>
+          <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginBottom: 4 }}>Gross Commission Income</div>
           <div style={{ fontSize: 32, fontWeight: 700 }}>{fmt(monthData.grossCommission)}</div>
-          <div style={{ fontSize: 12, color: "#6b7280" }}>{getMonthLabel(selectedMonth)}</div>
+          <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>{getMonthLabel(selectedMonth)}</div>
         </div>
         <div style={{ ...cardStyle, borderLeft: "4px solid #10b981" }}>
-          <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Net Take-Home</div>
+          <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginBottom: 4 }}>Net Take-Home</div>
           <div style={{ fontSize: 32, fontWeight: 700, color: computed.netTakeHome >= 0 ? "#059669" : "#dc2626" }}>
             {fmt(computed.netTakeHome)}
           </div>
-          <div style={{ fontSize: 12, color: "#6b7280" }}>after tax reserve, expenses &amp; marketing</div>
+          <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>after tax reserve, expenses &amp; marketing</div>
         </div>
       </div>
 
@@ -457,7 +457,7 @@ export default function TaxSavingsReserveClient() {
                 justifyContent: "space-between",
                 alignItems: "center",
                 padding: "10px 12px",
-                background: "#f9fafb",
+                background: "hsl(var(--muted))",
                 borderRadius: 8,
               }}
             >
@@ -467,7 +467,7 @@ export default function TaxSavingsReserveClient() {
               </div>
               <div style={{ textAlign: "right" }}>
                 <div style={{ fontSize: 14, fontWeight: 700 }}>{fmt(seg.value)}</div>
-                <div style={{ fontSize: 11, color: "#6b7280" }}>{seg.pct.toFixed(1)}%</div>
+                <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>{seg.pct.toFixed(1)}%</div>
               </div>
             </div>
           ))}
@@ -504,24 +504,24 @@ export default function TaxSavingsReserveClient() {
       {/* Year-to-Date Running Totals */}
       <div style={{ ...cardStyle, marginBottom: 24 }}>
         <h3 style={{ margin: "0 0 4px 0", fontSize: 16, fontWeight: 700 }}>Year-to-Date Totals</h3>
-        <p style={{ margin: "0 0 16px 0", fontSize: 13, color: "#6b7280" }}>
+        <p style={{ margin: "0 0 16px 0", fontSize: 13, color: "hsl(var(--muted-foreground))" }}>
           Through {getMonthLabel(selectedMonth)} ({ytd.months} month{ytd.months !== 1 ? "s" : ""})
         </p>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12, marginBottom: 16 }}>
-          <div style={{ padding: 16, background: "#f9fafb", borderRadius: 8 }}>
-            <div style={{ fontSize: 12, color: "#6b7280" }}>YTD Gross Commission</div>
+          <div style={{ padding: 16, background: "hsl(var(--muted))", borderRadius: 8 }}>
+            <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>YTD Gross Commission</div>
             <div style={{ fontSize: 22, fontWeight: 700 }}>{fmt(ytd.grossCommission)}</div>
           </div>
           <div style={{ padding: 16, background: "#ecfdf5", borderRadius: 8 }}>
-            <div style={{ fontSize: 12, color: "#6b7280" }}>YTD Net Take-Home</div>
+            <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>YTD Net Take-Home</div>
             <div style={{ fontSize: 22, fontWeight: 700, color: "#059669" }}>{fmt(ytd.netTakeHome)}</div>
           </div>
           <div style={{ padding: 16, background: "#fef2f2", borderRadius: 8 }}>
-            <div style={{ fontSize: 12, color: "#6b7280" }}>YTD Tax Reserve</div>
+            <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>YTD Tax Reserve</div>
             <div style={{ fontSize: 22, fontWeight: 700, color: "#dc2626" }}>{fmt(ytd.taxReserve)}</div>
           </div>
           <div style={{ padding: 16, background: "#fffbeb", borderRadius: 8 }}>
-            <div style={{ fontSize: 12, color: "#6b7280" }}>YTD Expenses + Marketing</div>
+            <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>YTD Expenses + Marketing</div>
             <div style={{ fontSize: 22, fontWeight: 700, color: "#d97706" }}>
               {fmt(ytd.businessExpenses + ytd.marketingBudget)}
             </div>

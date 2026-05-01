@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useCallback } from "react";
 import * as XLSX from "xlsx";
@@ -207,7 +207,7 @@ export default function MlsLeaderboardClient() {
     <div style={{ maxWidth: 1200, margin: "0 auto", padding: "24px 16px" }}>
       <div style={{ marginBottom: 24 }}>
         <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700 }}>MLS Agent Leaderboard</h1>
-        <p style={{ margin: "4px 0 0", fontSize: 14, color: "#6b7280" }}>
+        <p style={{ margin: "4px 0 0", fontSize: 14, color: "hsl(var(--muted-foreground))" }}>
           Market-wide agent rankings from MLS closed transactions
         </p>
       </div>
@@ -215,7 +215,7 @@ export default function MlsLeaderboardClient() {
       {/* Controls */}
       <div style={{ display: "flex", gap: 16, marginBottom: 20, flexWrap: "wrap", alignItems: "flex-end" }}>
         <div>
-          <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 4 }}>Period</label>
+          <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "hsl(var(--foreground))", marginBottom: 4 }}>Period</label>
           <select value={months} onChange={(e) => setMonths(Number(e.target.value))} style={selectStyle}>
             <option value={3}>Last 3 months</option>
             <option value={6}>Last 6 months</option>
@@ -224,7 +224,7 @@ export default function MlsLeaderboardClient() {
           </select>
         </div>
         <div>
-          <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 4 }}>Side</label>
+          <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "hsl(var(--foreground))", marginBottom: 4 }}>Side</label>
           <select value={agentType} onChange={(e) => setAgentType(e.target.value as AgentType)} style={selectStyle}>
             <option value="both">Both (Listing + Buyer)</option>
             <option value="listing">Listing Agents Only</option>
@@ -232,7 +232,7 @@ export default function MlsLeaderboardClient() {
           </select>
         </div>
         <div>
-          <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 4 }}>Top N</label>
+          <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "hsl(var(--foreground))", marginBottom: 4 }}>Top N</label>
           <select value={topN} onChange={(e) => setTopN(Number(e.target.value))} style={selectStyle}>
             <option value={50}>Top 50</option>
             <option value={100}>Top 100</option>
@@ -242,7 +242,7 @@ export default function MlsLeaderboardClient() {
           </select>
         </div>
         <div>
-          <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 4 }}>Property Types</label>
+          <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "hsl(var(--foreground))", marginBottom: 4 }}>Property Types</label>
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
             {PROPERTY_TYPE_OPTIONS.map((t) => {
               const sel = selectedPropTypes.includes(t.value);
@@ -272,7 +272,7 @@ export default function MlsLeaderboardClient() {
               onClick={exportToExcel}
               style={{
                 padding: "10px 24px", borderRadius: 8, border: "1px solid #059669",
-                background: "#fff", color: "#059669", fontWeight: 600,
+                background: "hsl(var(--card))", color: "#059669", fontWeight: 600,
                 cursor: "pointer", fontSize: 14,
               }}
             >
@@ -283,7 +283,7 @@ export default function MlsLeaderboardClient() {
               disabled={exporting}
               style={{
                 padding: "10px 24px", borderRadius: 8, border: "1px solid #8b5cf6",
-                background: "#fff", color: "#8b5cf6", fontWeight: 600,
+                background: "hsl(var(--card))", color: "#8b5cf6", fontWeight: 600,
                 cursor: exporting ? "wait" : "pointer", fontSize: 14,
                 opacity: exporting ? 0.6 : 1,
               }}
@@ -310,12 +310,12 @@ export default function MlsLeaderboardClient() {
               {exportResult.errors?.length > 0 && <span style={{ color: "#dc2626", display: "block", marginTop: 4 }}>{exportResult.errors.join("; ")}</span>}
             </span>
           )}
-          <button onClick={() => setExportResult(null)} style={{ marginLeft: 12, fontSize: 12, cursor: "pointer", background: "none", border: "none", color: "#6b7280" }}>Dismiss</button>
+          <button onClick={() => setExportResult(null)} style={{ marginLeft: 12, fontSize: 12, cursor: "pointer", background: "none", border: "none", color: "hsl(var(--muted-foreground))" }}>Dismiss</button>
         </div>
       )}
 
       {!hasLoaded && !loading && (
-        <div style={{ textAlign: "center", padding: 60, color: "#6b7280" }}>
+        <div style={{ textAlign: "center", padding: 60, color: "hsl(var(--muted-foreground))" }}>
           <p style={{ fontSize: 18, fontWeight: 600, marginBottom: 8 }}>Click "Generate Leaderboard" to fetch MLS data</p>
           <p style={{ fontSize: 14 }}>This queries all closed transactions on Oahu and ranks agents by sales volume.</p>
         </div>
@@ -361,7 +361,7 @@ export default function MlsLeaderboardClient() {
             <>
               {/* Charts */}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 24 }}>
-                <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 16 }}>
+                <div style={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 10, padding: 16 }}>
                   <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 12 }}>Top 20 - Sales Count</h3>
                   <ResponsiveContainer width="100%" height={400}>
                     <BarChart data={chartData} layout="vertical" margin={{ left: 100, right: 20 }}>
@@ -375,7 +375,7 @@ export default function MlsLeaderboardClient() {
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
-                <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 16 }}>
+                <div style={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 10, padding: 16 }}>
                   <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 12 }}>Top 15 - Total Volume</h3>
                   <ResponsiveContainer width="100%" height={400}>
                     <BarChart data={volumeChartData} layout="vertical" margin={{ left: 100, right: 20 }}>
@@ -390,10 +390,10 @@ export default function MlsLeaderboardClient() {
               </div>
 
               {/* Table */}
-              <div style={{ overflowX: "auto", border: "1px solid #e5e7eb", borderRadius: 10 }}>
+              <div style={{ overflowX: "auto", border: "1px solid hsl(var(--border))", borderRadius: 10 }}>
                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
                   <thead>
-                    <tr style={{ background: "#f9fafb" }}>
+                    <tr style={{ background: "hsl(var(--muted))" }}>
                       <th style={{ ...thStyle("totalSales"), textAlign: "center", width: 50 }}>#</th>
                       <th style={{ ...thStyle("totalSales"), textAlign: "left" }}>Agent</th>
                       <th style={{ ...thStyle("totalSales"), textAlign: "left" }}>Email</th>
@@ -413,16 +413,16 @@ export default function MlsLeaderboardClient() {
                       <tr key={a.name} style={{ background: i % 2 === 0 ? "#fff" : "#f9fafb", borderBottom: "1px solid #f3f4f6" }}>
                         <td style={{ padding: "8px 12px", textAlign: "center", fontWeight: 700, color: a.rank <= 3 ? "#d97706" : "#6b7280" }}>{a.rank}</td>
                         <td style={{ padding: "8px 12px", fontWeight: 600 }}>{a.name}</td>
-                        <td style={{ padding: "8px 12px", color: "#6b7280", fontSize: 12 }}>{a.email}</td>
-                        <td style={{ padding: "8px 12px", color: "#6b7280", fontSize: 12 }}>{a.phone}</td>
-                        <td style={{ padding: "8px 12px", color: "#6b7280", maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.office}</td>
+                        <td style={{ padding: "8px 12px", color: "hsl(var(--muted-foreground))", fontSize: 12 }}>{a.email}</td>
+                        <td style={{ padding: "8px 12px", color: "hsl(var(--muted-foreground))", fontSize: 12 }}>{a.phone}</td>
+                        <td style={{ padding: "8px 12px", color: "hsl(var(--muted-foreground))", maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.office}</td>
                         <td style={{ padding: "8px 12px", textAlign: "right", fontWeight: 700 }}>{a.totalSales}</td>
                         <td style={{ padding: "8px 12px", textAlign: "right", color: "#2563eb" }}>{a.listingSales}</td>
                         <td style={{ padding: "8px 12px", textAlign: "right", color: "#10b981" }}>{a.buyerSales}</td>
                         <td style={{ padding: "8px 12px", textAlign: "right", fontWeight: 600 }}>{fmtM(a.totalVolume)}</td>
                         <td style={{ padding: "8px 12px", textAlign: "right" }}>{fmtM(a.avgPrice)}</td>
                         <td style={{ padding: "8px 12px", textAlign: "right" }}>{a.avgDOM}</td>
-                        <td style={{ padding: "8px 12px", color: "#6b7280" }}>{a.topCity}</td>
+                        <td style={{ padding: "8px 12px", color: "hsl(var(--muted-foreground))" }}>{a.topCity}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -433,10 +433,10 @@ export default function MlsLeaderboardClient() {
 
           {/* Office Tab */}
           {tab === "offices" && (
-            <div style={{ overflowX: "auto", border: "1px solid #e5e7eb", borderRadius: 10 }}>
+            <div style={{ overflowX: "auto", border: "1px solid hsl(var(--border))", borderRadius: 10 }}>
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
                 <thead>
-                  <tr style={{ background: "#f9fafb" }}>
+                  <tr style={{ background: "hsl(var(--muted))" }}>
                     <th style={{ padding: "10px 12px", textAlign: "center", fontSize: 12, fontWeight: 700, borderBottom: "2px solid #e5e7eb" }}>#</th>
                     <th style={{ padding: "10px 12px", textAlign: "left", fontSize: 12, fontWeight: 700, borderBottom: "2px solid #e5e7eb" }}>Office</th>
                     <th style={{ padding: "10px 12px", textAlign: "right", fontSize: 12, fontWeight: 700, borderBottom: "2px solid #e5e7eb" }}>Total Sales</th>
@@ -467,6 +467,6 @@ export default function MlsLeaderboardClient() {
 }
 
 const selectStyle: React.CSSProperties = {
-  padding: "8px 12px", borderRadius: 8, border: "1px solid #d1d5db",
-  fontSize: 14, outline: "none", background: "#fff",
+  padding: "8px 12px", borderRadius: 8, border: "1px solid hsl(var(--border))",
+  fontSize: 14, outline: "none", background: "hsl(var(--card))",
 };

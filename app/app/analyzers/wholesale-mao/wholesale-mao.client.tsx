@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useMemo, useCallback } from "react";
 import * as XLSX from "xlsx";
@@ -173,7 +173,7 @@ export default function WholesaleMaoClient() {
   const inputStyle: React.CSSProperties = {
     width: "100%",
     padding: "10px 12px",
-    border: "1px solid #d1d5db",
+    border: "1px solid hsl(var(--border))",
     borderRadius: 6,
     fontSize: 16,
   };
@@ -186,7 +186,7 @@ export default function WholesaleMaoClient() {
         <MLSImport onImport={handleMLSImport} />
 
         <div
-          style={{ padding: 24, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, marginBottom: 20 }}
+          style={{ padding: 24, background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12, marginBottom: 20 }}
         >
           <h2 style={{ margin: "0 0 20px 0", fontSize: 18, fontWeight: 700 }}>Deal Inputs</h2>
 
@@ -219,7 +219,7 @@ export default function WholesaleMaoClient() {
               onChange={(e) => handleChange("investorMarginPercent", Number(e.target.value))}
               style={inputStyle}
             />
-            <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>
+            <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 4 }}>
               = {fmt(analysis.investorMargin)} profit for the investor
             </div>
           </div>
@@ -232,16 +232,16 @@ export default function WholesaleMaoClient() {
               onChange={(e) => handleChange("assignmentFee", Number(e.target.value))}
               style={inputStyle}
             />
-            <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>Your wholesale fee</div>
+            <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 4 }}>Your wholesale fee</div>
           </div>
         </div>
 
         {/* Formula Explanation */}
-        <div style={{ padding: 20, background: "#f9fafb", borderRadius: 12 }}>
+        <div style={{ padding: 20, background: "hsl(var(--muted))", borderRadius: 12 }}>
           <h3 style={{ margin: "0 0 12px 0", fontSize: 14, fontWeight: 700 }}>How MAO is Calculated</h3>
-          <div style={{ fontSize: 13, fontFamily: "monospace", lineHeight: 1.8, color: "#374151" }}>
+          <div style={{ fontSize: 13, fontFamily: "monospace", lineHeight: 1.8, color: "hsl(var(--foreground))" }}>
             <div>MAO = ARV - Repairs - Investor Margin - Assignment Fee</div>
-            <div style={{ color: "#6b7280", marginTop: 8 }}>
+            <div style={{ color: "hsl(var(--muted-foreground))", marginTop: 8 }}>
               MAO = {fmt(inputs.arv)} - {fmt(inputs.repairEstimate)} - {fmt(analysis.investorMargin)} -{" "}
               {fmt(inputs.assignmentFee)}
             </div>
@@ -274,14 +274,14 @@ export default function WholesaleMaoClient() {
 
         {/* Offer Range */}
         <div
-          style={{ padding: 24, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, marginBottom: 20 }}
+          style={{ padding: 24, background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12, marginBottom: 20 }}
         >
           <h3 style={{ margin: "0 0 16px 0", fontSize: 16, fontWeight: 700 }}>Suggested Offer Range</h3>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
             <div style={{ padding: 16, background: "#ecfdf5", borderRadius: 8, textAlign: "center" }}>
               <div style={{ fontSize: 11, color: "#065f46", fontWeight: 600, marginBottom: 4 }}>AGGRESSIVE</div>
               <div style={{ fontSize: 20, fontWeight: 700, color: "#059669" }}>{fmt(analysis.lowOffer)}</div>
-              <div style={{ fontSize: 11, color: "#6b7280", marginTop: 4 }}>MAO - 10%</div>
+              <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", marginTop: 4 }}>MAO - 10%</div>
             </div>
             <div
               style={{
@@ -294,12 +294,12 @@ export default function WholesaleMaoClient() {
             >
               <div style={{ fontSize: 11, color: "#92400e", fontWeight: 600, marginBottom: 4 }}>TARGET</div>
               <div style={{ fontSize: 20, fontWeight: 700, color: "#d97706" }}>{fmt(analysis.midOffer)}</div>
-              <div style={{ fontSize: 11, color: "#6b7280", marginTop: 4 }}>MAO</div>
+              <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", marginTop: 4 }}>MAO</div>
             </div>
             <div style={{ padding: 16, background: "#fef2f2", borderRadius: 8, textAlign: "center" }}>
               <div style={{ fontSize: 11, color: "#991b1b", fontWeight: 600, marginBottom: 4 }}>STRETCH</div>
               <div style={{ fontSize: 20, fontWeight: 700, color: "#dc2626" }}>{fmt(analysis.highOffer)}</div>
-              <div style={{ fontSize: 11, color: "#6b7280", marginTop: 4 }}>MAO + 5%</div>
+              <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", marginTop: 4 }}>MAO + 5%</div>
             </div>
           </div>
         </div>
@@ -318,10 +318,10 @@ export default function WholesaleMaoClient() {
             70% Rule: {analysis.meets70Rule ? "PASS" : "FAIL"}
           </h3>
           <div style={{ fontSize: 13 }}>
-            <span style={{ color: "#6b7280" }}>70% Rule MAO:</span>{" "}
+            <span style={{ color: "hsl(var(--muted-foreground))" }}>70% Rule MAO:</span>{" "}
             <span style={{ fontWeight: 600 }}>{fmt(analysis.mao70Rule)}</span>
           </div>
-          <p style={{ margin: "8px 0 0 0", fontSize: 12, color: "#6b7280" }}>
+          <p style={{ margin: "8px 0 0 0", fontSize: 12, color: "hsl(var(--muted-foreground))" }}>
             {inputs.arv > 0
               ? `${fmt(inputs.arv)} x 70% - ${fmt(inputs.repairEstimate)} = ${fmt(analysis.mao70Rule)}`
               : ""}
@@ -330,7 +330,7 @@ export default function WholesaleMaoClient() {
 
         {/* Investor Numbers */}
         <div
-          style={{ padding: 24, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, marginBottom: 20 }}
+          style={{ padding: 24, background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12, marginBottom: 20 }}
         >
           <h3 style={{ margin: "0 0 16px 0", fontSize: 16, fontWeight: 700 }}>Investor Numbers at MAO</h3>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
@@ -347,7 +347,7 @@ export default function WholesaleMaoClient() {
                 <td style={{ padding: "10px 0" }}>+ Assignment Fee</td>
                 <td style={{ padding: "10px 0", textAlign: "right", fontWeight: 600 }}>{fmt(inputs.assignmentFee)}</td>
               </tr>
-              <tr style={{ background: "#f9fafb", borderBottom: "2px solid #e5e7eb" }}>
+              <tr style={{ background: "hsl(var(--muted))", borderBottom: "2px solid #e5e7eb" }}>
                 <td style={{ padding: "10px 0", fontWeight: 700 }}>Investor All-In</td>
                 <td style={{ padding: "10px 0", textAlign: "right", fontWeight: 700 }}>
                   {fmt(analysis.investorAllIn)}

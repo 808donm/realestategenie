@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useMemo, useCallback } from "react";
 import * as XLSX from "xlsx";
@@ -448,11 +448,11 @@ export default function BRRRAnalyzerClient({ savedAnalyses }: BRRRAnalyzerClient
     marginBottom: 4,
     fontSize: 13,
     fontWeight: 500,
-    color: "#374151",
+    color: "hsl(var(--foreground))",
   };
 
   const sectionStyle = {
-    background: "#f9fafb",
+    background: "hsl(var(--muted))",
     borderRadius: 8,
     padding: 16,
     marginBottom: 16,
@@ -497,7 +497,7 @@ export default function BRRRAnalyzerClient({ savedAnalyses }: BRRRAnalyzerClient
       {activeTab === "saved" ? (
         <div>
           {savedAnalyses.length === 0 ? (
-            <p style={{ color: "#6b7280" }}>No saved analyses yet. Use the calculator to create one.</p>
+            <p style={{ color: "hsl(var(--muted-foreground))" }}>No saved analyses yet. Use the calculator to create one.</p>
           ) : (
             <div style={{ display: "grid", gap: 12 }}>
               {savedAnalyses.map((item) => (
@@ -506,7 +506,7 @@ export default function BRRRAnalyzerClient({ savedAnalyses }: BRRRAnalyzerClient
                   onClick={() => loadAnalysis(item.id)}
                   style={{
                     padding: 16,
-                    border: "1px solid #e5e7eb",
+                    border: "1px solid hsl(var(--border))",
                     borderRadius: 8,
                     cursor: "pointer",
                     transition: "all 0.2s",
@@ -518,7 +518,7 @@ export default function BRRRAnalyzerClient({ savedAnalyses }: BRRRAnalyzerClient
                     <div>
                       <h3 style={{ margin: 0, fontWeight: 600 }}>{item.name}</h3>
                       {item.address && (
-                        <p style={{ margin: "4px 0 0", fontSize: 13, color: "#6b7280" }}>{item.address}</p>
+                        <p style={{ margin: "4px 0 0", fontSize: 13, color: "hsl(var(--muted-foreground))" }}>{item.address}</p>
                       )}
                     </div>
                     <div style={{ textAlign: "right" }}>
@@ -537,7 +537,7 @@ export default function BRRRAnalyzerClient({ savedAnalyses }: BRRRAnalyzerClient
                         </span>
                       )}
                       {item.calculated_deal_score && (
-                        <div style={{ fontSize: 13, color: "#6b7280", marginTop: 4 }}>
+                        <div style={{ fontSize: 13, color: "hsl(var(--muted-foreground))", marginTop: 4 }}>
                           Score: {item.calculated_deal_score.toFixed(1)}/5
                         </div>
                       )}
@@ -545,15 +545,15 @@ export default function BRRRAnalyzerClient({ savedAnalyses }: BRRRAnalyzerClient
                   </div>
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, marginTop: 12 }}>
                     <div>
-                      <div style={{ fontSize: 12, color: "#6b7280" }}>Purchase</div>
+                      <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>Purchase</div>
                       <div style={{ fontWeight: 600 }}>{formatCurrency(item.purchase_price)}</div>
                     </div>
                     <div>
-                      <div style={{ fontSize: 12, color: "#6b7280" }}>ARV</div>
+                      <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>ARV</div>
                       <div style={{ fontWeight: 600 }}>{formatCurrency(item.after_repair_value)}</div>
                     </div>
                     <div>
-                      <div style={{ fontSize: 12, color: "#6b7280" }}>Monthly Rent</div>
+                      <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>Monthly Rent</div>
                       <div style={{ fontWeight: 600 }}>{formatCurrency(item.monthly_rent)}</div>
                     </div>
                   </div>
@@ -645,7 +645,7 @@ export default function BRRRAnalyzerClient({ savedAnalyses }: BRRRAnalyzerClient
                   />
                 </div>
               </div>
-              <p style={{ margin: "8px 0 0", fontSize: 12, color: "#6b7280" }}>
+              <p style={{ margin: "8px 0 0", fontSize: 12, color: "hsl(var(--muted-foreground))" }}>
                 70% Rule Max Purchase: {formatCurrency(maxPurchase70)}
                 {formData.purchasePrice <= maxPurchase70 ? (
                   <span style={{ color: "#16a34a", marginLeft: 8 }}>✓ Meets rule</span>
@@ -969,14 +969,14 @@ export default function BRRRAnalyzerClient({ savedAnalyses }: BRRRAnalyzerClient
             {/* Key Metrics */}
             <div
               style={{
-                background: "#fff",
-                border: "1px solid #e5e7eb",
+                background: "hsl(var(--card))",
+                border: "1px solid hsl(var(--border))",
                 borderRadius: 8,
                 padding: 16,
                 marginBottom: 16,
               }}
             >
-              <h4 style={{ margin: "0 0 12px", fontSize: 14, fontWeight: 600, color: "#6b7280" }}>KEY BRRR METRICS</h4>
+              <h4 style={{ margin: "0 0 12px", fontSize: 14, fontWeight: 600, color: "hsl(var(--muted-foreground))" }}>KEY BRRR METRICS</h4>
               <div style={{ display: "grid", gap: 12 }}>
                 <div style={{ display: "flex", justifyContent: "space-between" }}>
                   <span>Total Cash Invested</span>
@@ -1009,14 +1009,14 @@ export default function BRRRAnalyzerClient({ savedAnalyses }: BRRRAnalyzerClient
             {/* Returns */}
             <div
               style={{
-                background: "#fff",
-                border: "1px solid #e5e7eb",
+                background: "hsl(var(--card))",
+                border: "1px solid hsl(var(--border))",
                 borderRadius: 8,
                 padding: 16,
                 marginBottom: 16,
               }}
             >
-              <h4 style={{ margin: "0 0 12px", fontSize: 14, fontWeight: 600, color: "#6b7280" }}>RENTAL RETURNS</h4>
+              <h4 style={{ margin: "0 0 12px", fontSize: 14, fontWeight: 600, color: "hsl(var(--muted-foreground))" }}>RENTAL RETURNS</h4>
               <div style={{ display: "grid", gap: 12 }}>
                 <div style={{ display: "flex", justifyContent: "space-between" }}>
                   <span>Monthly Cash Flow</span>
@@ -1049,13 +1049,13 @@ export default function BRRRAnalyzerClient({ savedAnalyses }: BRRRAnalyzerClient
             {/* Long-term Projection */}
             <div
               style={{
-                background: "#fff",
-                border: "1px solid #e5e7eb",
+                background: "hsl(var(--card))",
+                border: "1px solid hsl(var(--border))",
                 borderRadius: 8,
                 padding: 16,
               }}
             >
-              <h4 style={{ margin: "0 0 12px", fontSize: 14, fontWeight: 600, color: "#6b7280" }}>
+              <h4 style={{ margin: "0 0 12px", fontSize: 14, fontWeight: 600, color: "hsl(var(--muted-foreground))" }}>
                 {formData.holdingPeriodYears}-YEAR PROJECTION
               </h4>
               <div style={{ display: "grid", gap: 12 }}>
@@ -1098,14 +1098,14 @@ export default function BRRRAnalyzerClient({ savedAnalyses }: BRRRAnalyzerClient
             {chartData.length > 0 && (
               <div
                 style={{
-                  background: "#fff",
-                  border: "1px solid #e5e7eb",
+                  background: "hsl(var(--card))",
+                  border: "1px solid hsl(var(--border))",
                   borderRadius: 8,
                   padding: 16,
                   marginTop: 16,
                 }}
               >
-                <h4 style={{ margin: "0 0 12px", fontSize: 14, fontWeight: 600, color: "#6b7280" }}>
+                <h4 style={{ margin: "0 0 12px", fontSize: 14, fontWeight: 600, color: "hsl(var(--muted-foreground))" }}>
                   CUMULATIVE RETURNS
                 </h4>
                 <ResponsiveContainer width="100%" height={280}>
@@ -1142,7 +1142,7 @@ export default function BRRRAnalyzerClient({ savedAnalyses }: BRRRAnalyzerClient
                     />
                   </LineChart>
                 </ResponsiveContainer>
-                <p style={{ margin: "8px 0 0", fontSize: 11, color: "#9ca3af", textAlign: "center" }}>
+                <p style={{ margin: "8px 0 0", fontSize: 11, color: "hsl(var(--muted-foreground))", textAlign: "center" }}>
                   Where cash flow crosses the invested line = payback period
                 </p>
               </div>

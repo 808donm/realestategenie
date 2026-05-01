@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -26,7 +26,7 @@ export default function StopImpersonationButton() {
         padding: "4px 14px",
         fontSize: 13,
         fontWeight: 700,
-        background: "#fff",
+        background: "hsl(var(--card))",
         color: "#991b1b",
         border: "2px solid #991b1b",
         borderRadius: 6,

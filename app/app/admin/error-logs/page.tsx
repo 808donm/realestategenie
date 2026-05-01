@@ -1,4 +1,4 @@
-import { supabaseServer } from "@/lib/supabase/server";
+﻿import { supabaseServer } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/auth/admin-check";
 import ErrorLogsClient from "./error-logs.client";
 
@@ -40,7 +40,7 @@ export default async function ErrorLogsPage() {
     <div style={{ padding: 32 }}>
       <div style={{ marginBottom: 32 }}>
         <h1 style={{ fontSize: 32, fontWeight: 800, margin: 0 }}>Error Logs</h1>
-        <p style={{ color: "#6b7280", marginTop: 8 }}>Monitor and troubleshoot application errors</p>
+        <p style={{ color: "hsl(var(--muted-foreground))", marginTop: 8 }}>Monitor and troubleshoot application errors</p>
       </div>
 
       <ErrorLogsClient errorLogs={errorLogs} />

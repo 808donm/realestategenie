@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useCallback, useEffect } from "react";
 
@@ -249,7 +249,7 @@ export function DomProspectingClient() {
               padding: "8px 20px",
               fontSize: 13,
               fontWeight: 600,
-              border: "1px solid #d1d5db",
+              border: "1px solid hsl(var(--border))",
               borderLeft: i === 0 ? "1px solid #d1d5db" : "none",
               borderRadius: i === 0 ? "8px 0 0 8px" : i === 2 ? "0 8px 8px 0" : "0",
               background: activeTab === tab.id ? "#1e40af" : "#fff",
@@ -265,10 +265,10 @@ export function DomProspectingClient() {
       {activeTab === "search" && (
         <>
           {/* Search Controls */}
-          <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 16 }}>
+          <div style={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 10, padding: 16 }}>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 12 }}>
               <div>
-                <label style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", display: "block", marginBottom: 4 }}>
+                <label style={{ fontSize: 12, fontWeight: 600, color: "hsl(var(--muted-foreground))", display: "block", marginBottom: 4 }}>
                   Zip Codes
                 </label>
                 <input
@@ -278,14 +278,14 @@ export function DomProspectingClient() {
                   style={{
                     width: "100%",
                     padding: "8px 10px",
-                    border: "1px solid #d1d5db",
+                    border: "1px solid hsl(var(--border))",
                     borderRadius: 6,
                     fontSize: 13,
                   }}
                 />
               </div>
               <div>
-                <label style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", display: "block", marginBottom: 4 }}>
+                <label style={{ fontSize: 12, fontWeight: 600, color: "hsl(var(--muted-foreground))", display: "block", marginBottom: 4 }}>
                   Property Types
                 </label>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
@@ -299,7 +299,7 @@ export function DomProspectingClient() {
                         padding: "4px 8px",
                         fontSize: 11,
                         borderRadius: 4,
-                        border: "1px solid #d1d5db",
+                        border: "1px solid hsl(var(--border))",
                         cursor: "pointer",
                         background: propertyTypes.includes(t) ? "#1e40af" : "#fff",
                         color: propertyTypes.includes(t) ? "#fff" : "#374151",
@@ -311,7 +311,7 @@ export function DomProspectingClient() {
                 </div>
               </div>
               <div>
-                <label style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", display: "block", marginBottom: 4 }}>
+                <label style={{ fontSize: 12, fontWeight: 600, color: "hsl(var(--muted-foreground))", display: "block", marginBottom: 4 }}>
                   Price Range
                 </label>
                 <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
@@ -322,12 +322,12 @@ export function DomProspectingClient() {
                     style={{
                       width: "50%",
                       padding: "8px 10px",
-                      border: "1px solid #d1d5db",
+                      border: "1px solid hsl(var(--border))",
                       borderRadius: 6,
                       fontSize: 13,
                     }}
                   />
-                  <span style={{ color: "#9ca3af" }}>–</span>
+                  <span style={{ color: "hsl(var(--muted-foreground))" }}>–</span>
                   <input
                     value={maxPrice}
                     onChange={(e) => setMaxPrice(e.target.value)}
@@ -335,7 +335,7 @@ export function DomProspectingClient() {
                     style={{
                       width: "50%",
                       padding: "8px 10px",
-                      border: "1px solid #d1d5db",
+                      border: "1px solid hsl(var(--border))",
                       borderRadius: 6,
                       fontSize: 13,
                     }}
@@ -343,7 +343,7 @@ export function DomProspectingClient() {
                 </div>
               </div>
               <div>
-                <label style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", display: "block", marginBottom: 4 }}>
+                <label style={{ fontSize: 12, fontWeight: 600, color: "hsl(var(--muted-foreground))", display: "block", marginBottom: 4 }}>
                   DOM Thresholds (× Avg)
                 </label>
                 <div style={{ display: "flex", gap: 6 }}>
@@ -418,7 +418,7 @@ export function DomProspectingClient() {
                 disabled={saving}
                 style={{
                   padding: "8px 16px",
-                  background: "#fff",
+                  background: "hsl(var(--card))",
                   color: "#1e40af",
                   border: "1px solid #1e40af",
                   borderRadius: 6,
@@ -475,7 +475,7 @@ export function DomProspectingClient() {
                     >
                       <div style={{ fontSize: 28, fontWeight: 800, color: t.border }}>{count}</div>
                       <div style={{ fontSize: 12, fontWeight: 600, color: t.text }}>{t.label}</div>
-                      <div style={{ fontSize: 10, color: "#9ca3af", marginTop: 2 }}>
+                      <div style={{ fontSize: 10, color: "hsl(var(--muted-foreground))", marginTop: 2 }}>
                         {tier === "red"
                           ? `≥${redMult}× avg DOM`
                           : tier === "orange"
@@ -490,7 +490,7 @@ export function DomProspectingClient() {
                 >
                   <div style={{ fontSize: 28, fontWeight: 800, color: "#1e40af" }}>{result.total}</div>
                   <div style={{ fontSize: 12, fontWeight: 600, color: "#1e3a5f" }}>Total Prospects</div>
-                  <div style={{ fontSize: 10, color: "#9ca3af", marginTop: 2 }}>Source: {result.dataSource}</div>
+                  <div style={{ fontSize: 10, color: "hsl(var(--muted-foreground))", marginTop: 2 }}>Source: {result.dataSource}</div>
                 </div>
               </div>
 
@@ -501,7 +501,7 @@ export function DomProspectingClient() {
                 >
                   <div style={{ fontSize: 24, fontWeight: 800, color: "#059669" }}>{result.summary.outreach || 0}</div>
                   <div style={{ fontSize: 12, fontWeight: 600, color: "#065f46" }}>Ready for Outreach</div>
-                  <div style={{ fontSize: 10, color: "#6b7280", marginTop: 2 }}>
+                  <div style={{ fontSize: 10, color: "hsl(var(--muted-foreground))", marginTop: 2 }}>
                     {result.summary.expired || 0} Expired, {result.summary.withdrawn || 0} Withdrawn
                   </div>
                   <div style={{ fontSize: 10, color: "#059669", marginTop: 2 }}>
@@ -513,7 +513,7 @@ export function DomProspectingClient() {
                 >
                   <div style={{ fontSize: 24, fontWeight: 800, color: "#d97706" }}>{result.summary.monitor || 0}</div>
                   <div style={{ fontSize: 12, fontWeight: 600, color: "#92400e" }}>Monitor Only</div>
-                  <div style={{ fontSize: 10, color: "#6b7280", marginTop: 2 }}>Active listings over DOM threshold</div>
+                  <div style={{ fontSize: 10, color: "hsl(var(--muted-foreground))", marginTop: 2 }}>Active listings over DOM threshold</div>
                   <div style={{ fontSize: 10, color: "#d97706", marginTop: 2 }}>
                     Still under contract — observe until expiration
                   </div>
@@ -522,24 +522,24 @@ export function DomProspectingClient() {
 
               {/* Market Stats Summary */}
               {Object.keys(result.marketStats).length > 0 && (
-                <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 14 }}>
-                  <h3 style={{ fontSize: 13, fontWeight: 700, color: "#374151", marginBottom: 8 }}>
+                <div style={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 10, padding: 14 }}>
+                  <h3 style={{ fontSize: 13, fontWeight: 700, color: "hsl(var(--foreground))", marginBottom: 8 }}>
                     Average DOM by Property Type & Zip
                   </h3>
                   <div style={{ overflowX: "auto" }}>
                     <table style={{ width: "100%", fontSize: 12, borderCollapse: "collapse" }}>
                       <thead>
                         <tr style={{ borderBottom: "2px solid #e5e7eb" }}>
-                          <th style={{ textAlign: "left", padding: "4px 8px", color: "#6b7280", fontWeight: 600 }}>
+                          <th style={{ textAlign: "left", padding: "4px 8px", color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>
                             Zip
                           </th>
-                          <th style={{ textAlign: "left", padding: "4px 8px", color: "#6b7280", fontWeight: 600 }}>
+                          <th style={{ textAlign: "left", padding: "4px 8px", color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>
                             Property Type
                           </th>
-                          <th style={{ textAlign: "right", padding: "4px 8px", color: "#6b7280", fontWeight: 600 }}>
+                          <th style={{ textAlign: "right", padding: "4px 8px", color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>
                             Avg DOM
                           </th>
-                          <th style={{ textAlign: "right", padding: "4px 8px", color: "#6b7280", fontWeight: 600 }}>
+                          <th style={{ textAlign: "right", padding: "4px 8px", color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>
                             Listings
                           </th>
                           <th style={{ textAlign: "right", padding: "4px 8px", color: "#dc2626", fontWeight: 600 }}>
@@ -588,14 +588,14 @@ export function DomProspectingClient() {
               )}
 
               {/* Results List */}
-              <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 14 }}>
-                <h3 style={{ fontSize: 13, fontWeight: 700, color: "#374151", marginBottom: 10 }}>
+              <div style={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 10, padding: 14 }}>
+                <h3 style={{ fontSize: 13, fontWeight: 700, color: "hsl(var(--foreground))", marginBottom: 10 }}>
                   {tierFilter === "all" ? "All Prospects" : `${TIER_COLORS[tierFilter].label} Prospects`}
-                  <span style={{ fontWeight: 400, color: "#9ca3af", marginLeft: 8 }}>({filteredResults.length})</span>
+                  <span style={{ fontWeight: 400, color: "hsl(var(--muted-foreground))", marginLeft: 8 }}>({filteredResults.length})</span>
                 </h3>
 
                 {filteredResults.length === 0 ? (
-                  <div style={{ textAlign: "center", padding: 20, color: "#9ca3af" }}>
+                  <div style={{ textAlign: "center", padding: 20, color: "hsl(var(--muted-foreground))" }}>
                     No prospects found matching the current filters.
                   </div>
                 ) : (
@@ -641,14 +641,14 @@ export function DomProspectingClient() {
                                     fontSize: 10,
                                     fontWeight: 700,
                                     background: "#e5e7eb",
-                                    color: "#6b7280",
+                                    color: "hsl(var(--muted-foreground))",
                                   }}
                                 >
                                   Active
                                 </span>
                               )}
                             </div>
-                            <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>
+                            <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 2 }}>
                               {r.city}, {r.state} {r.zipCode}
                               {r.mlsNumber && <span style={{ marginLeft: 8 }}>MLS# {r.mlsNumber}</span>}
                             </div>
@@ -664,7 +664,7 @@ export function DomProspectingClient() {
                               )}
                             </div>
                             {r.listingAgentName && (
-                              <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 4 }}>
+                              <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", marginTop: 4 }}>
                                 Agent: {r.listingAgentName}
                                 {r.listingOfficeName && ` | ${r.listingOfficeName}`}
                               </div>
@@ -685,7 +685,7 @@ export function DomProspectingClient() {
                           </div>
                           <div style={{ textAlign: "right", minWidth: 100 }}>
                             <div style={{ fontSize: 28, fontWeight: 800, color: tc.border }}>{r.daysOnMarket}</div>
-                            <div style={{ fontSize: 10, color: "#6b7280" }}>DOM</div>
+                            <div style={{ fontSize: 10, color: "hsl(var(--muted-foreground))" }}>DOM</div>
                             <div style={{ fontSize: 11, color: tc.text, fontWeight: 600, marginTop: 4 }}>
                               {r.domRatio}× avg ({r.avgDomForType}d)
                             </div>
@@ -714,9 +714,9 @@ export function DomProspectingClient() {
                                 borderRadius: 4,
                                 fontSize: 10,
                                 fontWeight: 600,
-                                border: "1px solid #d1d5db",
-                                background: "#fff",
-                                color: "#374151",
+                                border: "1px solid hsl(var(--border))",
+                                background: "hsl(var(--card))",
+                                color: "hsl(var(--foreground))",
                                 cursor: "pointer",
                               }}
                             >
@@ -736,11 +736,11 @@ export function DomProspectingClient() {
 
       {/* Monitored Properties Tab */}
       {activeTab === "monitored" && (
-        <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 16 }}>
-          <h3 style={{ fontSize: 15, fontWeight: 700, color: "#374151", marginBottom: 12 }}>Monitored Properties</h3>
-          {monitoredLoading && <div style={{ textAlign: "center", padding: 20, color: "#9ca3af" }}>Loading...</div>}
+        <div style={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 10, padding: 16 }}>
+          <h3 style={{ fontSize: 15, fontWeight: 700, color: "hsl(var(--foreground))", marginBottom: 12 }}>Monitored Properties</h3>
+          {monitoredLoading && <div style={{ textAlign: "center", padding: 20, color: "hsl(var(--muted-foreground))" }}>Loading...</div>}
           {!monitoredLoading && monitoredProps.length === 0 && (
-            <div style={{ textAlign: "center", padding: 30, color: "#9ca3af" }}>
+            <div style={{ textAlign: "center", padding: 30, color: "hsl(var(--muted-foreground))" }}>
               No monitored properties. Run a DOM search and click "Monitor" on properties you want to track.
             </div>
           )}
@@ -762,7 +762,7 @@ export function DomProspectingClient() {
               >
                 <div>
                   <div style={{ fontSize: 14, fontWeight: 700, color: tierColor.text }}>{p.address}</div>
-                  <div style={{ fontSize: 12, color: "#6b7280" }}>
+                  <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>
                     {p.city} {p.zip_code} | {p.property_type}
                   </div>
                   {p.latest_list_price && (
@@ -776,7 +776,7 @@ export function DomProspectingClient() {
                     </div>
                   )}
                   {p.previous_tier && p.previous_tier !== p.current_tier && (
-                    <div style={{ fontSize: 11, color: "#6b7280", marginTop: 2 }}>
+                    <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", marginTop: 2 }}>
                       Tier changed: {p.previous_tier} → {p.current_tier}
                     </div>
                   )}
@@ -785,7 +785,7 @@ export function DomProspectingClient() {
                   <div style={{ fontSize: 28, fontWeight: 800, color: tierColor.border }}>
                     {p.live_dom || p.latest_dom || "—"}
                   </div>
-                  <div style={{ fontSize: 10, color: "#6b7280" }}>DOM</div>
+                  <div style={{ fontSize: 10, color: "hsl(var(--muted-foreground))" }}>DOM</div>
                   <div
                     style={{
                       marginTop: 4,
@@ -813,7 +813,7 @@ export function DomProspectingClient() {
                       fontSize: 10,
                       fontWeight: 600,
                       border: "1px solid #fca5a5",
-                      background: "#fff",
+                      background: "hsl(var(--card))",
                       color: "#dc2626",
                       cursor: "pointer",
                     }}
@@ -829,9 +829,9 @@ export function DomProspectingClient() {
 
       {/* Alerts Tab */}
       {activeTab === "alerts" && (
-        <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 16 }}>
+        <div style={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 10, padding: 16 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-            <h3 style={{ fontSize: 15, fontWeight: 700, color: "#374151" }}>DOM Tier Alerts</h3>
+            <h3 style={{ fontSize: 15, fontWeight: 700, color: "hsl(var(--foreground))" }}>DOM Tier Alerts</h3>
             {unreadAlerts > 0 && (
               <button
                 onClick={async () => {
@@ -848,9 +848,9 @@ export function DomProspectingClient() {
                   borderRadius: 4,
                   fontSize: 11,
                   fontWeight: 600,
-                  border: "1px solid #d1d5db",
-                  background: "#fff",
-                  color: "#374151",
+                  border: "1px solid hsl(var(--border))",
+                  background: "hsl(var(--card))",
+                  color: "hsl(var(--foreground))",
                   cursor: "pointer",
                 }}
               >
@@ -858,9 +858,9 @@ export function DomProspectingClient() {
               </button>
             )}
           </div>
-          {alertsLoading && <div style={{ textAlign: "center", padding: 20, color: "#9ca3af" }}>Loading...</div>}
+          {alertsLoading && <div style={{ textAlign: "center", padding: 20, color: "hsl(var(--muted-foreground))" }}>Loading...</div>}
           {!alertsLoading && alerts.length === 0 && (
-            <div style={{ textAlign: "center", padding: 30, color: "#9ca3af" }}>
+            <div style={{ textAlign: "center", padding: 30, color: "hsl(var(--muted-foreground))" }}>
               No alerts yet. Monitor properties and you'll see alerts when they escalate to a higher tier.
             </div>
           )}
@@ -878,10 +878,10 @@ export function DomProspectingClient() {
                   background: a.status === "new" ? newTierColor.bg : "#fff",
                 }}
               >
-                <div style={{ fontSize: 13, fontWeight: a.status === "new" ? 700 : 500, color: "#111827" }}>
+                <div style={{ fontSize: 13, fontWeight: a.status === "new" ? 700 : 500, color: "hsl(var(--foreground))" }}>
                   {a.alert_title}
                 </div>
-                <div style={{ fontSize: 11, color: "#6b7280", marginTop: 2 }}>
+                <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", marginTop: 2 }}>
                   {new Date(a.created_at).toLocaleDateString()} | DOM: {details.liveDom} | Ratio: {details.domRatio}×
                   {details.listPrice && ` | ${fmt(details.listPrice)}`}
                 </div>

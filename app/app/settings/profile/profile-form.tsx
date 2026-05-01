@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useMemo, useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase/browser";
@@ -220,7 +220,7 @@ export default function ProfileForm({ agent }: { agent: Agent }) {
               <img
                 src={headshotUrl}
                 alt="Agent headshot"
-                style={{ width: 150, height: 150, objectFit: "cover", borderRadius: 8, border: "2px solid #e5e7eb" }}
+                style={{ width: 150, height: 150, objectFit: "cover", borderRadius: 8, border: "2px solid hsl(var(--border))" }}
               />
               <button
                 type="button"
@@ -264,7 +264,7 @@ export default function ProfileForm({ agent }: { agent: Agent }) {
                   height: 100,
                   objectFit: "contain",
                   borderRadius: 8,
-                  border: "2px solid #e5e7eb",
+                  border: "2px solid hsl(var(--border))",
                   padding: 10,
                   background: "white",
                 }}
@@ -372,7 +372,7 @@ export default function ProfileForm({ agent }: { agent: Agent }) {
           <select
             value={timezone}
             onChange={(e) => setTimezone(e.target.value)}
-            style={{ width: "100%", padding: 10, borderRadius: 6, border: "1px solid #d1d5db" }}
+            style={{ width: "100%", padding: 10, borderRadius: 6, border: "1px solid hsl(var(--border))" }}
           >
             <option value="America/New_York">Eastern Time (ET)</option>
             <option value="America/Chicago">Central Time (CT)</option>

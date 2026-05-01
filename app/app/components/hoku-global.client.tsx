@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useCallback, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
@@ -159,7 +159,7 @@ export default function HokuGlobal() {
             background: "rgba(0,0,0,0.4)",
           }}
         >
-          <div style={{ background: "#fff", padding: 24, borderRadius: 12, fontSize: 14 }}>
+          <div style={{ background: "hsl(var(--card))", padding: 24, borderRadius: 12, fontSize: 14 }}>
             Loading property details...
           </div>
         </div>

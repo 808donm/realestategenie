@@ -58,13 +58,13 @@ export default async function UserIntegrationsPage({ params }: { params: Promise
   return (
     <div style={{ maxWidth: 760, margin: "40px auto", padding: 24 }}>
       <div style={{ marginBottom: 24 }}>
-        <Link href="/app/admin/users" style={{ fontSize: 14, color: "#6b7280" }}>
+        <Link href="/app/admin/users" style={{ fontSize: 14, color: "hsl(var(--muted-foreground))" }}>
           ← Back to Users
         </Link>
         <h1 style={{ fontSize: 24, fontWeight: 700, margin: "8px 0 4px" }}>
           {user.display_name || user.email} — MLS Integrations
         </h1>
-        <p style={{ color: "#6b7280", fontSize: 14 }}>{user.email}</p>
+        <p style={{ color: "hsl(var(--muted-foreground))", fontSize: 14 }}>{user.email}</p>
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
@@ -83,14 +83,14 @@ export default async function UserIntegrationsPage({ params }: { params: Promise
                     fontWeight: 700,
                     padding: "2px 8px",
                     borderRadius: 10,
-                    background: isConnected ? "#d1fae5" : "#f3f4f6",
+                    background: isConnected ? "#d1fae5" : "hsl(var(--muted))",
                     color: isConnected ? "#065f46" : "#6b7280",
                   }}
                 >
                   {isConnected ? "Connected" : "Not Connected"}
                 </span>
               </div>
-              <p style={{ fontSize: 14, color: "#6b7280", marginBottom: 20 }}>{description}</p>
+              <p style={{ fontSize: 14, color: "hsl(var(--muted-foreground))", marginBottom: 20 }}>{description}</p>
 
               {provider === "trestle" ? (
                 <AdminTrestleForm
@@ -99,7 +99,7 @@ export default async function UserIntegrationsPage({ params }: { params: Promise
                   isConnected={isConnected}
                 />
               ) : (
-                <div style={{ padding: 16, background: "#f9fafb", borderRadius: 8, fontSize: 14, color: "#6b7280" }}>
+                <div style={{ padding: 16, background: "hsl(var(--muted))", borderRadius: 8, fontSize: 14, color: "hsl(var(--muted-foreground))" }}>
                   {name} connection management coming soon.
                 </div>
               )}

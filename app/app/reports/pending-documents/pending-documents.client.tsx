@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
@@ -313,8 +313,8 @@ export default function PendingDocumentsClient() {
 
   const cardStyle: React.CSSProperties = {
     padding: 20,
-    background: "#fff",
-    border: "1px solid #e5e7eb",
+    background: "hsl(var(--card))",
+    border: "1px solid hsl(var(--border))",
     borderRadius: 12,
     textAlign: "center" as const,
   };
@@ -362,19 +362,19 @@ export default function PendingDocumentsClient() {
       <div style={{ display: "flex", gap: 16, marginBottom: 24, flexWrap: "wrap" }}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 16, flex: "2 1 360px" }}>
           <div style={{ ...cardStyle, borderTop: "3px solid #3b82f6" }}>
-            <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Total Documents</div>
+            <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginBottom: 4 }}>Total Documents</div>
             <div style={{ fontSize: 28, fontWeight: 700 }}>{totalDocs}</div>
           </div>
           <div style={{ ...cardStyle, borderTop: "3px solid #16a34a" }}>
-            <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Signed / Complete</div>
+            <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginBottom: 4 }}>Signed / Complete</div>
             <div style={{ fontSize: 28, fontWeight: 700, color: "#16a34a" }}>{signedCount}</div>
           </div>
           <div style={{ ...cardStyle, borderTop: "3px solid #ca8a04" }}>
-            <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Pending</div>
+            <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginBottom: 4 }}>Pending</div>
             <div style={{ fontSize: 28, fontWeight: 700, color: "#ca8a04" }}>{pendingCount}</div>
           </div>
           <div style={{ ...cardStyle, borderTop: "3px solid #dc2626" }}>
-            <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Missing / Overdue</div>
+            <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginBottom: 4 }}>Missing / Overdue</div>
             <div style={{ fontSize: 28, fontWeight: 700, color: "#dc2626" }}>{missingCount}</div>
             <div style={{ fontSize: 11, color: "#dc2626" }}>{overdueCount} overdue</div>
           </div>
@@ -415,7 +415,7 @@ export default function PendingDocumentsClient() {
       {/* Filters + Export */}
       <div style={{ display: "flex", gap: 12, marginBottom: 24, flexWrap: "wrap", alignItems: "center" }}>
         <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-          <span style={{ fontSize: 13, fontWeight: 600, color: "#6b7280" }}>Status:</span>
+          <span style={{ fontSize: 13, fontWeight: 600, color: "hsl(var(--muted-foreground))" }}>Status:</span>
           {STATUS_OPTIONS.map((s) => (
             <button
               key={s}
@@ -436,16 +436,16 @@ export default function PendingDocumentsClient() {
           ))}
         </div>
         <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-          <span style={{ fontSize: 13, fontWeight: 600, color: "#6b7280" }}>Agent:</span>
+          <span style={{ fontSize: 13, fontWeight: 600, color: "hsl(var(--muted-foreground))" }}>Agent:</span>
           <select
             value={agentFilter}
             onChange={(e) => setAgentFilter(e.target.value)}
             style={{
               padding: "6px 12px",
               fontSize: 13,
-              border: "1px solid #d1d5db",
+              border: "1px solid hsl(var(--border))",
               borderRadius: 8,
-              background: "#fff",
+              background: "hsl(var(--card))",
               cursor: "pointer",
             }}
           >
@@ -476,9 +476,9 @@ export default function PendingDocumentsClient() {
           onClick={exportToExcel}
           style={{
             padding: "8px 20px",
-            background: "#fff",
-            color: "#374151",
-            border: "1px solid #d1d5db",
+            background: "hsl(var(--card))",
+            color: "hsl(var(--foreground))",
+            border: "1px solid hsl(var(--border))",
             borderRadius: 8,
             fontWeight: 600,
             cursor: "pointer",
@@ -494,17 +494,17 @@ export default function PendingDocumentsClient() {
         <div
           key={address}
           style={{
-            background: "#fff",
-            border: "1px solid #e5e7eb",
+            background: "hsl(var(--card))",
+            border: "1px solid hsl(var(--border))",
             borderRadius: 12,
             marginBottom: 20,
             overflow: "hidden",
           }}
         >
           {/* Group Header */}
-          <div style={{ padding: "14px 20px", background: "#f9fafb", borderBottom: "1px solid #e5e7eb" }}>
+          <div style={{ padding: "14px 20px", background: "hsl(var(--muted))", borderBottom: "1px solid #e5e7eb" }}>
             <div style={{ fontSize: 15, fontWeight: 700 }}>{address}</div>
-            <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>
+            <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 2 }}>
               {docs[0].buyerSeller} &middot; Agent: {docs[0].agent}
             </div>
           </div>
@@ -513,17 +513,17 @@ export default function PendingDocumentsClient() {
             <thead>
               <tr style={{ borderBottom: "2px solid #e5e7eb" }}>
                 <th
-                  style={{ padding: "10px 16px", textAlign: "left", fontWeight: 700, fontSize: 12, color: "#6b7280" }}
+                  style={{ padding: "10px 16px", textAlign: "left", fontWeight: 700, fontSize: 12, color: "hsl(var(--muted-foreground))" }}
                 >
                   Document Name
                 </th>
                 <th
-                  style={{ padding: "10px 16px", textAlign: "center", fontWeight: 700, fontSize: 12, color: "#6b7280" }}
+                  style={{ padding: "10px 16px", textAlign: "center", fontWeight: 700, fontSize: 12, color: "hsl(var(--muted-foreground))" }}
                 >
                   Status
                 </th>
                 <th
-                  style={{ padding: "10px 16px", textAlign: "right", fontWeight: 700, fontSize: 12, color: "#6b7280" }}
+                  style={{ padding: "10px 16px", textAlign: "right", fontWeight: 700, fontSize: 12, color: "hsl(var(--muted-foreground))" }}
                 >
                   Due Date
                 </th>
@@ -582,9 +582,9 @@ export default function PendingDocumentsClient() {
           style={{
             padding: 40,
             textAlign: "center",
-            color: "#6b7280",
-            background: "#fff",
-            border: "1px solid #e5e7eb",
+            color: "hsl(var(--muted-foreground))",
+            background: "hsl(var(--card))",
+            border: "1px solid hsl(var(--border))",
             borderRadius: 12,
           }}
         >

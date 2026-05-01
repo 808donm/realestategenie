@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 
@@ -104,7 +104,7 @@ export default function MarketReportsManager({ initialConfigs }: { initialConfig
 
   const inputStyle: React.CSSProperties = {
     width: "100%", padding: "8px 12px", borderRadius: 6,
-    border: "1px solid #d1d5db", fontSize: 13,
+    border: "1px solid hsl(var(--border))", fontSize: 13,
   };
 
   return (
@@ -112,7 +112,7 @@ export default function MarketReportsManager({ initialConfigs }: { initialConfig
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
         <div>
           <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700 }}>Market Reports</h1>
-          <p style={{ margin: "4px 0 0", fontSize: 14, color: "#6b7280" }}>
+          <p style={{ margin: "4px 0 0", fontSize: 14, color: "hsl(var(--muted-foreground))" }}>
             Manage which market reports are visible to agents based on their MLS connection
           </p>
         </div>
@@ -206,7 +206,7 @@ export default function MarketReportsManager({ initialConfigs }: { initialConfig
             <button onClick={handleAdd} disabled={saving || !formMlsId || !formSlug || !formTitle} style={{ padding: "8px 20px", borderRadius: 6, border: "none", background: "#2563eb", color: "#fff", fontWeight: 600, cursor: "pointer", fontSize: 13 }}>
               {saving ? "Saving..." : "Add"}
             </button>
-            <button onClick={() => setShowAdd(false)} style={{ padding: "8px 20px", borderRadius: 6, border: "1px solid #d1d5db", background: "#fff", color: "#374151", fontWeight: 600, cursor: "pointer", fontSize: 13 }}>
+            <button onClick={() => setShowAdd(false)} style={{ padding: "8px 20px", borderRadius: 6, border: "1px solid hsl(var(--border))", background: "hsl(var(--card))", color: "hsl(var(--foreground))", fontWeight: 600, cursor: "pointer", fontSize: 13 }}>
               Cancel
             </button>
           </div>
@@ -219,13 +219,13 @@ export default function MarketReportsManager({ initialConfigs }: { initialConfig
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
             <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>{reports[0].mls_name}</h2>
             <span style={{ fontSize: 12, padding: "2px 8px", borderRadius: 10, background: "#e0e7ff", color: "#3730a3", fontWeight: 600 }}>{mlsId}</span>
-            <span style={{ fontSize: 12, padding: "2px 8px", borderRadius: 10, background: "#f3f4f6", color: "#6b7280" }}>{reports[0].state}</span>
-            <span style={{ fontSize: 12, color: "#6b7280" }}>{reports.length} reports</span>
+            <span style={{ fontSize: 12, padding: "2px 8px", borderRadius: 10, background: "hsl(var(--muted))", color: "hsl(var(--muted-foreground))" }}>{reports[0].state}</span>
+            <span style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>{reports.length} reports</span>
           </div>
-          <div style={{ border: "1px solid #e5e7eb", borderRadius: 10, overflow: "hidden" }}>
+          <div style={{ border: "1px solid hsl(var(--border))", borderRadius: 10, overflow: "hidden" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
               <thead>
-                <tr style={{ background: "#f9fafb" }}>
+                <tr style={{ background: "hsl(var(--muted))" }}>
                   <th style={{ padding: "10px 12px", textAlign: "left", fontWeight: 600 }}>Title</th>
                   <th style={{ padding: "10px 12px", textAlign: "left", fontWeight: 600 }}>Slug</th>
                   <th style={{ padding: "10px 12px", textAlign: "left", fontWeight: 600 }}>Category</th>
@@ -238,8 +238,8 @@ export default function MarketReportsManager({ initialConfigs }: { initialConfig
                 {reports.map((r, i) => (
                   <tr key={r.id} style={{ background: i % 2 === 0 ? "#fff" : "#f9fafb", borderTop: "1px solid #f3f4f6" }}>
                     <td style={{ padding: "8px 12px", fontWeight: 500 }}>{r.report_title}</td>
-                    <td style={{ padding: "8px 12px", color: "#6b7280", fontFamily: "monospace", fontSize: 12 }}>{r.report_slug}</td>
-                    <td style={{ padding: "8px 12px", color: "#6b7280" }}>{r.report_category}</td>
+                    <td style={{ padding: "8px 12px", color: "hsl(var(--muted-foreground))", fontFamily: "monospace", fontSize: 12 }}>{r.report_slug}</td>
+                    <td style={{ padding: "8px 12px", color: "hsl(var(--muted-foreground))" }}>{r.report_category}</td>
                     <td style={{ padding: "8px 12px", textAlign: "center" }}>{r.display_order}</td>
                     <td style={{ padding: "8px 12px", textAlign: "center" }}>
                       <button
@@ -267,7 +267,7 @@ export default function MarketReportsManager({ initialConfigs }: { initialConfig
       ))}
 
       {configs.length === 0 && (
-        <div style={{ textAlign: "center", padding: 60, color: "#6b7280" }}>
+        <div style={{ textAlign: "center", padding: 60, color: "hsl(var(--muted-foreground))" }}>
           <p style={{ fontSize: 16, fontWeight: 600 }}>No market report configs yet</p>
           <p style={{ fontSize: 14 }}>Apply the migration first, then add report configs.</p>
         </div>

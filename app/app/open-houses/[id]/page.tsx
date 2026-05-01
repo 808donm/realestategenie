@@ -175,21 +175,21 @@ export default async function OpenHouseDetail({ params }: { params: Promise<{ id
       </div>
 
       {/* Editable Event Details */}
-      <div style={{ marginTop: 24, padding: 16, background: "#f9fafb", borderRadius: 10, border: "1px solid #e5e7eb" }}>
+      <div style={{ marginTop: 24, padding: 16, background: "hsl(var(--muted))", borderRadius: 10, border: "1px solid hsl(var(--border))" }}>
         <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12 }}>Event Details</h2>
         <form action={updateEventDetails} style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
           <div style={{ gridColumn: "1 / -1" }}>
-            <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 4 }}>
+            <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "hsl(var(--foreground))", marginBottom: 4 }}>
               Address
             </label>
             <input
               name="address"
               defaultValue={evt.address}
-              style={{ width: "100%", padding: "8px 10px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14 }}
+              style={{ width: "100%", padding: "8px 10px", border: "1px solid hsl(var(--border))", borderRadius: 6, fontSize: 14 }}
             />
           </div>
           <div>
-            <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 4 }}>
+            <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "hsl(var(--foreground))", marginBottom: 4 }}>
               Start Date & Time
             </label>
             <input
@@ -202,11 +202,11 @@ export default async function OpenHouseDetail({ params }: { params: Promise<{ id
                       .slice(0, 16)
                   : ""
               }
-              style={{ width: "100%", padding: "8px 10px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14 }}
+              style={{ width: "100%", padding: "8px 10px", border: "1px solid hsl(var(--border))", borderRadius: 6, fontSize: 14 }}
             />
           </div>
           <div>
-            <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 4 }}>
+            <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "hsl(var(--foreground))", marginBottom: 4 }}>
               End Date & Time
             </label>
             <input
@@ -219,7 +219,7 @@ export default async function OpenHouseDetail({ params }: { params: Promise<{ id
                       .slice(0, 16)
                   : ""
               }
-              style={{ width: "100%", padding: "8px 10px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14 }}
+              style={{ width: "100%", padding: "8px 10px", border: "1px solid hsl(var(--border))", borderRadius: 6, fontSize: 14 }}
             />
           </div>
           <div style={{ gridColumn: "1 / -1" }}>
@@ -276,11 +276,11 @@ export default async function OpenHouseDetail({ params }: { params: Promise<{ id
               flexDirection: "column",
               alignItems: "center",
               justifyContent: "center",
-              background: "#f9fafb",
+              background: "hsl(var(--muted))",
               gap: 8,
             }}
           >
-            <span style={{ fontSize: 14, color: "#6b7280" }}>No property photo uploaded yet</span>
+            <span style={{ fontSize: 14, color: "hsl(var(--muted-foreground))" }}>No property photo uploaded yet</span>
             <Link
               href={`/app/open-houses/${evt.id}/edit`}
               style={{

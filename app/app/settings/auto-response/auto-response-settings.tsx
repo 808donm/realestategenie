@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect } from "react";
 
@@ -59,7 +59,7 @@ export default function AutoResponseSettings() {
   };
 
   if (isLoading) {
-    return <div style={{ padding: 40, textAlign: "center", color: "#6b7280" }}>Loading settings...</div>;
+    return <div style={{ padding: 40, textAlign: "center", color: "hsl(var(--muted-foreground))" }}>Loading settings...</div>;
   }
 
   return (
@@ -86,11 +86,11 @@ export default function AutoResponseSettings() {
       )}
 
       {/* Main Toggle */}
-      <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, padding: 24, marginBottom: 16 }}>
+      <div style={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12, padding: 24, marginBottom: 16 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
           <div>
             <h3 style={{ fontSize: 16, fontWeight: 700, margin: 0 }}>AI SMS Auto-Response</h3>
-            <p style={{ fontSize: 13, color: "#6b7280", marginTop: 4 }}>
+            <p style={{ fontSize: 13, color: "hsl(var(--muted-foreground))", marginTop: 4 }}>
               Automatically respond to inbound SMS messages using AI
             </p>
           </div>
@@ -121,7 +121,7 @@ export default function AutoResponseSettings() {
                   width: 20,
                   left: config.enabled ? 24 : 3,
                   bottom: 3,
-                  background: "#fff",
+                  background: "hsl(var(--card))",
                   borderRadius: "50%",
                   transition: "0.3s",
                 }}
@@ -133,7 +133,7 @@ export default function AutoResponseSettings() {
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
             <h3 style={{ fontSize: 16, fontWeight: 700, margin: 0 }}>AI Email Auto-Response</h3>
-            <p style={{ fontSize: 13, color: "#6b7280", marginTop: 4 }}>Auto-respond to inbound emails (via GHL)</p>
+            <p style={{ fontSize: 13, color: "hsl(var(--muted-foreground))", marginTop: 4 }}>Auto-respond to inbound emails (via GHL)</p>
           </div>
           <label style={{ position: "relative", display: "inline-block", width: 48, height: 26 }}>
             <input
@@ -162,7 +162,7 @@ export default function AutoResponseSettings() {
                   width: 20,
                   left: config.autoReplyEmail ? 24 : 3,
                   bottom: 3,
-                  background: "#fff",
+                  background: "hsl(var(--card))",
                   borderRadius: "50%",
                   transition: "0.3s",
                 }}
@@ -173,7 +173,7 @@ export default function AutoResponseSettings() {
       </div>
 
       {/* Schedule */}
-      <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, padding: 24, marginBottom: 16 }}>
+      <div style={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12, padding: 24, marginBottom: 16 }}>
         <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 16 }}>Schedule</h3>
 
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
@@ -183,31 +183,31 @@ export default function AutoResponseSettings() {
             onChange={(e) => setConfig({ ...config, afterHoursOnly: e.target.checked })}
             style={{ width: 16, height: 16, accentColor: "#3b82f6" }}
           />
-          <label style={{ fontSize: 14, color: "#374151" }}>Only auto-respond outside business hours</label>
+          <label style={{ fontSize: 14, color: "hsl(var(--foreground))" }}>Only auto-respond outside business hours</label>
         </div>
 
         {config.afterHoursOnly && (
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <div>
-              <label style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", display: "block", marginBottom: 4 }}>
+              <label style={{ fontSize: 12, fontWeight: 600, color: "hsl(var(--muted-foreground))", display: "block", marginBottom: 4 }}>
                 Business Hours Start
               </label>
               <input
                 type="time"
                 value={config.businessHoursStart}
                 onChange={(e) => setConfig({ ...config, businessHoursStart: e.target.value })}
-                style={{ width: "100%", padding: 10, border: "1px solid #e5e7eb", borderRadius: 8, fontSize: 14 }}
+                style={{ width: "100%", padding: 10, border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 14 }}
               />
             </div>
             <div>
-              <label style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", display: "block", marginBottom: 4 }}>
+              <label style={{ fontSize: 12, fontWeight: 600, color: "hsl(var(--muted-foreground))", display: "block", marginBottom: 4 }}>
                 Business Hours End
               </label>
               <input
                 type="time"
                 value={config.businessHoursEnd}
                 onChange={(e) => setConfig({ ...config, businessHoursEnd: e.target.value })}
-                style={{ width: "100%", padding: 10, border: "1px solid #e5e7eb", borderRadius: 8, fontSize: 14 }}
+                style={{ width: "100%", padding: 10, border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 14 }}
               />
             </div>
           </div>
@@ -215,12 +215,12 @@ export default function AutoResponseSettings() {
       </div>
 
       {/* Limits & Escalation */}
-      <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, padding: 24, marginBottom: 16 }}>
+      <div style={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12, padding: 24, marginBottom: 16 }}>
         <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 16 }}>Limits & Escalation</h3>
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
           <div>
-            <label style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", display: "block", marginBottom: 4 }}>
+            <label style={{ fontSize: 12, fontWeight: 600, color: "hsl(var(--muted-foreground))", display: "block", marginBottom: 4 }}>
               Max Auto-Replies Per Contact
             </label>
             <input
@@ -229,11 +229,11 @@ export default function AutoResponseSettings() {
               onChange={(e) => setConfig({ ...config, maxAutoRepliesPerContact: parseInt(e.target.value) || 5 })}
               min={1}
               max={50}
-              style={{ width: "100%", padding: 10, border: "1px solid #e5e7eb", borderRadius: 8, fontSize: 14 }}
+              style={{ width: "100%", padding: 10, border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 14 }}
             />
           </div>
           <div>
-            <label style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", display: "block", marginBottom: 4 }}>
+            <label style={{ fontSize: 12, fontWeight: 600, color: "hsl(var(--muted-foreground))", display: "block", marginBottom: 4 }}>
               Escalate to Agent After
             </label>
             <input
@@ -242,15 +242,15 @@ export default function AutoResponseSettings() {
               onChange={(e) => setConfig({ ...config, escalateAfterReplies: parseInt(e.target.value) || 3 })}
               min={1}
               max={20}
-              style={{ width: "100%", padding: 10, border: "1px solid #e5e7eb", borderRadius: 8, fontSize: 14 }}
+              style={{ width: "100%", padding: 10, border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 14 }}
             />
-            <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 4 }}>replies before notifying you</div>
+            <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", marginTop: 4 }}>replies before notifying you</div>
           </div>
         </div>
       </div>
 
       {/* Custom Greeting */}
-      <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, padding: 24, marginBottom: 16 }}>
+      <div style={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12, padding: 24, marginBottom: 16 }}>
         <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 16 }}>Greeting Message</h3>
         <textarea
           value={config.greeting}
@@ -260,14 +260,14 @@ export default function AutoResponseSettings() {
           style={{
             width: "100%",
             padding: 12,
-            border: "1px solid #e5e7eb",
+            border: "1px solid hsl(var(--border))",
             borderRadius: 8,
             fontSize: 14,
             resize: "vertical",
             fontFamily: "inherit",
           }}
         />
-        <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 4 }}>
+        <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", marginTop: 4 }}>
           This greeting is sent as the first message when a new contact texts you.
         </div>
       </div>

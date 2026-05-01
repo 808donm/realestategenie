@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useMemo, useEffect, useCallback } from "react";
 import Link from "next/link";
@@ -248,9 +248,9 @@ export default function LeadAssignmentClient() {
             onClick={exportToExcel}
             style={{
               padding: "8px 20px",
-              background: "#fff",
-              color: "#374151",
-              border: "1px solid #d1d5db",
+              background: "hsl(var(--card))",
+              color: "hsl(var(--foreground))",
+              border: "1px solid hsl(var(--border))",
               borderRadius: 8,
               fontWeight: 600,
               cursor: "pointer",
@@ -263,7 +263,7 @@ export default function LeadAssignmentClient() {
       </div>
 
       {/* Lead Distribution Bar Chart */}
-      <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 20, marginBottom: 20 }}>
+      <div style={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 10, padding: 20, marginBottom: 20 }}>
         <h3 style={{ margin: "0 0 16px 0", fontSize: 15, fontWeight: 700 }}>Lead Distribution</h3>
         <ResponsiveContainer width="100%" height={280}>
           <BarChart
@@ -288,7 +288,7 @@ export default function LeadAssignmentClient() {
       </div>
 
       {/* Conversion Rate Chart */}
-      <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 20, marginBottom: 20 }}>
+      <div style={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 10, padding: 20, marginBottom: 20 }}>
         <h3 style={{ margin: "0 0 16px 0", fontSize: 15, fontWeight: 700 }}>Conversion Rate & Response Time</h3>
         <ResponsiveContainer width="100%" height={260}>
           <BarChart
@@ -326,8 +326,8 @@ export default function LeadAssignmentClient() {
       <div
         style={{
           overflowX: "auto",
-          background: "#fff",
-          border: "1px solid #e5e7eb",
+          background: "hsl(var(--card))",
+          border: "1px solid hsl(var(--border))",
           borderRadius: 10,
           marginBottom: 20,
         }}

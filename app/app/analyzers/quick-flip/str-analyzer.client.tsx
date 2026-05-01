@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useMemo, useCallback } from "react";
 import * as XLSX from "xlsx";
@@ -9,11 +9,11 @@ import CalculatorBrandedExport from "../../components/calculator-branded-export"
 import MLSImport, { type MLSPropertyData } from "@/components/mls-import";
 import { calculateSTR, type STRInput } from "@/lib/calculators/str";
 
-const sectionStyle = { background: "#f9fafb", borderRadius: 8, padding: 16, marginBottom: 16 };
+const sectionStyle = { background: "hsl(var(--muted))", borderRadius: 8, padding: 16, marginBottom: 16 };
 const inputStyle = {
   width: "100%",
   padding: "8px 12px",
-  border: "1px solid #d1d5db",
+  border: "1px solid hsl(var(--border))",
   borderRadius: 6,
   fontSize: 14,
 };
@@ -21,7 +21,7 @@ const labelStyle: React.CSSProperties = {
   display: "block",
   fontSize: 12,
   fontWeight: 600,
-  color: "#374151",
+  color: "hsl(var(--foreground))",
   marginBottom: 4,
 };
 
@@ -467,7 +467,7 @@ export default function STRAnalyzerClient() {
                 />
               </div>
             </div>
-            <p style={{ margin: "8px 0 0", fontSize: 12, color: "#6b7280" }}>
+            <p style={{ margin: "8px 0 0", fontSize: 12, color: "hsl(var(--muted-foreground))" }}>
               Hawaii defaults (GET + TAT). Set to 0 for mainland.
             </p>
           </div>
@@ -614,14 +614,14 @@ export default function STRAnalyzerClient() {
           {/* Cash Flow Breakdown */}
           <div
             style={{
-              background: "#fff",
-              border: "1px solid #e5e7eb",
+              background: "hsl(var(--card))",
+              border: "1px solid hsl(var(--border))",
               borderRadius: 8,
               padding: 16,
               marginBottom: 16,
             }}
           >
-            <h4 style={{ margin: "0 0 12px", fontSize: 14, fontWeight: 600, color: "#6b7280" }}>
+            <h4 style={{ margin: "0 0 12px", fontSize: 14, fontWeight: 600, color: "hsl(var(--muted-foreground))" }}>
               CASH FLOW (Year 1)
             </h4>
             <div style={{ display: "grid", gap: 10 }}>
@@ -689,14 +689,14 @@ export default function STRAnalyzerClient() {
           {/* Expense Breakdown Pie Chart */}
           <div
             style={{
-              background: "#fff",
-              border: "1px solid #e5e7eb",
+              background: "hsl(var(--card))",
+              border: "1px solid hsl(var(--border))",
               borderRadius: 8,
               padding: 16,
               marginBottom: 16,
             }}
           >
-            <h4 style={{ margin: "0 0 12px", fontSize: 14, fontWeight: 600, color: "#6b7280" }}>
+            <h4 style={{ margin: "0 0 12px", fontSize: 14, fontWeight: 600, color: "hsl(var(--muted-foreground))" }}>
               EXPENSE BREAKDOWN
             </h4>
             <ResponsiveContainer width="100%" height={250}>
@@ -734,14 +734,14 @@ export default function STRAnalyzerClient() {
           {/* Key Metrics */}
           <div
             style={{
-              background: "#fff",
-              border: "1px solid #e5e7eb",
+              background: "hsl(var(--card))",
+              border: "1px solid hsl(var(--border))",
               borderRadius: 8,
               padding: 16,
               marginBottom: 16,
             }}
           >
-            <h4 style={{ margin: "0 0 12px", fontSize: 14, fontWeight: 600, color: "#6b7280" }}>KEY STR METRICS</h4>
+            <h4 style={{ margin: "0 0 12px", fontSize: 14, fontWeight: 600, color: "hsl(var(--muted-foreground))" }}>KEY STR METRICS</h4>
             <div style={{ display: "grid", gap: 12 }}>
               <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <span>Cap Rate</span>
@@ -785,14 +785,14 @@ export default function STRAnalyzerClient() {
           {/* Equity Accumulation Table */}
           <div
             style={{
-              background: "#fff",
-              border: "1px solid #e5e7eb",
+              background: "hsl(var(--card))",
+              border: "1px solid hsl(var(--border))",
               borderRadius: 8,
               padding: 16,
               marginBottom: 16,
             }}
           >
-            <h4 style={{ margin: "0 0 12px", fontSize: 14, fontWeight: 600, color: "#6b7280" }}>
+            <h4 style={{ margin: "0 0 12px", fontSize: 14, fontWeight: 600, color: "hsl(var(--muted-foreground))" }}>
               EQUITY ACCUMULATION
             </h4>
             <table style={{ width: "100%", fontSize: 12, borderCollapse: "collapse" }}>
@@ -826,13 +826,13 @@ export default function STRAnalyzerClient() {
           {/* Sale Analysis Table */}
           <div
             style={{
-              background: "#fff",
-              border: "1px solid #e5e7eb",
+              background: "hsl(var(--card))",
+              border: "1px solid hsl(var(--border))",
               borderRadius: 8,
               padding: 16,
             }}
           >
-            <h4 style={{ margin: "0 0 12px", fontSize: 14, fontWeight: 600, color: "#6b7280" }}>SALE ANALYSIS</h4>
+            <h4 style={{ margin: "0 0 12px", fontSize: 14, fontWeight: 600, color: "hsl(var(--muted-foreground))" }}>SALE ANALYSIS</h4>
             <table style={{ width: "100%", fontSize: 12, borderCollapse: "collapse" }}>
               <thead>
                 <tr style={{ borderBottom: "1px solid #e5e7eb" }}>

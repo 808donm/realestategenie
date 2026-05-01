@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { supabaseServer } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
@@ -79,7 +79,7 @@ export default async function ReportsPage() {
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
           <div style={{ width: 4, height: 24, background: "#dc2626", borderRadius: 2 }} />
           <h2 style={{ margin: 0, fontSize: 20, fontWeight: 800 }}>Market Statistics</h2>
-          <span style={{ fontSize: 13, color: "#6b7280" }}>
+          <span style={{ fontSize: 13, color: "hsl(var(--muted-foreground))" }}>
             {agentMlsId ? `Reports for your MLS` : "Historical data with interactive charts"}
           </span>
         </div>
@@ -103,7 +103,7 @@ export default async function ReportsPage() {
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
           <div style={{ width: 4, height: 24, background: "#3b82f6", borderRadius: 2 }} />
           <h2 style={{ margin: 0, fontSize: 20, fontWeight: 800 }}>Solo Agent</h2>
-          <span style={{ fontSize: 13, color: "#6b7280" }}>Time management, lead ROI & personal income</span>
+          <span style={{ fontSize: 13, color: "hsl(var(--muted-foreground))" }}>Time management, lead ROI & personal income</span>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16 }}>
           <ReportCard
@@ -142,7 +142,7 @@ export default async function ReportsPage() {
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
           <div style={{ width: 4, height: 24, background: "#8b5cf6", borderRadius: 2 }} />
           <h2 style={{ margin: 0, fontSize: 20, fontWeight: 800 }}>Small Teams</h2>
-          <span style={{ fontSize: 13, color: "#6b7280" }}>Accountability, lead distribution & team splits</span>
+          <span style={{ fontSize: 13, color: "hsl(var(--muted-foreground))" }}>Accountability, lead distribution & team splits</span>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16 }}>
           <ReportCard
@@ -181,7 +181,7 @@ export default async function ReportsPage() {
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
           <div style={{ width: 4, height: 24, background: "#059669", borderRadius: 2 }} />
           <h2 style={{ margin: 0, fontSize: 20, fontWeight: 800 }}>Brokerage</h2>
-          <span style={{ fontSize: 13, color: "#6b7280" }}>Compliance, liability & brokerage-wide profitability</span>
+          <span style={{ fontSize: 13, color: "hsl(var(--muted-foreground))" }}>Compliance, liability & brokerage-wide profitability</span>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16 }}>
           <ReportCard
@@ -220,7 +220,7 @@ export default async function ReportsPage() {
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
           <div style={{ width: 4, height: 24, background: "#f59e0b", borderRadius: 2 }} />
           <h2 style={{ margin: 0, fontSize: 20, fontWeight: 800 }}>Assistants & Office Admin</h2>
-          <span style={{ fontSize: 13, color: "#6b7280" }}>Operations, maintenance & the to-do list</span>
+          <span style={{ fontSize: 13, color: "hsl(var(--muted-foreground))" }}>Operations, maintenance & the to-do list</span>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16 }}>
           <ReportCard
@@ -256,14 +256,14 @@ function ReportCard({
       href={href}
       style={{
         padding: 20,
-        border: "1px solid #e5e7eb",
+        border: "1px solid hsl(var(--border))",
         borderRadius: 12,
         textDecoration: "none",
         color: "inherit",
         display: "block",
         transition: "border-color 0.2s, box-shadow 0.2s",
         borderLeft: `4px solid ${color}`,
-        background: "#fff",
+        background: "hsl(var(--card))",
       }}
     >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
@@ -293,8 +293,8 @@ function ReportCard({
               fontWeight: 600,
               padding: "2px 8px",
               borderRadius: 4,
-              background: "#f3f4f6",
-              color: "#6b7280",
+              background: "hsl(var(--muted))",
+              color: "hsl(var(--muted-foreground))",
             }}
           >
             {source}

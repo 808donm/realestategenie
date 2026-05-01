@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useMemo, useEffect, useCallback } from "react";
 import jsPDF from "jspdf";
@@ -222,18 +222,18 @@ export default function SpeedToLeadClient() {
           <div style={{ fontSize: 48, fontWeight: 900 }}>{grade.letter}</div>
           <div style={{ fontSize: 13, opacity: 0.9 }}>{grade.label}</div>
         </div>
-        <div style={{ padding: 16, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 8 }}>
-          <div style={{ fontSize: 12, color: "#6b7280" }}>Avg Response</div>
+        <div style={{ padding: 16, background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }}>
+          <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>Avg Response</div>
           <div style={{ fontSize: 24, fontWeight: 700 }}>{data.avgResponseMin} min</div>
         </div>
-        <div style={{ padding: 16, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 8 }}>
-          <div style={{ fontSize: 12, color: "#6b7280" }}>Median</div>
+        <div style={{ padding: 16, background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }}>
+          <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>Median</div>
           <div style={{ fontSize: 24, fontWeight: 700 }}>{data.medianResponseMin} min</div>
         </div>
-        <div style={{ padding: 16, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 8 }}>
-          <div style={{ fontSize: 12, color: "#6b7280" }}>Under 5 min</div>
+        <div style={{ padding: 16, background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }}>
+          <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>Under 5 min</div>
           <div style={{ fontSize: 24, fontWeight: 700 }}>{under5pct}%</div>
-          <div style={{ fontSize: 11, color: "#6b7280" }}>{data.under5min} leads</div>
+          <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>{data.under5min} leads</div>
         </div>
         <div
           style={{
@@ -243,7 +243,7 @@ export default function SpeedToLeadClient() {
             borderRadius: 8,
           }}
         >
-          <div style={{ fontSize: 12, color: "#6b7280" }}>Missed (24hr)</div>
+          <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>Missed (24hr)</div>
           <div style={{ fontSize: 24, fontWeight: 700, color: data.noResponse24hr > 0 ? "#dc2626" : "#059669" }}>
             {data.noResponse24hr}
           </div>
@@ -251,7 +251,7 @@ export default function SpeedToLeadClient() {
       </div>
 
       {/* Response Distribution Pie Chart */}
-      <div style={{ padding: 24, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, marginBottom: 24 }}>
+      <div style={{ padding: 24, background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12, marginBottom: 24 }}>
         <h3 style={{ margin: "0 0 16px 0", fontSize: 16, fontWeight: 700 }}>Response Time Distribution</h3>
         {(() => {
           const distData = [
@@ -286,7 +286,7 @@ export default function SpeedToLeadClient() {
       </div>
 
       {/* Hourly Breakdown Bar Chart */}
-      <div style={{ padding: 24, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, marginBottom: 24 }}>
+      <div style={{ padding: 24, background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12, marginBottom: 24 }}>
         <h3 style={{ margin: "0 0 16px 0", fontSize: 16, fontWeight: 700 }}>Average Response by Time of Day</h3>
         <ResponsiveContainer width="100%" height={280}>
           <BarChart data={data.hourlyBreakdown} margin={{ top: 5, right: 20, bottom: 5, left: 20 }}>
@@ -311,7 +311,7 @@ export default function SpeedToLeadClient() {
         style={{ padding: 20, background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 12, marginBottom: 24 }}
       >
         <h3 style={{ margin: "0 0 8px 0", fontSize: 15, fontWeight: 700 }}>Recommendation</h3>
-        <p style={{ margin: 0, fontSize: 13, color: "#374151", lineHeight: 1.6 }}>
+        <p style={{ margin: 0, fontSize: 13, color: "hsl(var(--foreground))", lineHeight: 1.6 }}>
           {data.avgResponseMin > 15
             ? "Your average response time exceeds 15 minutes. Studies show that responding within 5 minutes increases conversion by 400%. Consider setting up automated initial responses in GHL for leads that come in during your busiest hours."
             : "Great job keeping response times low! Continue monitoring to ensure consistency, especially during peak hours."}
@@ -337,9 +337,9 @@ export default function SpeedToLeadClient() {
           onClick={exportToExcel}
           style={{
             padding: "8px 20px",
-            background: "#fff",
-            color: "#374151",
-            border: "1px solid #d1d5db",
+            background: "hsl(var(--card))",
+            color: "hsl(var(--foreground))",
+            border: "1px solid hsl(var(--border))",
             borderRadius: 8,
             fontWeight: 600,
             cursor: "pointer",

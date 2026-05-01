@@ -1,4 +1,4 @@
-import { requireAdmin } from "@/lib/auth/admin-check";
+﻿import { requireAdmin } from "@/lib/auth/admin-check";
 import { AvmStatisticsDashboard } from "./avm-statistics.client";
 
 export const metadata = {
@@ -11,7 +11,7 @@ export default async function AvmStatisticsPage() {
   return (
     <div>
       <h1 style={{ fontSize: 24, fontWeight: 800, marginBottom: 4 }}>AVM Statistics</h1>
-      <p style={{ color: "#6b7280", marginBottom: 20 }}>
+      <p style={{ color: "hsl(var(--muted-foreground))", marginBottom: 20 }}>
         Genie AVM accuracy tracking, comp cache health, and valuation performance by area
       </p>
       <AvmStatisticsDashboard />

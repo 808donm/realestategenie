@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -226,7 +226,7 @@ export default function UserManagementClient({ users, plans, subscriptionMap }: 
       <div style={{ overflow: "auto" }}>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
-            <tr style={{ background: "#f9fafb" }}>
+            <tr style={{ background: "hsl(var(--muted))" }}>
               <Th>User</Th>
               <Th>Email</Th>
               <Th>Role</Th>
@@ -392,7 +392,7 @@ export default function UserManagementClient({ users, plans, subscriptionMap }: 
             style={{
               padding: 48,
               textAlign: "center",
-              color: "#6b7280",
+              color: "hsl(var(--muted-foreground))",
             }}
           >
             No users found
@@ -429,7 +429,7 @@ export default function UserManagementClient({ users, plans, subscriptionMap }: 
             }}
           >
             <h3 style={{ margin: "0 0 4px 0", fontSize: 20, fontWeight: 700 }}>Assign Plan</h3>
-            <p style={{ margin: "0 0 20px 0", color: "#6b7280", fontSize: 14 }}>
+            <p style={{ margin: "0 0 20px 0", color: "hsl(var(--muted-foreground))", fontSize: 14 }}>
               {assigningUser.display_name || assigningUser.email}
             </p>
 
@@ -471,7 +471,7 @@ export default function UserManagementClient({ users, plans, subscriptionMap }: 
                   fontSize: 14,
                   fontWeight: 600,
                   marginBottom: 6,
-                  color: "#374151",
+                  color: "hsl(var(--foreground))",
                 }}
               >
                 Subscription Plan
@@ -482,7 +482,7 @@ export default function UserManagementClient({ users, plans, subscriptionMap }: 
                 style={{
                   width: "100%",
                   padding: "10px 12px",
-                  border: "1px solid #d1d5db",
+                  border: "1px solid hsl(var(--border))",
                   borderRadius: 8,
                   fontSize: 14,
                   background: "white",
@@ -505,7 +505,7 @@ export default function UserManagementClient({ users, plans, subscriptionMap }: 
                   fontSize: 14,
                   fontWeight: 600,
                   marginBottom: 6,
-                  color: "#374151",
+                  color: "hsl(var(--foreground))",
                 }}
               >
                 Billing Cycle
@@ -566,9 +566,9 @@ export default function UserManagementClient({ users, plans, subscriptionMap }: 
                   fontSize: 14,
                   fontWeight: 600,
                   borderRadius: 8,
-                  border: "1px solid #d1d5db",
+                  border: "1px solid hsl(var(--border))",
                   background: "white",
-                  color: "#374151",
+                  color: "hsl(var(--foreground))",
                   cursor: "pointer",
                 }}
               >
@@ -607,7 +607,7 @@ function Th({ children }: { children: React.ReactNode }) {
         textAlign: "left",
         fontSize: 12,
         fontWeight: 600,
-        color: "#6b7280",
+        color: "hsl(var(--muted-foreground))",
         textTransform: "uppercase",
       }}
     >

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useMemo, useCallback } from "react";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
@@ -459,11 +459,11 @@ export default function FlipAnalyzerClient({ savedAnalyses }: FlipAnalyzerClient
     marginBottom: 4,
     fontSize: 13,
     fontWeight: 500,
-    color: "#374151",
+    color: "hsl(var(--foreground))",
   };
 
   const sectionStyle = {
-    background: "#f9fafb",
+    background: "hsl(var(--muted))",
     borderRadius: 8,
     padding: 16,
     marginBottom: 16,
@@ -508,7 +508,7 @@ export default function FlipAnalyzerClient({ savedAnalyses }: FlipAnalyzerClient
       {activeTab === "saved" ? (
         <div>
           {savedAnalyses.length === 0 ? (
-            <p style={{ color: "#6b7280" }}>No saved analyses yet. Use the calculator to create one.</p>
+            <p style={{ color: "hsl(var(--muted-foreground))" }}>No saved analyses yet. Use the calculator to create one.</p>
           ) : (
             <div style={{ display: "grid", gap: 12 }}>
               {savedAnalyses.map((item) => (
@@ -517,7 +517,7 @@ export default function FlipAnalyzerClient({ savedAnalyses }: FlipAnalyzerClient
                   onClick={() => loadAnalysis(item.id)}
                   style={{
                     padding: 16,
-                    border: "1px solid #e5e7eb",
+                    border: "1px solid hsl(var(--border))",
                     borderRadius: 8,
                     cursor: "pointer",
                     transition: "all 0.2s",
@@ -529,7 +529,7 @@ export default function FlipAnalyzerClient({ savedAnalyses }: FlipAnalyzerClient
                     <div>
                       <h3 style={{ margin: 0, fontWeight: 600 }}>{item.name}</h3>
                       {item.address && (
-                        <p style={{ margin: "4px 0 0", fontSize: 13, color: "#6b7280" }}>{item.address}</p>
+                        <p style={{ margin: "4px 0 0", fontSize: 13, color: "hsl(var(--muted-foreground))" }}>{item.address}</p>
                       )}
                     </div>
                     <div style={{ textAlign: "right" }}>
@@ -548,7 +548,7 @@ export default function FlipAnalyzerClient({ savedAnalyses }: FlipAnalyzerClient
                         </span>
                       )}
                       {item.calculated_deal_score && (
-                        <div style={{ fontSize: 13, color: "#6b7280", marginTop: 4 }}>
+                        <div style={{ fontSize: 13, color: "hsl(var(--muted-foreground))", marginTop: 4 }}>
                           Score: {item.calculated_deal_score.toFixed(1)}/5
                         </div>
                       )}
@@ -556,19 +556,19 @@ export default function FlipAnalyzerClient({ savedAnalyses }: FlipAnalyzerClient
                   </div>
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginTop: 12 }}>
                     <div>
-                      <div style={{ fontSize: 12, color: "#6b7280" }}>Purchase</div>
+                      <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>Purchase</div>
                       <div style={{ fontWeight: 600 }}>{formatCurrency(item.purchase_price)}</div>
                     </div>
                     <div>
-                      <div style={{ fontSize: 12, color: "#6b7280" }}>Rehab</div>
+                      <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>Rehab</div>
                       <div style={{ fontWeight: 600 }}>{formatCurrency(item.renovation_costs)}</div>
                     </div>
                     <div>
-                      <div style={{ fontSize: 12, color: "#6b7280" }}>ARV</div>
+                      <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>ARV</div>
                       <div style={{ fontWeight: 600 }}>{formatCurrency(item.after_repair_value)}</div>
                     </div>
                     <div>
-                      <div style={{ fontSize: 12, color: "#6b7280" }}>Net Profit</div>
+                      <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>Net Profit</div>
                       <div
                         style={{
                           fontWeight: 600,
@@ -647,7 +647,7 @@ export default function FlipAnalyzerClient({ savedAnalyses }: FlipAnalyzerClient
                   />
                 </div>
               </div>
-              <p style={{ margin: "12px 0 0", fontSize: 12, color: "#6b7280" }}>
+              <p style={{ margin: "12px 0 0", fontSize: 12, color: "hsl(var(--muted-foreground))" }}>
                 Max Purchase (70% Rule): {formatCurrency(analysis.maxPurchaseAt70)}
                 {analysis.meetsRule70 ? (
                   <span style={{ color: "#16a34a", marginLeft: 8 }}>✓ Meets rule</span>
@@ -655,7 +655,7 @@ export default function FlipAnalyzerClient({ savedAnalyses }: FlipAnalyzerClient
                   <span style={{ color: "#dc2626", marginLeft: 8 }}>✗ Over max</span>
                 )}
               </p>
-              <p style={{ margin: "4px 0 0", fontSize: 12, color: "#6b7280" }}>
+              <p style={{ margin: "4px 0 0", fontSize: 12, color: "hsl(var(--muted-foreground))" }}>
                 Max Allowable Offer (15% profit): {formatCurrency(maoCalc.mao)}
               </p>
             </div>
@@ -751,7 +751,7 @@ export default function FlipAnalyzerClient({ savedAnalyses }: FlipAnalyzerClient
               </div>
 
               {/* Rehab Estimator */}
-              <div style={{ marginTop: 16, padding: 12, background: "#fff", borderRadius: 6 }}>
+              <div style={{ marginTop: 16, padding: 12, background: "hsl(var(--card))", borderRadius: 6 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
                   <label style={{ fontSize: 13, fontWeight: 500 }}>Rehab Estimator:</label>
                   <select
@@ -765,7 +765,7 @@ export default function FlipAnalyzerClient({ savedAnalyses }: FlipAnalyzerClient
                     <option value="gut">Gut Rehab ($80-175/sqft)</option>
                   </select>
                 </div>
-                <div style={{ fontSize: 12, color: "#6b7280" }}>
+                <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>
                   Estimate for {formData.squareFeet} sqft: <strong>{formatCurrency(rehabEstimate.low)}</strong> -{" "}
                   <strong>{formatCurrency(rehabEstimate.high)}</strong>
                   <button
@@ -973,14 +973,14 @@ export default function FlipAnalyzerClient({ savedAnalyses }: FlipAnalyzerClient
             {/* Profit Summary */}
             <div
               style={{
-                background: "#fff",
-                border: "1px solid #e5e7eb",
+                background: "hsl(var(--card))",
+                border: "1px solid hsl(var(--border))",
                 borderRadius: 8,
                 padding: 16,
                 marginBottom: 16,
               }}
             >
-              <h4 style={{ margin: "0 0 12px", fontSize: 14, fontWeight: 600, color: "#6b7280" }}>PROFIT SUMMARY</h4>
+              <h4 style={{ margin: "0 0 12px", fontSize: 14, fontWeight: 600, color: "hsl(var(--muted-foreground))" }}>PROFIT SUMMARY</h4>
               <div style={{ display: "grid", gap: 12 }}>
                 <div style={{ display: "flex", justifyContent: "space-between" }}>
                   <span>Gross Profit</span>
@@ -1014,14 +1014,14 @@ export default function FlipAnalyzerClient({ savedAnalyses }: FlipAnalyzerClient
             {/* Returns */}
             <div
               style={{
-                background: "#fff",
-                border: "1px solid #e5e7eb",
+                background: "hsl(var(--card))",
+                border: "1px solid hsl(var(--border))",
                 borderRadius: 8,
                 padding: 16,
                 marginBottom: 16,
               }}
             >
-              <h4 style={{ margin: "0 0 12px", fontSize: 14, fontWeight: 600, color: "#6b7280" }}>
+              <h4 style={{ margin: "0 0 12px", fontSize: 14, fontWeight: 600, color: "hsl(var(--muted-foreground))" }}>
                 RETURN ON INVESTMENT
               </h4>
               <div style={{ display: "grid", gap: 12 }}>
@@ -1050,14 +1050,14 @@ export default function FlipAnalyzerClient({ savedAnalyses }: FlipAnalyzerClient
             {/* Cost Breakdown */}
             <div
               style={{
-                background: "#fff",
-                border: "1px solid #e5e7eb",
+                background: "hsl(var(--card))",
+                border: "1px solid hsl(var(--border))",
                 borderRadius: 8,
                 padding: 16,
                 marginBottom: 16,
               }}
             >
-              <h4 style={{ margin: "0 0 12px", fontSize: 14, fontWeight: 600, color: "#6b7280" }}>COST BREAKDOWN</h4>
+              <h4 style={{ margin: "0 0 12px", fontSize: 14, fontWeight: 600, color: "hsl(var(--muted-foreground))" }}>COST BREAKDOWN</h4>
               <div style={{ display: "grid", gap: 8, fontSize: 14 }}>
                 <div style={{ display: "flex", justifyContent: "space-between" }}>
                   <span>Purchase + Closing</span>
@@ -1099,14 +1099,14 @@ export default function FlipAnalyzerClient({ savedAnalyses }: FlipAnalyzerClient
             {/* Cost Breakdown Pie Chart */}
             <div
               style={{
-                background: "#fff",
-                border: "1px solid #e5e7eb",
+                background: "hsl(var(--card))",
+                border: "1px solid hsl(var(--border))",
                 borderRadius: 8,
                 padding: 16,
                 marginBottom: 16,
               }}
             >
-              <h4 style={{ margin: "0 0 12px", fontSize: 14, fontWeight: 600, color: "#6b7280" }}>COST BREAKDOWN</h4>
+              <h4 style={{ margin: "0 0 12px", fontSize: 14, fontWeight: 600, color: "hsl(var(--muted-foreground))" }}>COST BREAKDOWN</h4>
               <ResponsiveContainer width="100%" height={250}>
                 <PieChart>
                   <Pie
@@ -1130,14 +1130,14 @@ export default function FlipAnalyzerClient({ savedAnalyses }: FlipAnalyzerClient
             {/* Deal Anatomy Bar Chart */}
             <div
               style={{
-                background: "#fff",
-                border: "1px solid #e5e7eb",
+                background: "hsl(var(--card))",
+                border: "1px solid hsl(var(--border))",
                 borderRadius: 8,
                 padding: 16,
                 marginBottom: 16,
               }}
             >
-              <h4 style={{ margin: "0 0 12px", fontSize: 14, fontWeight: 600, color: "#6b7280" }}>DEAL ANATOMY</h4>
+              <h4 style={{ margin: "0 0 12px", fontSize: 14, fontWeight: 600, color: "hsl(var(--muted-foreground))" }}>DEAL ANATOMY</h4>
               <ResponsiveContainer width="100%" height={200}>
                 <BarChart data={dealAnatomyData} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" />

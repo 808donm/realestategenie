@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 
@@ -51,7 +51,7 @@ export default function SkipTraceBillingClient({
   return (
     <div style={{ maxWidth: 900 }}>
       <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 4 }}>Skip Trace Billing</h1>
-      <p style={{ fontSize: 14, color: "#6b7280", marginBottom: 24 }}>
+      <p style={{ fontSize: 14, color: "hsl(var(--muted-foreground))", marginBottom: 24 }}>
         Track skip trace usage and revenue across all agents. Agents are charged $0.10/trace, REAPI costs $0.05/trace.
       </p>
 
@@ -85,14 +85,14 @@ export default function SkipTraceBillingClient({
 
       {/* Agent table */}
       {loading ? (
-        <p style={{ textAlign: "center", color: "#6b7280", padding: 40 }}>Loading...</p>
+        <p style={{ textAlign: "center", color: "hsl(var(--muted-foreground))", padding: 40 }}>Loading...</p>
       ) : usage.length === 0 ? (
-        <p style={{ textAlign: "center", color: "#6b7280", padding: 40 }}>No skip trace usage for {month}</p>
+        <p style={{ textAlign: "center", color: "hsl(var(--muted-foreground))", padding: 40 }}>No skip trace usage for {month}</p>
       ) : (
-        <div style={{ border: "1px solid #e5e7eb", borderRadius: 10, overflow: "hidden" }}>
+        <div style={{ border: "1px solid hsl(var(--border))", borderRadius: 10, overflow: "hidden" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
             <thead>
-              <tr style={{ background: "#f9fafb" }}>
+              <tr style={{ background: "hsl(var(--muted))" }}>
                 <th style={thStyle}>Agent</th>
                 <th style={thStyle}>Email</th>
                 <th style={{ ...thStyle, textAlign: "right" }}>Billable</th>
@@ -109,9 +109,9 @@ export default function SkipTraceBillingClient({
                 return (
                   <tr key={u.agentId} style={{ background: i % 2 === 0 ? "#fff" : "#f9fafb", borderTop: "1px solid #f3f4f6" }}>
                     <td style={{ padding: "8px 12px", fontWeight: 600 }}>{u.agentName || "Unknown"}</td>
-                    <td style={{ padding: "8px 12px", color: "#6b7280" }}>{u.agentEmail}</td>
+                    <td style={{ padding: "8px 12px", color: "hsl(var(--muted-foreground))" }}>{u.agentEmail}</td>
                     <td style={{ padding: "8px 12px", textAlign: "right", fontWeight: 600 }}>{u.billableTraces}</td>
-                    <td style={{ padding: "8px 12px", textAlign: "right", color: "#6b7280" }}>{u.cachedTraces}</td>
+                    <td style={{ padding: "8px 12px", textAlign: "right", color: "hsl(var(--muted-foreground))" }}>{u.cachedTraces}</td>
                     <td style={{ padding: "8px 12px", textAlign: "right", color: "#059669", fontWeight: 600 }}>${u.totalDollars.toFixed(2)}</td>
                     <td style={{ padding: "8px 12px", textAlign: "right", color: "#dc2626" }}>${cost.toFixed(2)}</td>
                     <td style={{ padding: "8px 12px", textAlign: "right", fontWeight: 600, color: profit >= 0 ? "#059669" : "#dc2626" }}>${profit.toFixed(2)}</td>
@@ -132,8 +132,8 @@ const thStyle: React.CSSProperties = {
 
 function SummaryCard({ label, value, color }: { label: string; value: string; color: string }) {
   return (
-    <div style={{ padding: "12px 20px", background: "#fff", borderRadius: 8, border: "1px solid #e5e7eb", minWidth: 120 }}>
-      <div style={{ fontSize: 11, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", marginBottom: 4 }}>{label}</div>
+    <div style={{ padding: "12px 20px", background: "hsl(var(--card))", borderRadius: 8, border: "1px solid hsl(var(--border))", minWidth: 120 }}>
+      <div style={{ fontSize: 11, fontWeight: 600, color: "hsl(var(--muted-foreground))", textTransform: "uppercase", marginBottom: 4 }}>{label}</div>
       <div style={{ fontSize: 20, fontWeight: 700, color }}>{value}</div>
     </div>
   );

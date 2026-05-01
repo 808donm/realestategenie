@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useMemo, useCallback } from "react";
 import * as XLSX from "xlsx";
@@ -238,7 +238,7 @@ export default function RentalCalculatorClient() {
   const inputStyle: React.CSSProperties = {
     width: "100%",
     padding: "10px 12px",
-    border: "1px solid #d1d5db",
+    border: "1px solid hsl(var(--border))",
     borderRadius: 6,
     fontSize: 16,
   };
@@ -252,7 +252,7 @@ export default function RentalCalculatorClient() {
 
         {/* Property & Financing */}
         <div
-          style={{ padding: 24, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, marginBottom: 20 }}
+          style={{ padding: 24, background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12, marginBottom: 20 }}
         >
           <h2 style={{ margin: "0 0 20px 0", fontSize: 18, fontWeight: 700 }}>Property & Financing</h2>
 
@@ -276,7 +276,7 @@ export default function RentalCalculatorClient() {
                 onChange={(e) => handleChange("downPaymentPercent", Number(e.target.value))}
                 style={inputStyle}
               />
-              <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>= {fmt(analysis.downPayment)}</div>
+              <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 4 }}>= {fmt(analysis.downPayment)}</div>
             </div>
             <div>
               <label style={labelStyle}>Interest Rate (%)</label>
@@ -306,7 +306,7 @@ export default function RentalCalculatorClient() {
 
         {/* Income */}
         <div
-          style={{ padding: 24, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, marginBottom: 20 }}
+          style={{ padding: 24, background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12, marginBottom: 20 }}
         >
           <h2 style={{ margin: "0 0 20px 0", fontSize: 18, fontWeight: 700 }}>Income</h2>
 
@@ -329,12 +329,12 @@ export default function RentalCalculatorClient() {
               onChange={(e) => handleChange("vacancyPercent", Number(e.target.value))}
               style={inputStyle}
             />
-            <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>= -{fmtDecimal(analysis.vacancyLoss)}/mo</div>
+            <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 4 }}>= -{fmtDecimal(analysis.vacancyLoss)}/mo</div>
           </div>
         </div>
 
         {/* Expenses */}
-        <div style={{ padding: 24, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12 }}>
+        <div style={{ padding: 24, background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12 }}>
           <h2 style={{ margin: "0 0 20px 0", fontSize: 18, fontWeight: 700 }}>Expenses</h2>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
@@ -378,7 +378,7 @@ export default function RentalCalculatorClient() {
                 onChange={(e) => handleChange("maintenancePercent", Number(e.target.value))}
                 style={inputStyle}
               />
-              <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>
+              <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 4 }}>
                 = {fmtDecimal(analysis.maintenanceMonthly)}/mo
               </div>
             </div>
@@ -391,7 +391,7 @@ export default function RentalCalculatorClient() {
                 onChange={(e) => handleChange("managementPercent", Number(e.target.value))}
                 style={inputStyle}
               />
-              <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>
+              <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 4 }}>
                 = {fmtDecimal(analysis.managementMonthly)}/mo
               </div>
             </div>
@@ -431,13 +431,13 @@ export default function RentalCalculatorClient() {
 
         {/* Key Metrics Grid */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 20 }}>
-          <div style={{ padding: 16, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 8 }}>
-            <div style={{ fontSize: 12, color: "#6b7280" }}>NOI (Annual)</div>
+          <div style={{ padding: 16, background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }}>
+            <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>NOI (Annual)</div>
             <div style={{ fontSize: 22, fontWeight: 700 }}>{fmt(analysis.noi)}</div>
-            <div style={{ fontSize: 12, color: "#6b7280" }}>{fmtDecimal(analysis.noiMonthly)}/mo</div>
+            <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>{fmtDecimal(analysis.noiMonthly)}/mo</div>
           </div>
-          <div style={{ padding: 16, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 8 }}>
-            <div style={{ fontSize: 12, color: "#6b7280" }}>Cap Rate</div>
+          <div style={{ padding: 16, background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }}>
+            <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>Cap Rate</div>
             <div
               style={{
                 fontSize: 22,
@@ -447,10 +447,10 @@ export default function RentalCalculatorClient() {
             >
               {analysis.capRate.toFixed(2)}%
             </div>
-            <div style={{ fontSize: 12, color: "#6b7280" }}>NOI / Purchase Price</div>
+            <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>NOI / Purchase Price</div>
           </div>
-          <div style={{ padding: 16, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 8 }}>
-            <div style={{ fontSize: 12, color: "#6b7280" }}>Cash-on-Cash Return</div>
+          <div style={{ padding: 16, background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }}>
+            <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>Cash-on-Cash Return</div>
             <div
               style={{
                 fontSize: 22,
@@ -460,14 +460,14 @@ export default function RentalCalculatorClient() {
             >
               {analysis.cashOnCash.toFixed(2)}%
             </div>
-            <div style={{ fontSize: 12, color: "#6b7280" }}>Annual CF / Cash Invested</div>
+            <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>Annual CF / Cash Invested</div>
           </div>
-          <div style={{ padding: 16, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 8 }}>
-            <div style={{ fontSize: 12, color: "#6b7280" }}>DSCR</div>
+          <div style={{ padding: 16, background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }}>
+            <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>DSCR</div>
             <div style={{ fontSize: 22, fontWeight: 700, color: dscrColor }}>
               {analysis.dscr >= 999 ? "N/A" : analysis.dscr.toFixed(2)}
             </div>
-            <div style={{ fontSize: 12, color: "#6b7280" }}>NOI / Debt Service</div>
+            <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>NOI / Debt Service</div>
           </div>
         </div>
 
@@ -484,19 +484,19 @@ export default function RentalCalculatorClient() {
           <div style={{ fontSize: 13, fontWeight: 700 }}>
             DSCR: {analysis.dscr >= 999 ? "No debt" : analysis.dscr.toFixed(2)}
           </div>
-          <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>{analysis.dscrVerdict}</div>
+          <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 4 }}>{analysis.dscrVerdict}</div>
         </div>
 
         {/* Income / Expense Breakdown */}
         <div
-          style={{ padding: 24, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, marginBottom: 20 }}
+          style={{ padding: 24, background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12, marginBottom: 20 }}
         >
           <h3 style={{ margin: "0 0 16px 0", fontSize: 16, fontWeight: 700 }}>Monthly Breakdown</h3>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <tbody>
               {/* Income */}
-              <tr style={{ background: "#f9fafb" }}>
-                <td colSpan={2} style={{ padding: "8px 0", fontWeight: 700, fontSize: 13, color: "#6b7280" }}>
+              <tr style={{ background: "hsl(var(--muted))" }}>
+                <td colSpan={2} style={{ padding: "8px 0", fontWeight: 700, fontSize: 13, color: "hsl(var(--muted-foreground))" }}>
                   INCOME
                 </td>
               </tr>
@@ -520,8 +520,8 @@ export default function RentalCalculatorClient() {
               </tr>
 
               {/* Expenses */}
-              <tr style={{ background: "#f9fafb" }}>
-                <td colSpan={2} style={{ padding: "8px 0", fontWeight: 700, fontSize: 13, color: "#6b7280" }}>
+              <tr style={{ background: "hsl(var(--muted))" }}>
+                <td colSpan={2} style={{ padding: "8px 0", fontWeight: 700, fontSize: 13, color: "hsl(var(--muted-foreground))" }}>
                   OPERATING EXPENSES
                 </td>
               </tr>
@@ -575,8 +575,8 @@ export default function RentalCalculatorClient() {
               </tr>
 
               {/* Debt Service */}
-              <tr style={{ background: "#f9fafb" }}>
-                <td colSpan={2} style={{ padding: "8px 0", fontWeight: 700, fontSize: 13, color: "#6b7280" }}>
+              <tr style={{ background: "hsl(var(--muted))" }}>
+                <td colSpan={2} style={{ padding: "8px 0", fontWeight: 700, fontSize: 13, color: "hsl(var(--muted-foreground))" }}>
                   DEBT SERVICE
                 </td>
               </tr>
@@ -608,15 +608,15 @@ export default function RentalCalculatorClient() {
 
         {/* Additional Metrics */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 20 }}>
-          <div style={{ padding: 16, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 8 }}>
-            <div style={{ fontSize: 12, color: "#6b7280" }}>GRM</div>
+          <div style={{ padding: 16, background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }}>
+            <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>GRM</div>
             <div style={{ fontSize: 18, fontWeight: 600 }}>{analysis.grm.toFixed(1)}</div>
-            <div style={{ fontSize: 11, color: "#6b7280" }}>Price / Annual Rent</div>
+            <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>Price / Annual Rent</div>
           </div>
-          <div style={{ padding: 16, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 8 }}>
-            <div style={{ fontSize: 12, color: "#6b7280" }}>Expense Ratio</div>
+          <div style={{ padding: 16, background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }}>
+            <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>Expense Ratio</div>
             <div style={{ fontSize: 18, fontWeight: 600 }}>{analysis.operatingExpenseRatio.toFixed(1)}%</div>
-            <div style={{ fontSize: 11, color: "#6b7280" }}>OpEx / Effective Income</div>
+            <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>OpEx / Effective Income</div>
           </div>
         </div>
 
@@ -624,13 +624,13 @@ export default function RentalCalculatorClient() {
         <div
           style={{
             padding: 16,
-            background: "#fff",
-            border: "1px solid #e5e7eb",
+            background: "hsl(var(--card))",
+            border: "1px solid hsl(var(--border))",
             borderRadius: 8,
             marginBottom: 20,
           }}
         >
-          <h3 style={{ margin: "0 0 12px 0", fontSize: 14, fontWeight: 700, color: "#6b7280", letterSpacing: 1 }}>
+          <h3 style={{ margin: "0 0 12px 0", fontSize: 14, fontWeight: 700, color: "hsl(var(--muted-foreground))", letterSpacing: 1 }}>
             CUMULATIVE RETURNS
           </h3>
           <ResponsiveContainer width="100%" height={280}>
@@ -674,7 +674,7 @@ export default function RentalCalculatorClient() {
               />
             </LineChart>
           </ResponsiveContainer>
-          <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 8, textAlign: "center" }}>
+          <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", marginTop: 8, textAlign: "center" }}>
             Where cash flow crosses the invested line = payback period
           </div>
         </div>

@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import Image from "next/image";
 import DeleteOpenHouseButton from "./delete-button.client";
 import OpenHousesExport from "./open-houses-export";
@@ -67,8 +67,8 @@ export default async function OpenHousesIndex() {
             <div
               style={{
                 position: "relative",
-                background: "#fff",
-                border: "1px solid #e5e7eb",
+                background: "hsl(var(--card))",
+                border: "1px solid hsl(var(--border))",
                 borderRadius: 14,
                 overflow: "hidden",
                 transition: "box-shadow 0.15s",
@@ -143,15 +143,15 @@ export default async function OpenHousesIndex() {
                         ${Number((e as any).price).toLocaleString()}
                       </span>
                     )}
-                    {(e as any).beds && <span style={{ color: "#374151" }}>{(e as any).beds} bd</span>}
-                    {(e as any).baths && <span style={{ color: "#374151" }}>{(e as any).baths} ba</span>}
+                    {(e as any).beds && <span style={{ color: "hsl(var(--foreground))" }}>{(e as any).beds} bd</span>}
+                    {(e as any).baths && <span style={{ color: "hsl(var(--foreground))" }}>{(e as any).baths} ba</span>}
                     {(e as any).sqft && (
-                      <span style={{ color: "#6b7280" }}>{Number((e as any).sqft).toLocaleString()} sqft</span>
+                      <span style={{ color: "hsl(var(--muted-foreground))" }}>{Number((e as any).sqft).toLocaleString()} sqft</span>
                     )}
                   </div>
                 )}
                 {(e as any).mls_listing_id && (
-                  <div style={{ fontSize: 11, color: "#6b7280", marginTop: 2 }}>MLS# {(e as any).mls_listing_id}</div>
+                  <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", marginTop: 2 }}>MLS# {(e as any).mls_listing_id}</div>
                 )}
 
                 <div style={{ fontSize: 12, opacity: 0.75, marginTop: 6 }}>
@@ -166,7 +166,7 @@ export default async function OpenHousesIndex() {
         ))}
 
         {(!events || events.length === 0) && (
-          <div style={{ padding: 14, background: "#fff", border: "1px solid #e6e6e6", borderRadius: 14 }}>
+          <div style={{ padding: 14, background: "hsl(var(--card))", border: "1px solid #e6e6e6", borderRadius: 14 }}>
             <p style={{ margin: 0, opacity: 0.75 }}>
               No open houses yet. Create one and generate your QR check-in link.
             </p>
@@ -183,5 +183,5 @@ const btn: React.CSSProperties = {
   borderRadius: 12,
   fontWeight: 800,
   textDecoration: "none",
-  background: "#fff",
+  background: "hsl(var(--card))",
 };

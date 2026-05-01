@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -106,7 +106,7 @@ export default function InvitationsClient({ invitations, adminId }: { invitation
           background: "white",
           borderRadius: 12,
           padding: 24,
-          border: "1px solid #e5e7eb",
+          border: "1px solid hsl(var(--border))",
         }}
       >
         <h2 style={{ fontSize: 18, fontWeight: 700, margin: "0 0 16px 0" }}>Send New Invitation</h2>
@@ -122,7 +122,7 @@ export default function InvitationsClient({ invitations, adminId }: { invitation
               flex: 1,
               padding: "10px 16px",
               borderRadius: 8,
-              border: "1px solid #d1d5db",
+              border: "1px solid hsl(var(--border))",
               fontSize: 14,
             }}
           />
@@ -152,7 +152,7 @@ export default function InvitationsClient({ invitations, adminId }: { invitation
           style={{
             background: "white",
             borderRadius: 12,
-            border: "1px solid #e5e7eb",
+            border: "1px solid hsl(var(--border))",
             overflow: "hidden",
           }}
         >
@@ -180,7 +180,7 @@ export default function InvitationsClient({ invitations, adminId }: { invitation
           style={{
             background: "white",
             borderRadius: 12,
-            border: "1px solid #e5e7eb",
+            border: "1px solid hsl(var(--border))",
             overflow: "hidden",
           }}
         >
@@ -221,20 +221,20 @@ function InvitationTable({
   return (
     <table style={{ width: "100%", borderCollapse: "collapse" }}>
       <thead>
-        <tr style={{ background: "#f9fafb" }}>
-          <th style={{ padding: "12px 24px", textAlign: "left", fontSize: 12, fontWeight: 600, color: "#6b7280" }}>
+        <tr style={{ background: "hsl(var(--muted))" }}>
+          <th style={{ padding: "12px 24px", textAlign: "left", fontSize: 12, fontWeight: 600, color: "hsl(var(--muted-foreground))" }}>
             EMAIL
           </th>
-          <th style={{ padding: "12px 24px", textAlign: "left", fontSize: 12, fontWeight: 600, color: "#6b7280" }}>
+          <th style={{ padding: "12px 24px", textAlign: "left", fontSize: 12, fontWeight: 600, color: "hsl(var(--muted-foreground))" }}>
             STATUS
           </th>
-          <th style={{ padding: "12px 24px", textAlign: "left", fontSize: 12, fontWeight: 600, color: "#6b7280" }}>
+          <th style={{ padding: "12px 24px", textAlign: "left", fontSize: 12, fontWeight: 600, color: "hsl(var(--muted-foreground))" }}>
             INVITED BY
           </th>
-          <th style={{ padding: "12px 24px", textAlign: "left", fontSize: 12, fontWeight: 600, color: "#6b7280" }}>
+          <th style={{ padding: "12px 24px", textAlign: "left", fontSize: 12, fontWeight: 600, color: "hsl(var(--muted-foreground))" }}>
             EXPIRES
           </th>
-          <th style={{ padding: "12px 24px", textAlign: "left", fontSize: 12, fontWeight: 600, color: "#6b7280" }}>
+          <th style={{ padding: "12px 24px", textAlign: "left", fontSize: 12, fontWeight: 600, color: "hsl(var(--muted-foreground))" }}>
             ACTIONS
           </th>
         </tr>
@@ -246,10 +246,10 @@ function InvitationTable({
             <td style={{ padding: "16px 24px" }}>
               <StatusBadge status={inv.status} />
             </td>
-            <td style={{ padding: "16px 24px", fontSize: 14, color: "#6b7280" }}>
+            <td style={{ padding: "16px 24px", fontSize: 14, color: "hsl(var(--muted-foreground))" }}>
               {inv.invited_by?.display_name || "Unknown"}
             </td>
-            <td style={{ padding: "16px 24px", fontSize: 14, color: "#6b7280" }}>
+            <td style={{ padding: "16px 24px", fontSize: 14, color: "hsl(var(--muted-foreground))" }}>
               {new Date(inv.expires_at).toLocaleDateString()}
             </td>
             <td style={{ padding: "16px 24px" }}>

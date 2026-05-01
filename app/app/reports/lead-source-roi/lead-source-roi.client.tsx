@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useMemo, useEffect, useCallback } from "react";
 import Link from "next/link";
@@ -223,8 +223,8 @@ export default function LeadSourceROIClient() {
 
   const cardStyle: React.CSSProperties = {
     padding: 20,
-    background: "#fff",
-    border: "1px solid #e5e7eb",
+    background: "hsl(var(--card))",
+    border: "1px solid hsl(var(--border))",
     borderRadius: 12,
   };
 
@@ -327,9 +327,9 @@ export default function LeadSourceROIClient() {
           onClick={exportToExcel}
           style={{
             padding: "8px 20px",
-            background: "#fff",
-            color: "#374151",
-            border: "1px solid #d1d5db",
+            background: "hsl(var(--card))",
+            color: "hsl(var(--foreground))",
+            border: "1px solid hsl(var(--border))",
             borderRadius: 8,
             fontWeight: 600,
             cursor: "pointer",
@@ -343,21 +343,21 @@ export default function LeadSourceROIClient() {
       {/* Summary Cards */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, marginBottom: 24 }}>
         <div style={{ ...cardStyle, borderLeft: "4px solid #10b981" }}>
-          <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Best Conversion Rate</div>
+          <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginBottom: 4 }}>Best Conversion Rate</div>
           <div style={{ fontSize: 24, fontWeight: 700 }}>{bestConversion?.name ?? "N/A"}</div>
           <div style={{ fontSize: 14, color: "#10b981", fontWeight: 600 }}>
             {bestConversion ? `${bestConversion.conversionRate.toFixed(1)}%` : "—"}
           </div>
         </div>
         <div style={{ ...cardStyle, borderLeft: "4px solid #3b82f6" }}>
-          <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Lowest Cost per Closing</div>
+          <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginBottom: 4 }}>Lowest Cost per Closing</div>
           <div style={{ fontSize: 24, fontWeight: 700 }}>{lowestCostPerClosing?.name ?? "N/A"}</div>
           <div style={{ fontSize: 14, color: "#3b82f6", fontWeight: 600 }}>
             {lowestCostPerClosing ? fmt(lowestCostPerClosing.costPerClosing) : "—"}
           </div>
         </div>
         <div style={{ ...cardStyle, borderLeft: "4px solid #8b5cf6" }}>
-          <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Highest ROI</div>
+          <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginBottom: 4 }}>Highest ROI</div>
           <div style={{ fontSize: 24, fontWeight: 700 }}>{highestROI?.name ?? "N/A"}</div>
           <div style={{ fontSize: 14, color: "#8b5cf6", fontWeight: 600 }}>
             {highestROI ? `${highestROI.roi.toFixed(0)}%` : "—"}
@@ -387,7 +387,7 @@ export default function LeadSourceROIClient() {
       {/* ROI Bubble Chart */}
       <div style={{ ...cardStyle, marginBottom: 24 }}>
         <h3 style={{ margin: "0 0 20px 0", fontSize: 16, fontWeight: 700 }}>ROI vs Conversion Rate</h3>
-        <p style={{ margin: "0 0 12px 0", fontSize: 12, color: "#6b7280" }}>Bubble size = revenue generated</p>
+        <p style={{ margin: "0 0 12px 0", fontSize: 12, color: "hsl(var(--muted-foreground))" }}>Bubble size = revenue generated</p>
         <ResponsiveContainer width="100%" height={300}>
           <ScatterChart margin={{ top: 10, right: 20, bottom: 10, left: 20 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
@@ -412,7 +412,7 @@ export default function LeadSourceROIClient() {
             </Scatter>
           </ScatterChart>
         </ResponsiveContainer>
-        <div style={{ display: "flex", gap: 16, marginTop: 8, fontSize: 11, color: "#6b7280" }}>
+        <div style={{ display: "flex", gap: 16, marginTop: 8, fontSize: 11, color: "hsl(var(--muted-foreground))" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
             <div style={{ width: 10, height: 10, borderRadius: 2, background: "#10b981" }} /> ROI &gt; 500%
           </div>
@@ -452,7 +452,7 @@ export default function LeadSourceROIClient() {
                     textAlign: h === "Source" ? "left" : "right",
                     fontWeight: 700,
                     fontSize: 12,
-                    color: "#6b7280",
+                    color: "hsl(var(--muted-foreground))",
                   }}
                 >
                   {h}
@@ -495,7 +495,7 @@ export default function LeadSourceROIClient() {
               ))}
           </tbody>
           <tfoot>
-            <tr style={{ borderTop: "2px solid #e5e7eb", background: "#f9fafb" }}>
+            <tr style={{ borderTop: "2px solid #e5e7eb", background: "hsl(var(--muted))" }}>
               <td style={{ padding: "10px 8px", fontWeight: 700 }}>TOTAL</td>
               <td style={{ padding: "10px 8px", textAlign: "right", fontWeight: 700 }}>{totalLeads}</td>
               <td style={{ padding: "10px 8px", textAlign: "right", fontWeight: 700 }}>{totalClosings}</td>

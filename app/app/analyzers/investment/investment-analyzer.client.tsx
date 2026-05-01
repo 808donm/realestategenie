@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useMemo, useCallback } from "react";
 import { supabaseBrowser } from "@/lib/supabase/browser";
@@ -815,7 +815,7 @@ export default function InvestmentAnalyzerClient({ savedProperties }: Props) {
             <div
               style={{
                 padding: 16,
-                background: "#fff",
+                background: "hsl(var(--card))",
                 borderRadius: 8,
                 border: "1px solid #e6e6e6",
                 textAlign: "center",
@@ -830,7 +830,7 @@ export default function InvestmentAnalyzerClient({ savedProperties }: Props) {
             <div
               style={{
                 padding: 16,
-                background: "#fff",
+                background: "hsl(var(--card))",
                 borderRadius: 8,
                 border: "1px solid #e6e6e6",
                 textAlign: "center",
@@ -851,7 +851,7 @@ export default function InvestmentAnalyzerClient({ savedProperties }: Props) {
             <div
               style={{
                 padding: 16,
-                background: "#fff",
+                background: "hsl(var(--card))",
                 borderRadius: 8,
                 border: "1px solid #e6e6e6",
                 textAlign: "center",
@@ -890,7 +890,7 @@ export default function InvestmentAnalyzerClient({ savedProperties }: Props) {
           </div>
 
           {/* Quick Stats Bar */}
-          <div style={{ marginTop: 16, padding: 12, background: "#fff", borderRadius: 8, border: "1px solid #e6e6e6" }}>
+          <div style={{ marginTop: 16, padding: 12, background: "hsl(var(--card))", borderRadius: 8, border: "1px solid #e6e6e6" }}>
             <div
               style={{
                 display: "grid",
@@ -1032,7 +1032,7 @@ function MetricCard({
   good?: boolean;
 }) {
   return (
-    <div style={{ padding: 12, background: "#fff", borderRadius: 8, border: "1px solid #e6e6e6" }}>
+    <div style={{ padding: 12, background: "hsl(var(--card))", borderRadius: 8, border: "1px solid #e6e6e6" }}>
       <div style={{ fontSize: 12, opacity: 0.7, marginBottom: 4 }}>{label}</div>
       <div style={{ fontSize: 24, fontWeight: 800, color: good ? "green" : undefined }}>{value}</div>
       <div style={{ fontSize: 10, opacity: 0.5 }}>{description}</div>

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useMemo, useCallback } from "react";
 import * as XLSX from "xlsx";
@@ -270,7 +270,7 @@ export default function CashToCloseCalculatorClient() {
   const inputStyle: React.CSSProperties = {
     width: "100%",
     padding: "10px 12px",
-    border: "1px solid #d1d5db",
+    border: "1px solid hsl(var(--border))",
     borderRadius: 6,
     fontSize: 16,
   };
@@ -290,7 +290,7 @@ export default function CashToCloseCalculatorClient() {
 
         {/* Purchase Details */}
         <div
-          style={{ padding: 24, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, marginBottom: 20 }}
+          style={{ padding: 24, background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12, marginBottom: 20 }}
         >
           <h2 style={{ margin: "0 0 20px 0", fontSize: 18, fontWeight: 700 }}>Purchase Details</h2>
 
@@ -314,7 +314,7 @@ export default function CashToCloseCalculatorClient() {
                 onChange={(e) => handleChange("downPaymentPercent", Number(e.target.value))}
                 style={inputStyle}
               />
-              <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>= {fmt(analysis.downPayment)}</div>
+              <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 4 }}>= {fmt(analysis.downPayment)}</div>
             </div>
             <div>
               <label style={labelStyle}>Interest Rate (%)</label>
@@ -337,7 +337,7 @@ export default function CashToCloseCalculatorClient() {
               onChange={(e) => handleChange("closingCostPercent", Number(e.target.value))}
               style={inputStyle}
             />
-            <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>
+            <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 4 }}>
               = {fmt(analysis.closingCosts)} (typical range: 2-5%)
             </div>
           </div>
@@ -350,13 +350,13 @@ export default function CashToCloseCalculatorClient() {
               onChange={(e) => handleChange("earnestMoney", Number(e.target.value))}
               style={inputStyle}
             />
-            <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>Credited toward down payment at closing</div>
+            <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 4 }}>Credited toward down payment at closing</div>
           </div>
         </div>
 
         {/* Credits & Concessions */}
         <div
-          style={{ padding: 24, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, marginBottom: 20 }}
+          style={{ padding: 24, background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12, marginBottom: 20 }}
         >
           <h2 style={{ margin: "0 0 20px 0", fontSize: 18, fontWeight: 700 }}>Credits & Concessions</h2>
 
@@ -368,7 +368,7 @@ export default function CashToCloseCalculatorClient() {
               onChange={(e) => handleChange("sellerCredits", Number(e.target.value))}
               style={inputStyle}
             />
-            <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>Seller contribution toward closing costs</div>
+            <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 4 }}>Seller contribution toward closing costs</div>
           </div>
 
           <div>
@@ -379,14 +379,14 @@ export default function CashToCloseCalculatorClient() {
               onChange={(e) => handleChange("lenderCredits", Number(e.target.value))}
               style={inputStyle}
             />
-            <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>
+            <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 4 }}>
               Credits from lender (often in exchange for higher rate)
             </div>
           </div>
         </div>
 
         {/* Prepaids & Escrows */}
-        <div style={{ padding: 24, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12 }}>
+        <div style={{ padding: 24, background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12 }}>
           <h2 style={{ margin: "0 0 20px 0", fontSize: 18, fontWeight: 700 }}>Prepaids & Escrows</h2>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
@@ -407,7 +407,7 @@ export default function CashToCloseCalculatorClient() {
                 onChange={(e) => handleChange("prepaidInsuranceMonths", Number(e.target.value))}
                 style={inputStyle}
               />
-              <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>= {fmt(analysis.prepaidInsurance)}</div>
+              <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 4 }}>= {fmt(analysis.prepaidInsurance)}</div>
             </div>
           </div>
 
@@ -429,7 +429,7 @@ export default function CashToCloseCalculatorClient() {
                 onChange={(e) => handleChange("prepaidTaxMonths", Number(e.target.value))}
                 style={inputStyle}
               />
-              <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>= {fmt(analysis.prepaidTaxes)}</div>
+              <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 4 }}>= {fmt(analysis.prepaidTaxes)}</div>
             </div>
           </div>
 
@@ -441,7 +441,7 @@ export default function CashToCloseCalculatorClient() {
               onChange={(e) => handleChange("prepaidInterestDays", Number(e.target.value))}
               style={inputStyle}
             />
-            <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>
+            <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 4 }}>
               Per diem interest from closing to end of month = {fmtDecimal(analysis.prepaidInterest)}
             </div>
           </div>
@@ -469,7 +469,7 @@ export default function CashToCloseCalculatorClient() {
 
         {/* Range Visualization */}
         <div
-          style={{ padding: 24, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, marginBottom: 20 }}
+          style={{ padding: 24, background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12, marginBottom: 20 }}
         >
           <h3 style={{ margin: "0 0 16px 0", fontSize: 16, fontWeight: 700 }}>Estimate Range</h3>
           <div style={{ position: "relative", height: 48, marginBottom: 8 }}>
@@ -481,7 +481,7 @@ export default function CashToCloseCalculatorClient() {
                 left: 0,
                 right: 0,
                 height: 12,
-                background: "#f3f4f6",
+                background: "hsl(var(--muted))",
                 borderRadius: 6,
               }}
             />
@@ -530,7 +530,7 @@ export default function CashToCloseCalculatorClient() {
           </div>
           <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
             <div>
-              <div style={{ color: "#6b7280" }}>Low</div>
+              <div style={{ color: "hsl(var(--muted-foreground))" }}>Low</div>
               <div style={{ fontWeight: 600 }}>{fmt(analysis.lowEstimate)}</div>
             </div>
             <div style={{ textAlign: "center" }}>
@@ -538,7 +538,7 @@ export default function CashToCloseCalculatorClient() {
               <div style={{ fontWeight: 700 }}>{fmt(analysis.estimatedCashToClose)}</div>
             </div>
             <div style={{ textAlign: "right" }}>
-              <div style={{ color: "#6b7280" }}>High</div>
+              <div style={{ color: "hsl(var(--muted-foreground))" }}>High</div>
               <div style={{ fontWeight: 600 }}>{fmt(analysis.highEstimate)}</div>
             </div>
           </div>
@@ -546,35 +546,35 @@ export default function CashToCloseCalculatorClient() {
 
         {/* Full Breakdown */}
         <div
-          style={{ padding: 24, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, marginBottom: 20 }}
+          style={{ padding: 24, background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12, marginBottom: 20 }}
         >
           <h3 style={{ margin: "0 0 16px 0", fontSize: 16, fontWeight: 700 }}>Full Breakdown</h3>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <tbody>
               {/* Cash needed */}
-              <tr style={{ background: "#f9fafb" }}>
-                <td colSpan={2} style={{ padding: "8px 0", fontWeight: 700, fontSize: 13, color: "#6b7280" }}>
+              <tr style={{ background: "hsl(var(--muted))" }}>
+                <td colSpan={2} style={{ padding: "8px 0", fontWeight: 700, fontSize: 13, color: "hsl(var(--muted-foreground))" }}>
                   CASH NEEDED
                 </td>
               </tr>
               <tr style={{ borderBottom: "1px solid #e5e7eb" }}>
                 <td style={{ padding: "10px 0" }}>
                   Down Payment
-                  <span style={{ fontSize: 12, color: "#6b7280", marginLeft: 6 }}>({inputs.downPaymentPercent}%)</span>
+                  <span style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginLeft: 6 }}>({inputs.downPaymentPercent}%)</span>
                 </td>
                 <td style={{ padding: "10px 0", textAlign: "right", fontWeight: 600 }}>{fmt(analysis.downPayment)}</td>
               </tr>
               <tr style={{ borderBottom: "1px solid #e5e7eb" }}>
                 <td style={{ padding: "10px 0" }}>
                   Closing Costs
-                  <span style={{ fontSize: 12, color: "#6b7280", marginLeft: 6 }}>({inputs.closingCostPercent}%)</span>
+                  <span style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginLeft: 6 }}>({inputs.closingCostPercent}%)</span>
                 </td>
                 <td style={{ padding: "10px 0", textAlign: "right", fontWeight: 600 }}>{fmt(analysis.closingCosts)}</td>
               </tr>
               <tr style={{ borderBottom: "1px solid #e5e7eb" }}>
                 <td style={{ padding: "10px 0" }}>
                   Prepaid Insurance
-                  <span style={{ fontSize: 12, color: "#6b7280", marginLeft: 6 }}>
+                  <span style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginLeft: 6 }}>
                     ({inputs.prepaidInsuranceMonths} mo)
                   </span>
                 </td>
@@ -585,14 +585,14 @@ export default function CashToCloseCalculatorClient() {
               <tr style={{ borderBottom: "1px solid #e5e7eb" }}>
                 <td style={{ padding: "10px 0" }}>
                   Prepaid Taxes
-                  <span style={{ fontSize: 12, color: "#6b7280", marginLeft: 6 }}>({inputs.prepaidTaxMonths} mo)</span>
+                  <span style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginLeft: 6 }}>({inputs.prepaidTaxMonths} mo)</span>
                 </td>
                 <td style={{ padding: "10px 0", textAlign: "right", fontWeight: 600 }}>{fmt(analysis.prepaidTaxes)}</td>
               </tr>
               <tr style={{ borderBottom: "1px solid #e5e7eb" }}>
                 <td style={{ padding: "10px 0" }}>
                   Prepaid Interest
-                  <span style={{ fontSize: 12, color: "#6b7280", marginLeft: 6 }}>
+                  <span style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginLeft: 6 }}>
                     ({inputs.prepaidInterestDays} days)
                   </span>
                 </td>
@@ -600,7 +600,7 @@ export default function CashToCloseCalculatorClient() {
                   {fmtDecimal(analysis.prepaidInterest)}
                 </td>
               </tr>
-              <tr style={{ borderBottom: "2px solid #e5e7eb", background: "#f9fafb" }}>
+              <tr style={{ borderBottom: "2px solid #e5e7eb", background: "hsl(var(--muted))" }}>
                 <td style={{ padding: "10px 0", fontWeight: 700 }}>Gross Cash Needed</td>
                 <td style={{ padding: "10px 0", textAlign: "right", fontWeight: 700 }}>
                   {fmt(analysis.grossCashNeeded)}
@@ -608,8 +608,8 @@ export default function CashToCloseCalculatorClient() {
               </tr>
 
               {/* Credits */}
-              <tr style={{ background: "#f9fafb" }}>
-                <td colSpan={2} style={{ padding: "12px 0 8px 0", fontWeight: 700, fontSize: 13, color: "#6b7280" }}>
+              <tr style={{ background: "hsl(var(--muted))" }}>
+                <td colSpan={2} style={{ padding: "12px 0 8px 0", fontWeight: 700, fontSize: 13, color: "hsl(var(--muted-foreground))" }}>
                   CREDITS APPLIED
                 </td>
               </tr>
@@ -638,7 +638,7 @@ export default function CashToCloseCalculatorClient() {
                 </tr>
               )}
               {analysis.totalCredits > 0 && (
-                <tr style={{ borderBottom: "2px solid #e5e7eb", background: "#f9fafb" }}>
+                <tr style={{ borderBottom: "2px solid #e5e7eb", background: "hsl(var(--muted))" }}>
                   <td style={{ padding: "10px 0", fontWeight: 700 }}>Total Credits</td>
                   <td style={{ padding: "10px 0", textAlign: "right", fontWeight: 700, color: "#059669" }}>
                     -{fmt(analysis.totalCredits)}
@@ -659,12 +659,12 @@ export default function CashToCloseCalculatorClient() {
 
         {/* Summary Cards */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 20 }}>
-          <div style={{ padding: 16, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 8 }}>
-            <div style={{ fontSize: 12, color: "#6b7280" }}>Total Prepaids & Escrows</div>
+          <div style={{ padding: 16, background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }}>
+            <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>Total Prepaids & Escrows</div>
             <div style={{ fontSize: 20, fontWeight: 600 }}>{fmt(analysis.totalPrepaids)}</div>
           </div>
-          <div style={{ padding: 16, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 8 }}>
-            <div style={{ fontSize: 12, color: "#6b7280" }}>Loan-to-Value</div>
+          <div style={{ padding: 16, background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }}>
+            <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>Loan-to-Value</div>
             <div style={{ fontSize: 20, fontWeight: 600 }}>
               {inputs.purchasePrice > 0 ? `${((inputs.loanAmount / inputs.purchasePrice) * 100).toFixed(1)}%` : "0%"}
             </div>

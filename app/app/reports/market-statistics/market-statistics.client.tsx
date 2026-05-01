@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useMemo } from "react";
 import jsPDF from "jspdf";
@@ -200,10 +200,10 @@ export default function MarketStatisticsClient() {
             padding: "6px 14px",
             fontSize: 12,
             fontWeight: 600,
-            border: "1px solid #d1d5db",
+            border: "1px solid hsl(var(--border))",
             borderRadius: 6,
-            background: "#fff",
-            color: "#374151",
+            background: "hsl(var(--card))",
+            color: "hsl(var(--foreground))",
             cursor: "pointer",
           }}
         >

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useMemo, useRef, useEffect } from "react";
 import jsPDF from "jspdf";
@@ -646,8 +646,8 @@ export default function MonthlyStatisticsClient() {
 
   const cardStyle: React.CSSProperties = {
     padding: 20,
-    background: "#fff",
-    border: "1px solid #e5e7eb",
+    background: "hsl(var(--card))",
+    border: "1px solid hsl(var(--border))",
     borderRadius: 12,
   };
 
@@ -706,10 +706,10 @@ export default function MonthlyStatisticsClient() {
             padding: "6px 14px",
             fontSize: 12,
             fontWeight: 600,
-            border: "1px solid #d1d5db",
+            border: "1px solid hsl(var(--border))",
             borderRadius: 6,
-            background: "#fff",
-            color: "#374151",
+            background: "hsl(var(--card))",
+            color: "hsl(var(--foreground))",
             cursor: "pointer",
           }}
         >
@@ -743,28 +743,28 @@ export default function MonthlyStatisticsClient() {
         }}
       >
         <div style={{ ...cardStyle, borderLeft: `4px solid ${COLORS.sf}` }}>
-          <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 600 }}>SF Median Price</div>
+          <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>SF Median Price</div>
           <div style={{ fontSize: 26, fontWeight: 800 }}>{fmt(sf.medianPrice)}</div>
           <div style={{ fontSize: 13, color: yoyColor(sf.medianPriceYoY), fontWeight: 600 }}>
             {yoyText(sf.medianPriceYoY)} YoY
           </div>
         </div>
         <div style={{ ...cardStyle, borderLeft: `4px solid ${COLORS.condo}` }}>
-          <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 600 }}>Condo Median Price</div>
+          <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>Condo Median Price</div>
           <div style={{ fontSize: 26, fontWeight: 800 }}>{fmt(cd.medianPrice)}</div>
           <div style={{ fontSize: 13, color: yoyColor(cd.medianPriceYoY), fontWeight: 600 }}>
             {yoyText(cd.medianPriceYoY)} YoY
           </div>
         </div>
         <div style={{ ...cardStyle, borderLeft: `4px solid ${COLORS.green}` }}>
-          <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 600 }}>Total Sales</div>
+          <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>Total Sales</div>
           <div style={{ fontSize: 26, fontWeight: 800 }}>{sf.sales + cd.sales}</div>
-          <div style={{ fontSize: 12, color: "#6b7280" }}>
+          <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>
             SF: {sf.sales} | Condo: {cd.sales}
           </div>
         </div>
         <div style={{ ...cardStyle, borderLeft: `4px solid ${COLORS.purple}` }}>
-          <div style={{ fontSize: 11, color: "#6b7280", fontWeight: 600 }}>Pending Sales</div>
+          <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>Pending Sales</div>
           <div style={{ fontSize: 26, fontWeight: 800 }}>{sf.pendingSales + cd.pendingSales}</div>
           <div style={{ fontSize: 13, fontWeight: 600 }}>
             <span style={{ color: yoyColor(sf.pendingSalesYoY) }}>SF {yoyText(sf.pendingSalesYoY)}</span>
@@ -777,7 +777,7 @@ export default function MonthlyStatisticsClient() {
       {/* Market Highlights */}
       <div style={{ ...cardStyle, marginBottom: 24 }}>
         <h3 style={{ margin: "0 0 16px 0", fontSize: 16, fontWeight: 700 }}>Market Highlights</h3>
-        <ul style={{ margin: 0, padding: "0 0 0 20px", fontSize: 14, lineHeight: 2, color: "#374151" }}>
+        <ul style={{ margin: 0, padding: "0 0 0 20px", fontSize: 14, lineHeight: 2, color: "hsl(var(--foreground))" }}>
           {data.highlights.map((h, i) => (
             <li key={i}>{h}</li>
           ))}
@@ -1051,7 +1051,7 @@ export default function MonthlyStatisticsClient() {
               <Tooltip />
             </PieChart>
           </ResponsiveContainer>
-          <div style={{ textAlign: "center", fontSize: 13, color: "#6b7280" }}>
+          <div style={{ textAlign: "center", fontSize: 13, color: "hsl(var(--muted-foreground))" }}>
             Total: {(sf.activeInventory + cd.activeInventory).toLocaleString()} active listings
           </div>
         </div>
@@ -1063,7 +1063,7 @@ export default function MonthlyStatisticsClient() {
             <thead>
               <tr style={{ borderBottom: "2px solid #e5e7eb" }}>
                 <th
-                  style={{ padding: "10px 12px", textAlign: "left", fontWeight: 700, fontSize: 12, color: "#6b7280" }}
+                  style={{ padding: "10px 12px", textAlign: "left", fontWeight: 700, fontSize: 12, color: "hsl(var(--muted-foreground))" }}
                 >
                   Metric
                 </th>
@@ -1073,7 +1073,7 @@ export default function MonthlyStatisticsClient() {
                   Single-Family
                 </th>
                 <th
-                  style={{ padding: "10px 12px", textAlign: "right", fontWeight: 700, fontSize: 12, color: "#6b7280" }}
+                  style={{ padding: "10px 12px", textAlign: "right", fontWeight: 700, fontSize: 12, color: "hsl(var(--muted-foreground))" }}
                 >
                   YoY Change
                 </th>
@@ -1089,7 +1089,7 @@ export default function MonthlyStatisticsClient() {
                   Condo
                 </th>
                 <th
-                  style={{ padding: "10px 12px", textAlign: "right", fontWeight: 700, fontSize: 12, color: "#6b7280" }}
+                  style={{ padding: "10px 12px", textAlign: "right", fontWeight: 700, fontSize: 12, color: "hsl(var(--muted-foreground))" }}
                 >
                   YoY Change
                 </th>
@@ -1187,7 +1187,7 @@ export default function MonthlyStatisticsClient() {
       {/* end chartsRef */}
 
       {/* Source Attribution */}
-      <div style={{ fontSize: 12, color: "#9ca3af", textAlign: "center", padding: "12px 0" }}>
+      <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", textAlign: "center", padding: "12px 0" }}>
         Source: Honolulu Board of REALTORS® / HiCentral MLS, Ltd. &middot; Resales of existing properties only &middot;
         Does not include new home sales
       </div>

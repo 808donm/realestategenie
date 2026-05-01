@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useMemo, useCallback } from "react";
 import { supabaseBrowser } from "@/lib/supabase/browser";
@@ -938,7 +938,7 @@ export default function Exchange1031Client({ savedExchanges, investmentPropertie
             <div
               style={{
                 padding: 12,
-                background: "#fff",
+                background: "hsl(var(--card))",
                 borderRadius: 8,
                 borderLeft: `4px solid ${timeline.identificationExpired ? "#ef4444" : timeline.daysUntilIdentification <= 7 ? "#f59e0b" : "#22c55e"}`,
               }}
@@ -963,7 +963,7 @@ export default function Exchange1031Client({ savedExchanges, investmentPropertie
             <div
               style={{
                 padding: 12,
-                background: "#fff",
+                background: "hsl(var(--card))",
                 borderRadius: 8,
                 borderLeft: `4px solid ${timeline.exchangeExpired ? "#ef4444" : timeline.daysUntilExchange <= 30 ? "#f59e0b" : "#22c55e"}`,
               }}

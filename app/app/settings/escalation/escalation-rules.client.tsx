@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect } from "react";
 
@@ -67,7 +67,7 @@ export default function EscalationRulesClient() {
   };
 
   if (isLoading) {
-    return <div style={{ padding: 40, textAlign: "center", color: "#6b7280" }}>Loading escalation rules...</div>;
+    return <div style={{ padding: 40, textAlign: "center", color: "hsl(var(--muted-foreground))" }}>Loading escalation rules...</div>;
   }
 
   return (
@@ -95,13 +95,13 @@ export default function EscalationRulesClient() {
 
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         {rules.map((rule) => {
-          const actionStyle = ACTION_COLORS[rule.action] || { bg: "#f3f4f6", color: "#6b7280" };
+          const actionStyle = ACTION_COLORS[rule.action] || { bg: "#f3f4f6", color: "hsl(var(--muted-foreground))" };
           return (
             <div
               key={rule.id}
               style={{
-                background: "#fff",
-                border: "1px solid #e5e7eb",
+                background: "hsl(var(--card))",
+                border: "1px solid hsl(var(--border))",
                 borderRadius: 10,
                 padding: 20,
                 opacity: rule.enabled ? 1 : 0.6,
@@ -127,16 +127,16 @@ export default function EscalationRulesClient() {
                     </span>
                   </div>
                   {rule.description && (
-                    <p style={{ fontSize: 13, color: "#6b7280", margin: "4px 0 0" }}>{rule.description}</p>
+                    <p style={{ fontSize: 13, color: "hsl(var(--muted-foreground))", margin: "4px 0 0" }}>{rule.description}</p>
                   )}
                   <div style={{ display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
                     <span
                       style={{
                         fontSize: 11,
                         padding: "2px 8px",
-                        background: "#f3f4f6",
+                        background: "hsl(var(--muted))",
                         borderRadius: 4,
-                        color: "#374151",
+                        color: "hsl(var(--foreground))",
                       }}
                     >
                       Trigger: {TRIGGER_LABELS[rule.trigger] || rule.trigger}
@@ -206,7 +206,7 @@ export default function EscalationRulesClient() {
                         width: 18,
                         left: rule.enabled ? 22 : 3,
                         bottom: 3,
-                        background: "#fff",
+                        background: "hsl(var(--card))",
                         borderRadius: "50%",
                         transition: "0.3s",
                       }}
@@ -220,7 +220,7 @@ export default function EscalationRulesClient() {
       </div>
 
       {rules.length === 0 && (
-        <div style={{ padding: 32, textAlign: "center", color: "#6b7280", background: "#f9fafb", borderRadius: 12 }}>
+        <div style={{ padding: 32, textAlign: "center", color: "hsl(var(--muted-foreground))", background: "hsl(var(--muted))", borderRadius: 12 }}>
           No escalation rules configured yet.
         </div>
       )}

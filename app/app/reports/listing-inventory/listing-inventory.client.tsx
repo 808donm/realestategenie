@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useMemo, useEffect, useCallback } from "react";
 import Link from "next/link";
@@ -268,9 +268,9 @@ export default function ListingInventoryClient() {
             onClick={exportToExcel}
             style={{
               padding: "8px 20px",
-              background: "#fff",
-              color: "#374151",
-              border: "1px solid #d1d5db",
+              background: "hsl(var(--card))",
+              color: "hsl(var(--foreground))",
+              border: "1px solid hsl(var(--border))",
               borderRadius: 8,
               fontWeight: 600,
               cursor: "pointer",
@@ -286,52 +286,52 @@ export default function ListingInventoryClient() {
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, marginBottom: 24 }}>
         <div
           style={{
-            background: "#fff",
-            border: "1px solid #e5e7eb",
+            background: "hsl(var(--card))",
+            border: "1px solid hsl(var(--border))",
             borderRadius: 10,
             padding: 16,
             borderTop: "3px solid #8b5cf6",
           }}
         >
-          <div style={{ fontSize: 11, fontWeight: 600, color: "#6b7280", marginBottom: 4 }}>Total Active</div>
+          <div style={{ fontSize: 11, fontWeight: 600, color: "hsl(var(--muted-foreground))", marginBottom: 4 }}>Total Active</div>
           <div style={{ fontSize: 22, fontWeight: 800 }}>{totalActive}</div>
         </div>
         <div
           style={{
-            background: "#fff",
-            border: "1px solid #e5e7eb",
+            background: "hsl(var(--card))",
+            border: "1px solid hsl(var(--border))",
             borderRadius: 10,
             padding: 16,
             borderTop: "3px solid #3b82f6",
           }}
         >
-          <div style={{ fontSize: 11, fontWeight: 600, color: "#6b7280", marginBottom: 4 }}>Avg DOM</div>
+          <div style={{ fontSize: 11, fontWeight: 600, color: "hsl(var(--muted-foreground))", marginBottom: 4 }}>Avg DOM</div>
           <div style={{ fontSize: 22, fontWeight: 800 }}>{avgDom.toFixed(1)}</div>
         </div>
         <div
           style={{
-            background: "#fff",
-            border: "1px solid #e5e7eb",
+            background: "hsl(var(--card))",
+            border: "1px solid hsl(var(--border))",
             borderRadius: 10,
             padding: 16,
             borderTop: "3px solid #f59e0b",
           }}
         >
-          <div style={{ fontSize: 11, fontWeight: 600, color: "#6b7280", marginBottom: 4 }}>Listings 21+ DOM</div>
+          <div style={{ fontSize: 11, fontWeight: 600, color: "hsl(var(--muted-foreground))", marginBottom: 4 }}>Listings 21+ DOM</div>
           <div style={{ fontSize: 22, fontWeight: 800, color: listings21Plus > 0 ? "#d97706" : "inherit" }}>
             {listings21Plus}
           </div>
         </div>
         <div
           style={{
-            background: "#fff",
-            border: "1px solid #e5e7eb",
+            background: "hsl(var(--card))",
+            border: "1px solid hsl(var(--border))",
             borderRadius: 10,
             padding: 16,
             borderTop: "3px solid #10b981",
           }}
         >
-          <div style={{ fontSize: 11, fontWeight: 600, color: "#6b7280", marginBottom: 4 }}>Avg List Price</div>
+          <div style={{ fontSize: 11, fontWeight: 600, color: "hsl(var(--muted-foreground))", marginBottom: 4 }}>Avg List Price</div>
           <div style={{ fontSize: 22, fontWeight: 800 }}>{fmt.format(avgListPrice)}</div>
         </div>
       </div>
@@ -339,7 +339,7 @@ export default function ListingInventoryClient() {
       {/* DOM Distribution Charts */}
       <div style={{ display: "flex", gap: 16, marginBottom: 20, flexWrap: "wrap" }}>
         <div
-          style={{ flex: "2 1 400px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 20 }}
+          style={{ flex: "2 1 400px", background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 10, padding: 20 }}
         >
           <h3 style={{ margin: "0 0 16px 0", fontSize: 15, fontWeight: 700 }}>Days on Market Distribution</h3>
           <ResponsiveContainer width="100%" height={220}>
@@ -357,7 +357,7 @@ export default function ListingInventoryClient() {
           </ResponsiveContainer>
         </div>
         <div
-          style={{ flex: "1 1 280px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 20 }}
+          style={{ flex: "1 1 280px", background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 10, padding: 20 }}
         >
           <h3 style={{ margin: "0 0 16px 0", fontSize: 15, fontWeight: 700 }}>Status Breakdown</h3>
           {(() => {
@@ -417,7 +417,7 @@ export default function ListingInventoryClient() {
       )}
 
       {/* Listings Table */}
-      <div style={{ overflowX: "auto", background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10 }}>
+      <div style={{ overflowX: "auto", background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 10 }}>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr>

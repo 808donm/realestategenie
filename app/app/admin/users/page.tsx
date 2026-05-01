@@ -1,4 +1,4 @@
-import { requireAdmin } from "@/lib/auth/admin-check";
+﻿import { requireAdmin } from "@/lib/auth/admin-check";
 import { supabaseServer } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import Link from "next/link";
@@ -54,14 +54,14 @@ export default async function UsersManagementPage() {
     <div>
       <div style={{ marginBottom: 32 }}>
         <h1 style={{ fontSize: 32, fontWeight: 800, margin: 0 }}>User Management</h1>
-        <p style={{ color: "#6b7280", marginTop: 8 }}>Manage agent accounts, permissions, and plan assignments</p>
+        <p style={{ color: "hsl(var(--muted-foreground))", marginTop: 8 }}>Manage agent accounts, permissions, and plan assignments</p>
       </div>
 
       <div
         style={{
           background: "white",
           borderRadius: 12,
-          border: "1px solid #e5e7eb",
+          border: "1px solid hsl(var(--border))",
           overflow: "hidden",
         }}
       >

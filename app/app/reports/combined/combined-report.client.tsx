@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import jsPDF from "jspdf";
@@ -254,7 +254,7 @@ export default function CombinedReportClient() {
           onChange={(e) => setAddress(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && fetchReport()}
           placeholder="Enter property address (e.g. 123 Main St, Honolulu, HI 96815)"
-          style={{ flex: 1, padding: 14, border: "1px solid #e5e7eb", borderRadius: 8, fontSize: 14 }}
+          style={{ flex: 1, padding: 14, border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 14 }}
         />
         <button
           onClick={fetchReport}
@@ -291,7 +291,7 @@ export default function CombinedReportClient() {
       )}
 
       {isLoading && (
-        <div style={{ padding: 60, textAlign: "center", color: "#6b7280" }}>
+        <div style={{ padding: 60, textAlign: "center", color: "hsl(var(--muted-foreground))" }}>
           <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 8 }}>Generating combined report...</div>
           <div style={{ fontSize: 13 }}>Fetching property data, tax records, valuations, and hazard info</div>
         </div>
@@ -377,7 +377,7 @@ export default function CombinedReportClient() {
                   style={{
                     padding: "6px 10px",
                     fontSize: 12,
-                    border: "1px solid #e5e7eb",
+                    border: "1px solid hsl(var(--border))",
                     borderRadius: 6,
                     width: 280,
                   }}
@@ -388,9 +388,9 @@ export default function CombinedReportClient() {
                   style={{
                     padding: "6px 10px",
                     fontSize: 11,
-                    border: "1px solid #e5e7eb",
+                    border: "1px solid hsl(var(--border))",
                     borderRadius: 6,
-                    background: "#fff",
+                    background: "hsl(var(--card))",
                     cursor: "pointer",
                   }}
                 >
@@ -402,10 +402,10 @@ export default function CombinedReportClient() {
 
           {/* Report Header */}
           <div
-            style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, padding: 24, marginBottom: 16 }}
+            style={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12, padding: 24, marginBottom: 16 }}
           >
             <h2 style={{ fontSize: 20, fontWeight: 700, margin: "0 0 4px" }}>{report.address}</h2>
-            <div style={{ fontSize: 12, color: "#9ca3af" }}>
+            <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>
               Generated {new Date(report.generatedAt).toLocaleString()}
             </div>
           </div>
@@ -577,7 +577,7 @@ export default function CombinedReportClient() {
           {/* Demographics */}
           {report.demographics && (
             <Section title="Demographics & Neighborhood">
-              <div style={{ fontSize: 13, color: "#6b7280" }}>
+              <div style={{ fontSize: 13, color: "hsl(var(--muted-foreground))" }}>
                 <pre style={{ whiteSpace: "pre-wrap", fontFamily: "inherit", margin: 0 }}>
                   {typeof report.demographics === "string"
                     ? report.demographics
@@ -611,7 +611,7 @@ function ValueCard({
         {label}
       </div>
       <div style={{ fontSize: 20, fontWeight: 700, color }}>{value}</div>
-      {sub && <div style={{ fontSize: 11, color: "#6b7280" }}>{sub}</div>}
+      {sub && <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>{sub}</div>}
     </div>
   );
 }
@@ -620,8 +620,8 @@ function Section({ title, children, color }: { title: string; children: React.Re
   return (
     <div
       style={{
-        background: "#fff",
-        border: "1px solid #e5e7eb",
+        background: "hsl(var(--card))",
+        border: "1px solid hsl(var(--border))",
         borderRadius: 10,
         padding: 20,
         marginBottom: 16,
@@ -646,10 +646,10 @@ function Field({ label, value }: { label: string; value?: string | number | null
   if (value == null || value === "") return null;
   return (
     <div>
-      <div style={{ fontSize: 11, fontWeight: 500, color: "#9ca3af", textTransform: "uppercase", letterSpacing: 0.5 }}>
+      <div style={{ fontSize: 11, fontWeight: 500, color: "hsl(var(--muted-foreground))", textTransform: "uppercase", letterSpacing: 0.5 }}>
         {label}
       </div>
-      <div style={{ fontSize: 14, color: "#111827", fontWeight: 500 }}>{value}</div>
+      <div style={{ fontSize: 14, color: "hsl(var(--foreground))", fontWeight: 500 }}>{value}</div>
     </div>
   );
 }

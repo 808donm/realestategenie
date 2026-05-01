@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useMemo, useEffect, useCallback } from "react";
 import Link from "next/link";
@@ -202,8 +202,8 @@ export default function PipelineVelocityClient() {
 
   const cardStyle: React.CSSProperties = {
     padding: 20,
-    background: "#fff",
-    border: "1px solid #e5e7eb",
+    background: "hsl(var(--card))",
+    border: "1px solid hsl(var(--border))",
     borderRadius: 12,
   };
 
@@ -306,9 +306,9 @@ export default function PipelineVelocityClient() {
           onClick={exportToExcel}
           style={{
             padding: "8px 20px",
-            background: "#fff",
-            color: "#374151",
-            border: "1px solid #d1d5db",
+            background: "hsl(var(--card))",
+            color: "hsl(var(--foreground))",
+            border: "1px solid hsl(var(--border))",
             borderRadius: 8,
             fontWeight: 600,
             cursor: "pointer",
@@ -322,19 +322,19 @@ export default function PipelineVelocityClient() {
       {/* Summary Cards */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, marginBottom: 24 }}>
         <div style={{ ...cardStyle, borderLeft: "4px solid #3b82f6" }}>
-          <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Avg Lead-to-Close</div>
+          <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginBottom: 4 }}>Avg Lead-to-Close</div>
           <div style={{ fontSize: 28, fontWeight: 700 }}>{totalAvgDays.toFixed(1)}d</div>
-          <div style={{ fontSize: 12, color: "#6b7280" }}>across all stages</div>
+          <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>across all stages</div>
         </div>
         <div style={{ ...cardStyle, borderLeft: "4px solid #ef4444" }}>
-          <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Bottleneck Stage</div>
+          <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginBottom: 4 }}>Bottleneck Stage</div>
           <div style={{ fontSize: 24, fontWeight: 700, color: "#dc2626" }}>{bottleneckStage.name}</div>
           <div style={{ fontSize: 14, color: "#ef4444", fontWeight: 600 }}>{bottleneckStage.avgDays} avg days</div>
         </div>
         <div style={{ ...cardStyle, borderLeft: "4px solid #f59e0b" }}>
-          <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>Stuck Deals</div>
+          <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginBottom: 4 }}>Stuck Deals</div>
           <div style={{ fontSize: 28, fontWeight: 700, color: "#d97706" }}>{stuckDeals.length}</div>
-          <div style={{ fontSize: 12, color: "#6b7280" }}>leads in stage 2x+ longer than avg</div>
+          <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>leads in stage 2x+ longer than avg</div>
         </div>
       </div>
 
@@ -438,7 +438,7 @@ export default function PipelineVelocityClient() {
                     <span style={{ fontSize: 13, fontWeight: 700, zIndex: 1 }}>{s.currentCount} leads</span>
                   </div>
                 </div>
-                <div style={{ width: 100, fontSize: 12, color: "#6b7280", flexShrink: 0 }}>
+                <div style={{ width: 100, fontSize: 12, color: "hsl(var(--muted-foreground))", flexShrink: 0 }}>
                   {s.name === "Closed" ? (
                     <span style={{ color: "#059669", fontWeight: 600 }}>Complete</span>
                   ) : (
@@ -468,7 +468,7 @@ export default function PipelineVelocityClient() {
                     textAlign: h === "Stage" ? "left" : "right",
                     fontWeight: 700,
                     fontSize: 12,
-                    color: "#6b7280",
+                    color: "hsl(var(--muted-foreground))",
                   }}
                 >
                   {h}
@@ -565,7 +565,7 @@ export default function PipelineVelocityClient() {
       {/* Stuck Deals */}
       <div style={{ ...cardStyle, marginBottom: 24, borderLeft: "4px solid #f59e0b" }}>
         <h3 style={{ margin: "0 0 4px 0", fontSize: 16, fontWeight: 700 }}>Stuck Deals</h3>
-        <p style={{ margin: "0 0 16px 0", fontSize: 13, color: "#6b7280" }}>
+        <p style={{ margin: "0 0 16px 0", fontSize: 13, color: "hsl(var(--muted-foreground))" }}>
           Leads that have been in their current stage for 2x or longer than the average.
         </p>
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
@@ -579,7 +579,7 @@ export default function PipelineVelocityClient() {
                     textAlign: h === "Lead" || h === "Stage" || h === "Source" ? "left" : "right",
                     fontWeight: 700,
                     fontSize: 12,
-                    color: "#6b7280",
+                    color: "hsl(var(--muted-foreground))",
                   }}
                 >
                   {h}

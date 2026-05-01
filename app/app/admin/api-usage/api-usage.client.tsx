@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect } from "react";
 
@@ -139,7 +139,7 @@ export function ApiUsageDashboard() {
   }, [days]);
 
   if (loading)
-    return <div style={{ textAlign: "center", padding: 40, color: "#9ca3af" }}>Loading API usage data...</div>;
+    return <div style={{ textAlign: "center", padding: 40, color: "hsl(var(--muted-foreground))" }}>Loading API usage data...</div>;
   if (!data)
     return <div style={{ textAlign: "center", padding: 40, color: "#dc2626" }}>Failed to load usage data.</div>;
 
@@ -160,7 +160,7 @@ export function ApiUsageDashboard() {
               fontSize: 12,
               fontWeight: 600,
               borderRadius: 6,
-              border: "1px solid #d1d5db",
+              border: "1px solid hsl(var(--border))",
               cursor: "pointer",
               background: days === d ? "#1e40af" : "#fff",
               color: days === d ? "#fff" : "#374151",
@@ -173,42 +173,42 @@ export function ApiUsageDashboard() {
 
       {/* Summary Cards */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 10 }}>
-        <div style={{ padding: 16, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10 }}>
-          <div style={{ fontSize: 28, fontWeight: 800, color: "#111827" }}>{fmtNum(data.totalCalls)}</div>
-          <div style={{ fontSize: 12, color: "#6b7280" }}>Total API Calls ({days}d)</div>
+        <div style={{ padding: 16, background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 10 }}>
+          <div style={{ fontSize: 28, fontWeight: 800, color: "hsl(var(--foreground))" }}>{fmtNum(data.totalCalls)}</div>
+          <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>Total API Calls ({days}d)</div>
         </div>
-        <div style={{ padding: 16, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10 }}>
+        <div style={{ padding: 16, background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 10 }}>
           <div style={{ fontSize: 28, fontWeight: 800, color: "#059669" }}>{data.cacheHitRate}%</div>
-          <div style={{ fontSize: 12, color: "#6b7280" }}>Cache Hit Rate</div>
+          <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>Cache Hit Rate</div>
         </div>
-        <div style={{ padding: 16, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10 }}>
+        <div style={{ padding: 16, background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 10 }}>
           <div style={{ fontSize: 28, fontWeight: 800, color: "#1e40af" }}>{data.activeUsers}</div>
-          <div style={{ fontSize: 12, color: "#6b7280" }}>Active Users</div>
+          <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>Active Users</div>
         </div>
-        <div style={{ padding: 16, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10 }}>
+        <div style={{ padding: 16, background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 10 }}>
           <div style={{ fontSize: 28, fontWeight: 800, color: "#7c3aed" }}>{perUserPerDay.toFixed(1)}</div>
-          <div style={{ fontSize: 12, color: "#6b7280" }}>Calls/User/Day</div>
+          <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>Calls/User/Day</div>
         </div>
       </div>
 
       {/* Per-Provider Breakdown */}
-      <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 16 }}>
-        <h3 style={{ fontSize: 15, fontWeight: 700, color: "#111827", marginBottom: 12 }}>API Calls by Provider</h3>
+      <div style={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 10, padding: 16 }}>
+        <h3 style={{ fontSize: 15, fontWeight: 700, color: "hsl(var(--foreground))", marginBottom: 12 }}>API Calls by Provider</h3>
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", fontSize: 13, borderCollapse: "collapse" }}>
             <thead>
               <tr style={{ borderBottom: "2px solid #e5e7eb" }}>
-                <th style={{ textAlign: "left", padding: "8px 10px", color: "#6b7280", fontWeight: 600 }}>Provider</th>
-                <th style={{ textAlign: "right", padding: "8px 10px", color: "#6b7280", fontWeight: 600 }}>
+                <th style={{ textAlign: "left", padding: "8px 10px", color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>Provider</th>
+                <th style={{ textAlign: "right", padding: "8px 10px", color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>
                   Calls ({days}d)
                 </th>
-                <th style={{ textAlign: "right", padding: "8px 10px", color: "#6b7280", fontWeight: 600 }}>
+                <th style={{ textAlign: "right", padding: "8px 10px", color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>
                   Calls/Day
                 </th>
-                <th style={{ textAlign: "right", padding: "8px 10px", color: "#6b7280", fontWeight: 600 }}>
+                <th style={{ textAlign: "right", padding: "8px 10px", color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>
                   Avg Response
                 </th>
-                <th style={{ textAlign: "right", padding: "8px 10px", color: "#6b7280", fontWeight: 600 }}>
+                <th style={{ textAlign: "right", padding: "8px 10px", color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>
                   % of Total
                 </th>
               </tr>
@@ -248,7 +248,7 @@ export function ApiUsageDashboard() {
                     <td style={{ padding: "8px 10px", textAlign: "right" }}>{avgMs ? `${avgMs}ms` : "—"}</td>
                     <td style={{ padding: "8px 10px", textAlign: "right" }}>
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 6 }}>
-                        <div style={{ width: 60, height: 6, background: "#f3f4f6", borderRadius: 3 }}>
+                        <div style={{ width: 60, height: 6, background: "hsl(var(--muted))", borderRadius: 3 }}>
                           <div style={{ width: `${pct}%`, height: 6, background: color, borderRadius: 3 }} />
                         </div>
                         {pct}%
@@ -263,8 +263,8 @@ export function ApiUsageDashboard() {
 
         {/* Expanded endpoint breakdown */}
         {expandedProvider && data.byEndpoint[expandedProvider] && (
-          <div style={{ marginTop: 10, padding: 12, background: "#f9fafb", borderRadius: 8 }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: "#374151", marginBottom: 6 }}>
+          <div style={{ marginTop: 10, padding: 12, background: "hsl(var(--muted))", borderRadius: 8 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: "hsl(var(--foreground))", marginBottom: 6 }}>
               {PROVIDER_LABELS[expandedProvider] || expandedProvider} — Endpoints
             </div>
             {Object.entries(data.byEndpoint[expandedProvider])
@@ -274,7 +274,7 @@ export function ApiUsageDashboard() {
                   key={endpoint}
                   style={{ display: "flex", justifyContent: "space-between", padding: "3px 0", fontSize: 12 }}
                 >
-                  <code style={{ color: "#6b7280" }}>{endpoint}</code>
+                  <code style={{ color: "hsl(var(--muted-foreground))" }}>{endpoint}</code>
                   <span style={{ fontWeight: 600 }}>{fmtNum(count)}</span>
                 </div>
               ))}
@@ -283,11 +283,11 @@ export function ApiUsageDashboard() {
       </div>
 
       {/* Projection Table */}
-      <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 16 }}>
-        <h3 style={{ fontSize: 15, fontWeight: 700, color: "#111827", marginBottom: 4 }}>
+      <div style={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 10, padding: 16 }}>
+        <h3 style={{ fontSize: 15, fontWeight: 700, color: "hsl(var(--foreground))", marginBottom: 4 }}>
           API Call Projections by User Scale
         </h3>
-        <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 12 }}>
+        <p style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginBottom: 12 }}>
           Based on {perUserPerDay.toFixed(1)} API calls/user/day average over {days} days with {data.activeUsers} active
           user{data.activeUsers !== 1 ? "s" : ""}
         </p>
@@ -296,17 +296,17 @@ export function ApiUsageDashboard() {
           <table style={{ width: "100%", fontSize: 12, borderCollapse: "collapse" }}>
             <thead>
               <tr style={{ borderBottom: "2px solid #e5e7eb" }}>
-                <th style={{ textAlign: "left", padding: "8px 10px", color: "#6b7280", fontWeight: 600 }}>Users</th>
-                <th style={{ textAlign: "right", padding: "8px 10px", color: "#6b7280", fontWeight: 600 }}>
+                <th style={{ textAlign: "left", padding: "8px 10px", color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>Users</th>
+                <th style={{ textAlign: "right", padding: "8px 10px", color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>
                   Calls/Day
                 </th>
-                <th style={{ textAlign: "right", padding: "8px 10px", color: "#6b7280", fontWeight: 600 }}>
+                <th style={{ textAlign: "right", padding: "8px 10px", color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>
                   Calls/Week
                 </th>
-                <th style={{ textAlign: "right", padding: "8px 10px", color: "#6b7280", fontWeight: 600 }}>
+                <th style={{ textAlign: "right", padding: "8px 10px", color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>
                   Calls/Month
                 </th>
-                <th style={{ textAlign: "right", padding: "8px 10px", color: "#6b7280", fontWeight: 600 }}>
+                <th style={{ textAlign: "right", padding: "8px 10px", color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>
                   Calls/Year
                 </th>
                 {providers.map((p) => (
@@ -382,18 +382,18 @@ export function ApiUsageDashboard() {
           </table>
         </div>
 
-        <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 8 }}>
+        <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", marginTop: 8 }}>
           Projections assume linear scaling. Actual usage may vary with caching efficiency at scale. Cache hit rate (
           {data.cacheHitRate}%) reduces real API calls — projections show gross calls before caching.
         </div>
       </div>
 
       {/* Provider Cost Analysis & Tier Recommendations */}
-      <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 16 }}>
-        <h3 style={{ fontSize: 15, fontWeight: 700, color: "#111827", marginBottom: 4 }}>
+      <div style={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 10, padding: 16 }}>
+        <h3 style={{ fontSize: 15, fontWeight: 700, color: "hsl(var(--foreground))", marginBottom: 4 }}>
           API Provider Costs & Tier Recommendations
         </h3>
-        <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 12 }}>
+        <p style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginBottom: 12 }}>
           Based on {days}-day usage, projected monthly costs and recommended plan tiers
         </p>
 
@@ -448,11 +448,11 @@ export function ApiUsageDashboard() {
                           : `${tierInfo.headroom}% headroom`}
                     </div>
                   </div>
-                  <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>
+                  <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginBottom: 4 }}>
                     Current plan: <strong>{tierInfo.current}</strong> | Recommended:{" "}
                     <strong>{tierInfo.recommended}</strong>
                   </div>
-                  <div style={{ fontSize: 12, color: "#6b7280" }}>
+                  <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>
                     Est. monthly calls: <strong>{fmtNum(monthlyCalls)}</strong> | Plan cost:{" "}
                     <strong>${tierInfo.monthlyCost}/mo</strong>
                   </div>
@@ -462,14 +462,14 @@ export function ApiUsageDashboard() {
         </div>
 
         {/* Cost projection table by provider */}
-        <div style={{ fontSize: 13, fontWeight: 700, color: "#374151", marginBottom: 6 }}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: "hsl(var(--foreground))", marginBottom: 6 }}>
           Cost Projections by Provider & User Scale
         </div>
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", fontSize: 12, borderCollapse: "collapse" }}>
             <thead>
               <tr style={{ borderBottom: "2px solid #e5e7eb" }}>
-                <th style={{ textAlign: "left", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>Users</th>
+                <th style={{ textAlign: "left", padding: "6px 8px", color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>Users</th>
                 {providers
                   .filter((p) => PROVIDER_PRICING[p])
                   .map((p) => (
@@ -490,8 +490,8 @@ export function ApiUsageDashboard() {
                       {(PROVIDER_LABELS[p] || p).split(" ")[0]} Tier
                     </th>
                   ))}
-                <th style={{ textAlign: "right", padding: "6px 8px", color: "#111827", fontWeight: 700 }}>Total/Mo</th>
-                <th style={{ textAlign: "right", padding: "6px 8px", color: "#111827", fontWeight: 700 }}>
+                <th style={{ textAlign: "right", padding: "6px 8px", color: "hsl(var(--foreground))", fontWeight: 700 }}>Total/Mo</th>
+                <th style={{ textAlign: "right", padding: "6px 8px", color: "hsl(var(--foreground))", fontWeight: 700 }}>
                   Total/Year
                 </th>
               </tr>
@@ -586,14 +586,14 @@ export function ApiUsageDashboard() {
         </div>
 
         {/* Tier breakdown */}
-        <div style={{ marginTop: 16, fontSize: 13, fontWeight: 700, color: "#374151", marginBottom: 6 }}>
+        <div style={{ marginTop: 16, fontSize: 13, fontWeight: 700, color: "hsl(var(--foreground))", marginBottom: 6 }}>
           Available Plan Tiers
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 10 }}>
           {Object.entries(PROVIDER_PRICING).map(([provider, pricing]) => (
             <div
               key={provider}
-              style={{ padding: 12, background: "#f9fafb", borderRadius: 8, border: "1px solid #e5e7eb" }}
+              style={{ padding: 12, background: "hsl(var(--muted))", borderRadius: 8, border: "1px solid hsl(var(--border))" }}
             >
               <div
                 style={{
@@ -611,13 +611,13 @@ export function ApiUsageDashboard() {
                   style={{ display: "flex", justifyContent: "space-between", padding: "2px 0", fontSize: 12 }}
                 >
                   <span style={{ fontWeight: 500 }}>{tier.name}</span>
-                  <span style={{ color: "#6b7280" }}>
+                  <span style={{ color: "hsl(var(--muted-foreground))" }}>
                     {fmtNum(tier.calls)} calls/mo — ${tier.cost}/mo
                   </span>
                 </div>
               ))}
               {pricing.perCallOverage && (
-                <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 4 }}>
+                <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", marginTop: 4 }}>
                   Overage: ${pricing.perCallOverage}/call beyond plan limit
                 </div>
               )}
@@ -628,9 +628,9 @@ export function ApiUsageDashboard() {
 
       {/* AI Token Usage & Cost */}
       {data.ai && data.ai.totalCalls > 0 && (
-        <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 16 }}>
-          <h3 style={{ fontSize: 15, fontWeight: 700, color: "#111827", marginBottom: 4 }}>AI Token Usage & Cost</h3>
-          <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 12 }}>Vercel AI Gateway — OpenAI & Anthropic</p>
+        <div style={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 10, padding: 16 }}>
+          <h3 style={{ fontSize: 15, fontWeight: 700, color: "hsl(var(--foreground))", marginBottom: 4 }}>AI Token Usage & Cost</h3>
+          <p style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginBottom: 12 }}>Vercel AI Gateway — OpenAI & Anthropic</p>
 
           {/* AI Summary Cards */}
           <div
@@ -643,40 +643,40 @@ export function ApiUsageDashboard() {
           >
             <div style={{ padding: 12, background: "#f0fdf4", borderRadius: 8, border: "1px solid #bbf7d0" }}>
               <div style={{ fontSize: 22, fontWeight: 800, color: "#059669" }}>{fmtNum(data.ai.totalCalls)}</div>
-              <div style={{ fontSize: 11, color: "#6b7280" }}>AI Calls</div>
+              <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>AI Calls</div>
             </div>
             <div style={{ padding: 12, background: "#eff6ff", borderRadius: 8, border: "1px solid #bfdbfe" }}>
               <div style={{ fontSize: 22, fontWeight: 800, color: "#1e40af" }}>{fmtNum(data.ai.totalTokens)}</div>
-              <div style={{ fontSize: 11, color: "#6b7280" }}>Total Tokens</div>
+              <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>Total Tokens</div>
             </div>
             <div style={{ padding: 12, background: "#faf5ff", borderRadius: 8, border: "1px solid #d8b4fe" }}>
               <div style={{ fontSize: 22, fontWeight: 800, color: "#7c3aed" }}>${data.ai.totalCost.toFixed(2)}</div>
-              <div style={{ fontSize: 11, color: "#6b7280" }}>Est. Cost ({days}d)</div>
+              <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>Est. Cost ({days}d)</div>
             </div>
             <div style={{ padding: 12, background: "#fff7ed", borderRadius: 8, border: "1px solid #fed7aa" }}>
               <div style={{ fontSize: 22, fontWeight: 800, color: "#ea580c" }}>${data.ai.costPerUser.toFixed(2)}</div>
-              <div style={{ fontSize: 11, color: "#6b7280" }}>Cost/User ({days}d)</div>
+              <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>Cost/User ({days}d)</div>
             </div>
           </div>
 
           {/* By Model */}
           <div style={{ marginBottom: 16 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: "#374151", marginBottom: 6 }}>By Model</div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "hsl(var(--foreground))", marginBottom: 6 }}>By Model</div>
             <table style={{ width: "100%", fontSize: 12, borderCollapse: "collapse" }}>
               <thead>
                 <tr style={{ borderBottom: "2px solid #e5e7eb" }}>
-                  <th style={{ textAlign: "left", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>Model</th>
-                  <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>Calls</th>
-                  <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>
+                  <th style={{ textAlign: "left", padding: "6px 8px", color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>Model</th>
+                  <th style={{ textAlign: "right", padding: "6px 8px", color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>Calls</th>
+                  <th style={{ textAlign: "right", padding: "6px 8px", color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>
                     Prompt Tokens
                   </th>
-                  <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>
+                  <th style={{ textAlign: "right", padding: "6px 8px", color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>
                     Completion
                   </th>
-                  <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>
+                  <th style={{ textAlign: "right", padding: "6px 8px", color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>
                     Total Tokens
                   </th>
-                  <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>
+                  <th style={{ textAlign: "right", padding: "6px 8px", color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>
                     Est. Cost
                   </th>
                 </tr>
@@ -709,16 +709,16 @@ export function ApiUsageDashboard() {
 
           {/* By Feature/Source */}
           <div style={{ marginBottom: 16 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: "#374151", marginBottom: 6 }}>By Feature</div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "hsl(var(--foreground))", marginBottom: 6 }}>By Feature</div>
             <table style={{ width: "100%", fontSize: 12, borderCollapse: "collapse" }}>
               <thead>
                 <tr style={{ borderBottom: "2px solid #e5e7eb" }}>
-                  <th style={{ textAlign: "left", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>Feature</th>
-                  <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>Calls</th>
-                  <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>
+                  <th style={{ textAlign: "left", padding: "6px 8px", color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>Feature</th>
+                  <th style={{ textAlign: "right", padding: "6px 8px", color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>Calls</th>
+                  <th style={{ textAlign: "right", padding: "6px 8px", color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>
                     Total Tokens
                   </th>
-                  <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>
+                  <th style={{ textAlign: "right", padding: "6px 8px", color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>
                     Est. Cost
                   </th>
                 </tr>
@@ -745,21 +745,21 @@ export function ApiUsageDashboard() {
 
           {/* AI Cost Projection */}
           <div>
-            <div style={{ fontSize: 13, fontWeight: 700, color: "#374151", marginBottom: 6 }}>AI Cost Projections</div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "hsl(var(--foreground))", marginBottom: 6 }}>AI Cost Projections</div>
             <table style={{ width: "100%", fontSize: 12, borderCollapse: "collapse" }}>
               <thead>
                 <tr style={{ borderBottom: "2px solid #e5e7eb" }}>
-                  <th style={{ textAlign: "left", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>Users</th>
-                  <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>
+                  <th style={{ textAlign: "left", padding: "6px 8px", color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>Users</th>
+                  <th style={{ textAlign: "right", padding: "6px 8px", color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>
                     Tokens/Month
                   </th>
-                  <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>
+                  <th style={{ textAlign: "right", padding: "6px 8px", color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>
                     Cost/Month
                   </th>
-                  <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>
+                  <th style={{ textAlign: "right", padding: "6px 8px", color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>
                     Cost/Year
                   </th>
-                  <th style={{ textAlign: "right", padding: "6px 8px", color: "#6b7280", fontWeight: 600 }}>
+                  <th style={{ textAlign: "right", padding: "6px 8px", color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>
                     Cost/User/Mo
                   </th>
                 </tr>
@@ -802,7 +802,7 @@ export function ApiUsageDashboard() {
                 })}
               </tbody>
             </table>
-            <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 6 }}>
+            <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", marginTop: 6 }}>
               Pricing: GPT-4o-mini ($0.15/$0.60 per 1M tokens), GPT-4-turbo ($10/$30), Claude Opus ($15/$75). Actual
               costs depend on model mix.
             </div>
@@ -811,13 +811,13 @@ export function ApiUsageDashboard() {
       )}
 
       {/* Daily Trend (simple text-based) */}
-      <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 16 }}>
-        <h3 style={{ fontSize: 15, fontWeight: 700, color: "#111827", marginBottom: 12 }}>Daily API Call Trend</h3>
+      <div style={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 10, padding: 16 }}>
+        <h3 style={{ fontSize: 15, fontWeight: 700, color: "hsl(var(--foreground))", marginBottom: 12 }}>Daily API Call Trend</h3>
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", fontSize: 11, borderCollapse: "collapse" }}>
             <thead>
               <tr style={{ borderBottom: "2px solid #e5e7eb" }}>
-                <th style={{ textAlign: "left", padding: "4px 8px", color: "#6b7280", fontWeight: 600 }}>Date</th>
+                <th style={{ textAlign: "left", padding: "4px 8px", color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>Date</th>
                 {providers.map((p) => (
                   <th
                     key={p}
@@ -831,7 +831,7 @@ export function ApiUsageDashboard() {
                     {(PROVIDER_LABELS[p] || p).split(" ")[0]}
                   </th>
                 ))}
-                <th style={{ textAlign: "right", padding: "4px 8px", color: "#111827", fontWeight: 700 }}>Total</th>
+                <th style={{ textAlign: "right", padding: "4px 8px", color: "hsl(var(--foreground))", fontWeight: 700 }}>Total</th>
               </tr>
             </thead>
             <tbody>

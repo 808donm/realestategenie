@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
@@ -119,10 +119,10 @@ export default function GlobalSearch() {
           style={{
             width: "100%",
             padding: "8px 12px 8px 36px",
-            border: "1px solid #e5e7eb",
+            border: "1px solid hsl(var(--border))",
             borderRadius: 8,
             fontSize: 13,
-            background: "#f9fafb",
+            background: "hsl(var(--muted))",
             outline: "none",
             boxSizing: "border-box",
           }}
@@ -148,8 +148,8 @@ export default function GlobalSearch() {
             top: "calc(100% + 6px)",
             left: 0,
             right: 0,
-            background: "#fff",
-            border: "1px solid #e5e7eb",
+            background: "hsl(var(--card))",
+            border: "1px solid hsl(var(--border))",
             borderRadius: 10,
             boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
             zIndex: 50,
@@ -157,9 +157,9 @@ export default function GlobalSearch() {
             overflowY: "auto",
           }}
         >
-          {isSearching && <div style={{ padding: "12px 16px", fontSize: 13, color: "#9ca3af" }}>Searching...</div>}
+          {isSearching && <div style={{ padding: "12px 16px", fontSize: 13, color: "hsl(var(--muted-foreground))" }}>Searching...</div>}
           {!isSearching && results.length === 0 && query.length >= 2 && (
-            <div style={{ padding: "12px 16px", fontSize: 13, color: "#9ca3af" }}>No results found</div>
+            <div style={{ padding: "12px 16px", fontSize: 13, color: "hsl(var(--muted-foreground))" }}>No results found</div>
           )}
           {results.map((r, i) => {
             const style = TYPE_STYLES[r.type];
@@ -198,7 +198,7 @@ export default function GlobalSearch() {
                   <div
                     style={{
                       fontWeight: 600,
-                      color: "#111827",
+                      color: "hsl(var(--foreground))",
                       overflow: "hidden",
                       textOverflow: "ellipsis",
                       whiteSpace: "nowrap",
@@ -210,7 +210,7 @@ export default function GlobalSearch() {
                     <div
                       style={{
                         fontSize: 11,
-                        color: "#9ca3af",
+                        color: "hsl(var(--muted-foreground))",
                         overflow: "hidden",
                         textOverflow: "ellipsis",
                         whiteSpace: "nowrap",
@@ -220,7 +220,7 @@ export default function GlobalSearch() {
                     </div>
                   )}
                 </div>
-                {r.meta && <span style={{ fontSize: 11, color: "#9ca3af", whiteSpace: "nowrap" }}>{r.meta}</span>}
+                {r.meta && <span style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", whiteSpace: "nowrap" }}>{r.meta}</span>}
               </button>
             );
           })}

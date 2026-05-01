@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import CommissionSplitClient from "./commission-split.client";
 
 export default function CommissionSplitPage() {
@@ -13,7 +13,7 @@ export default function CommissionSplitPage() {
             href="/app/analyzers/net-sheet"
             style={{
               padding: "6px 12px",
-              background: "#f3f4f6",
+              background: "hsl(var(--muted))",
               borderRadius: 6,
               fontSize: 13,
               textDecoration: "none",
@@ -26,7 +26,7 @@ export default function CommissionSplitPage() {
             href="/app/analyzers/cash-to-close"
             style={{
               padding: "6px 12px",
-              background: "#f3f4f6",
+              background: "hsl(var(--muted))",
               borderRadius: 6,
               fontSize: 13,
               textDecoration: "none",
@@ -39,7 +39,7 @@ export default function CommissionSplitPage() {
             href="/app/analyzers/mortgage"
             style={{
               padding: "6px 12px",
-              background: "#f3f4f6",
+              background: "hsl(var(--muted))",
               borderRadius: 6,
               fontSize: 13,
               textDecoration: "none",

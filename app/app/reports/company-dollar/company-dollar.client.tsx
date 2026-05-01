@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
@@ -248,7 +248,7 @@ export default function CompanyDollarClient() {
               padding: "7px 18px",
               borderRadius: 8,
               border: "1px solid #ddd",
-              background: "#fff",
+              background: "hsl(var(--card))",
               fontWeight: 600,
               fontSize: 13,
               cursor: "pointer",
@@ -260,9 +260,9 @@ export default function CompanyDollarClient() {
             onClick={exportToExcel}
             style={{
               padding: "8px 20px",
-              background: "#fff",
-              color: "#374151",
-              border: "1px solid #d1d5db",
+              background: "hsl(var(--card))",
+              color: "hsl(var(--foreground))",
+              border: "1px solid hsl(var(--border))",
               borderRadius: 8,
               fontWeight: 600,
               cursor: "pointer",

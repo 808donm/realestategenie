@@ -141,28 +141,28 @@ export default function ScorecardClient({
         <div
           style={{
             padding: 20,
-            background: "#fff",
+            background: "hsl(var(--card))",
             border: "1px solid #e5e7eb",
             borderRadius: 12,
             textAlign: "center",
           }}
         >
-          <div style={{ fontSize: 14, color: "#6b7280", marginBottom: 8 }}>Sign-Ins Captured</div>
-          <div style={{ fontSize: 36, fontWeight: 700, color: "#111827" }}>{metrics.totalSignIns}</div>
-          <div style={{ fontSize: 12, color: "#9ca3af", marginTop: 4 }}>Total attendees</div>
+          <div style={{ fontSize: 14, color: "hsl(var(--muted-foreground))", marginBottom: 8 }}>Sign-Ins Captured</div>
+          <div style={{ fontSize: 36, fontWeight: 700, color: "hsl(var(--foreground))" }}>{metrics.totalSignIns}</div>
+          <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 4 }}>Total attendees</div>
         </div>
 
         {/* Contacted Within 5 Min */}
         <div
           style={{
             padding: 20,
-            background: "#fff",
+            background: "hsl(var(--card))",
             border: "1px solid #e5e7eb",
             borderRadius: 12,
             textAlign: "center",
           }}
         >
-          <div style={{ fontSize: 14, color: "#6b7280", marginBottom: 8 }}>Contacted Within 5 Min</div>
+          <div style={{ fontSize: 14, color: "hsl(var(--muted-foreground))", marginBottom: 8 }}>Contacted Within 5 Min</div>
           <div
             style={{
               fontSize: 36,
@@ -172,7 +172,7 @@ export default function ScorecardClient({
           >
             {metrics.percentWithin5Min}%
           </div>
-          <div style={{ fontSize: 12, color: "#9ca3af", marginTop: 4 }}>
+          <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 4 }}>
             {metrics.contactedWithin5Min} of {metrics.totalSignIns}
           </div>
         </div>
@@ -181,13 +181,13 @@ export default function ScorecardClient({
         <div
           style={{
             padding: 20,
-            background: "#fff",
+            background: "hsl(var(--card))",
             border: "1px solid #e5e7eb",
             borderRadius: 12,
             textAlign: "center",
           }}
         >
-          <div style={{ fontSize: 14, color: "#6b7280", marginBottom: 8 }}>Represented by Realtor</div>
+          <div style={{ fontSize: 14, color: "hsl(var(--muted-foreground))", marginBottom: 8 }}>Represented by Realtor</div>
           <div
             style={{
               fontSize: 36,
@@ -197,7 +197,7 @@ export default function ScorecardClient({
           >
             {metrics.percentHasRealtor}%
           </div>
-          <div style={{ fontSize: 12, color: "#9ca3af", marginTop: 4 }}>
+          <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 4 }}>
             {metrics.hasRealtor} of {metrics.totalSignIns}
           </div>
         </div>
@@ -206,13 +206,13 @@ export default function ScorecardClient({
         <div
           style={{
             padding: 20,
-            background: "#fff",
+            background: "hsl(var(--card))",
             border: "1px solid #e5e7eb",
             borderRadius: 12,
             textAlign: "center",
           }}
         >
-          <div style={{ fontSize: 14, color: "#6b7280", marginBottom: 8 }}>Looking for an Agent</div>
+          <div style={{ fontSize: 14, color: "hsl(var(--muted-foreground))", marginBottom: 8 }}>Looking for an Agent</div>
           <div
             style={{
               fontSize: 36,
@@ -222,7 +222,7 @@ export default function ScorecardClient({
           >
             {metrics.percentLookingForAgent}%
           </div>
-          <div style={{ fontSize: 12, color: "#9ca3af", marginTop: 4 }}>
+          <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 4 }}>
             {metrics.lookingForAgent} of {metrics.totalSignIns}
           </div>
         </div>
@@ -256,7 +256,7 @@ export default function ScorecardClient({
       {/* Lead Contact Tracking Table */}
       <div style={{ marginBottom: 16 }}>
         <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 12 }}>Contact Tracking</h2>
-        <p style={{ fontSize: 14, color: "#6b7280", marginBottom: 16 }}>
+        <p style={{ fontSize: 14, color: "hsl(var(--muted-foreground))", marginBottom: 16 }}>
           Mark leads as contacted to track your 5-minute response rate. Speed to lead matters!
         </p>
       </div>
@@ -266,9 +266,9 @@ export default function ScorecardClient({
           style={{
             padding: 40,
             textAlign: "center",
-            background: "#f9fafb",
+            background: "hsl(var(--muted))",
             borderRadius: 12,
-            color: "#6b7280",
+            color: "hsl(var(--muted-foreground))",
           }}
         >
           No sign-ins yet. Share your QR code to start capturing leads!
@@ -277,7 +277,7 @@ export default function ScorecardClient({
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
-              <tr style={{ background: "#f9fafb" }}>
+              <tr style={{ background: "hsl(var(--muted))" }}>
                 <th style={{ padding: 12, textAlign: "left", borderBottom: "1px solid #e5e7eb" }}>Name</th>
                 <th style={{ padding: 12, textAlign: "left", borderBottom: "1px solid #e5e7eb" }}>Contact Info</th>
                 <th style={{ padding: 12, textAlign: "left", borderBottom: "1px solid #e5e7eb" }}>Sign-In Time</th>
@@ -354,7 +354,7 @@ export default function ScorecardClient({
                             {within5Min ? "Within 5 min" : `${responseMinutes} min`}
                           </span>
                           {lead.contact_method && (
-                            <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 4 }}>
+                            <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", marginTop: 4 }}>
                               via {lead.contact_method}
                             </div>
                           )}

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useMemo, useCallback } from "react";
 import * as XLSX from "xlsx";
@@ -387,7 +387,7 @@ export default function ComparePropertiesClient({ savedProperties, savedComparis
                   fontSize: 12,
                   border: "1px solid #ddd",
                   borderRadius: 6,
-                  background: "#fff",
+                  background: "hsl(var(--card))",
                   cursor: "pointer",
                 }}
               >
@@ -501,7 +501,7 @@ export default function ComparePropertiesClient({ savedProperties, savedComparis
                     key={comp.propertyId}
                     style={{
                       padding: 16,
-                      background: "#fff",
+                      background: "hsl(var(--card))",
                       borderRadius: 8,
                       border: index === 0 ? "2px solid #22c55e" : "1px solid #e6e6e6",
                     }}

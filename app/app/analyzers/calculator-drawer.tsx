@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect } from "react";
 
@@ -64,7 +64,7 @@ export default function CalculatorDrawer({ isOpen, onClose, href, title }: Calcu
           position: "relative",
           width: "min(90vw, 900px)",
           height: "100%",
-          background: "#fff",
+          background: "hsl(var(--card))",
           boxShadow: "-4px 0 24px rgba(0,0,0,0.15)",
           display: "flex",
           flexDirection: "column",
@@ -79,10 +79,10 @@ export default function CalculatorDrawer({ isOpen, onClose, href, title }: Calcu
             alignItems: "center",
             padding: "12px 20px",
             borderBottom: "1px solid #e5e7eb",
-            background: "#f9fafb",
+            background: "hsl(var(--muted))",
           }}
         >
-          <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "#111827" }}>{title}</h2>
+          <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "hsl(var(--foreground))" }}>{title}</h2>
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
             <a
               href={href}
@@ -90,10 +90,10 @@ export default function CalculatorDrawer({ isOpen, onClose, href, title }: Calcu
                 padding: "6px 12px",
                 fontSize: 12,
                 fontWeight: 600,
-                border: "1px solid #d1d5db",
+                border: "1px solid hsl(var(--border))",
                 borderRadius: 6,
-                background: "#fff",
-                color: "#374151",
+                background: "hsl(var(--card))",
+                color: "hsl(var(--foreground))",
                 textDecoration: "none",
               }}
             >
@@ -103,12 +103,12 @@ export default function CalculatorDrawer({ isOpen, onClose, href, title }: Calcu
               onClick={onClose}
               style={{
                 padding: "6px 10px",
-                border: "1px solid #d1d5db",
+                border: "1px solid hsl(var(--border))",
                 borderRadius: 6,
-                background: "#fff",
+                background: "hsl(var(--card))",
                 cursor: "pointer",
                 fontSize: 16,
-                color: "#6b7280",
+                color: "hsl(var(--muted-foreground))",
               }}
             >
               ✕

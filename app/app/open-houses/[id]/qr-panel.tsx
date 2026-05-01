@@ -128,7 +128,7 @@ export default function QRPanel({ eventId, status }: { eventId: string; status: 
   const isPublished = status === "published";
 
   return (
-    <div style={{ marginTop: 18, padding: 16, background: "#fff", border: "1px solid #e6e6e6", borderRadius: 16 }}>
+    <div style={{ marginTop: 18, padding: 16, background: "hsl(var(--card))", border: "1px solid #e6e6e6", borderRadius: 16 }}>
       <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center" }}>
         <div>
           <h2 style={{ margin: 0, fontSize: 18, fontWeight: 900 }}>QR Check-in</h2>
@@ -174,7 +174,7 @@ const btn: React.CSSProperties = {
   padding: "10px 12px",
   borderRadius: 12,
   border: "1px solid #ddd",
-  background: "#fff",
+  background: "hsl(var(--card))",
   fontWeight: 800,
   cursor: "pointer",
 };
