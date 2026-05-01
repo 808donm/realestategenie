@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, lazy, Suspense } from "react";
+
+const PropertyDetailModal = lazy(() => import("../../property-data/property-detail-modal.client"));
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -62,6 +64,7 @@ export default function AssumableVaPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
+  const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
 
   const onSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -334,7 +337,68 @@ export default function AssumableVaPage() {
         </div>
       )}
 
-      {results && <ResultsView results={results} marketRate={marketRateNum} />}
+      {results && <ResultsView results={results} marketRate={marketRateNum} onSelect={setSelectedListing} />}
+
+      {selectedListing && (
+        <Suspense fallback={null}>
+          <PropertyDetailModal
+            property={{
+              identifier: {
+                attomId: selectedListing.ListingKey ? Number(selectedListing.ListingKey) || undefined : undefined,
+              },
+              address: {
+                oneLine:
+                  selectedListing.UnparsedAddress ||
+                  [
+                    selectedListing.StreetNumber,
+                    selectedListing.StreetName,
+                    selectedListing.StreetSuffix,
+                    selectedListing.UnitNumber,
+                    selectedListing.City,
+                    selectedListing.StateOrProvince,
+                    selectedListing.PostalCode,
+                  ]
+                    .filter(Boolean)
+                    .join(" ")
+                    .trim(),
+                line1:
+                  selectedListing.UnparsedAddress ||
+                  [
+                    selectedListing.StreetNumber,
+                    selectedListing.StreetName,
+                    selectedListing.StreetSuffix,
+                    selectedListing.UnitNumber,
+                  ]
+                    .filter(Boolean)
+                    .join(" ")
+                    .trim(),
+                locality: selectedListing.City,
+                countrySubd: selectedListing.StateOrProvince,
+                postal1: selectedListing.PostalCode,
+              },
+              summary: {
+                propType: selectedListing.PropertySubType,
+                propSubType: selectedListing.PropertySubType,
+                yearBuilt: selectedListing.YearBuilt,
+              },
+              building: {
+                rooms: { beds: selectedListing.BedroomsTotal, bathsFull: selectedListing.BathroomsTotalInteger },
+                size: { livingSize: selectedListing.LivingArea },
+                summary: { yearBuilt: selectedListing.YearBuilt },
+              },
+            }}
+            onClose={() => setSelectedListing(null)}
+            mlsListPrice={selectedListing.ListPrice}
+            mlsAddress={selectedListing.UnparsedAddress}
+            mlsBeds={selectedListing.BedroomsTotal}
+            mlsBaths={selectedListing.BathroomsTotalInteger}
+            mlsSqft={selectedListing.LivingArea}
+            mlsYearBuilt={selectedListing.YearBuilt}
+            mlsPropertyType={selectedListing.PropertySubType}
+            mlsPropertySubType={selectedListing.PropertySubType}
+          />
+        </Suspense>
+      )}
 
       {!results && hasSearched && !loading && !error && (
         <div
@@ -358,7 +422,15 @@ export default function AssumableVaPage() {
   );
 }
 
-function ResultsView({ results, marketRate }: { results: SearchResponse; marketRate: number }) {
+function ResultsView({
+  results,
+  marketRate,
+  onSelect,
+}: {
+  results: SearchResponse;
+  marketRate: number;
+  onSelect: (l: Listing) => void;
+}) {
   const all: Listing[] = [
     ...results.tier1Explicit,
     ...results.tier2Remarks,
@@ -430,6 +502,7 @@ function ResultsView({ results, marketRate }: { results: SearchResponse; marketR
           listings={results.tier1Explicit}
           marketRate={marketRate}
           accent="#15803d"
+          onSelect={onSelect}
         />
       )}
       {results.tier2Remarks.length > 0 && (
@@ -439,6 +512,7 @@ function ResultsView({ results, marketRate }: { results: SearchResponse; marketR
           listings={results.tier2Remarks}
           marketRate={marketRate}
           accent="#C6932E"
+          onSelect={onSelect}
         />
       )}
       {results.tier3Unspecified.length > 0 && (
@@ -448,6 +522,7 @@ function ResultsView({ results, marketRate }: { results: SearchResponse; marketR
           listings={results.tier3Unspecified}
           marketRate={marketRate}
           accent="#6b7280"
+          onSelect={onSelect}
         />
       )}
     </div>
@@ -460,12 +535,14 @@ function TierSection({
   listings,
   marketRate,
   accent,
+  onSelect,
 }: {
   title: string;
   subtitle: string;
   listings: Listing[];
   marketRate: number;
   accent: string;
+  onSelect: (l: Listing) => void;
 }) {
   return (
     <section style={{ marginBottom: 28 }}>
@@ -487,7 +564,7 @@ function TierSection({
         }}
       >
         {listings.map((l) => (
-          <ListingCard key={l.ListingKey} listing={l} marketRate={marketRate} accent={accent} />
+          <ListingCard key={l.ListingKey} listing={l} marketRate={marketRate} accent={accent} onSelect={onSelect} />
         ))}
       </div>
     </section>
@@ -498,10 +575,12 @@ function ListingCard({
   listing,
   marketRate,
   accent,
+  onSelect,
 }: {
   listing: Listing;
   marketRate: number;
   accent: string;
+  onSelect: (l: Listing) => void;
 }) {
   const address = listing.UnparsedAddress
     || [listing.StreetNumber, listing.StreetName, listing.StreetSuffix, listing.UnitNumber].filter(Boolean).join(" ").trim()
@@ -519,6 +598,7 @@ function ListingCard({
 
   return (
     <div
+      onClick={() => onSelect(listing)}
       style={{
         background: "hsl(var(--card))",
         border: "1px solid hsl(var(--border))",
@@ -528,6 +608,14 @@ function ListingCard({
         display: "flex",
         flexDirection: "column",
         gap: 10,
+        cursor: "pointer",
+        transition: "transform 0.1s, box-shadow 0.1s",
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.08)";
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.boxShadow = "none";
       }}
     >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
@@ -625,6 +713,7 @@ function ListingCard({
           href={listing.ListingURL}
           target="_blank"
           rel="noreferrer"
+          onClick={(e) => e.stopPropagation()}
           style={{
             fontSize: 12,
             color: "#1e40af",
