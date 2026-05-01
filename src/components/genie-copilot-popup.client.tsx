@@ -403,7 +403,7 @@ export function GenieCopilotPopup({ isOpen, onClose, actionContext, onClearConte
         boxShadow: "0 25px 50px rgba(0,0,0,0.25)",
         display: "flex",
         flexDirection: "column",
-        background: "#fff",
+        background: "hsl(var(--card))",
         animation: "slideUp 0.25s ease-out",
       }}
     >
@@ -474,9 +474,9 @@ export function GenieCopilotPopup({ isOpen, onClose, actionContext, onClearConte
       </div>
 
       {/* Messages */}
-      <div style={{ flex: 1, overflowY: "auto", padding: "12px 14px", background: "#f9fafb" }}>
+      <div style={{ flex: 1, overflowY: "auto", padding: "12px 14px", background: "hsl(var(--muted))" }}>
         {messages.length === 0 && !loading && (
-          <div style={{ textAlign: "center", padding: 30, color: "#9ca3af" }}>
+          <div style={{ textAlign: "center", padding: 30, color: "hsl(var(--muted-foreground))" }}>
             <div style={{ fontSize: 32, marginBottom: 8 }}>&#10024;</div>
             <div style={{ fontSize: 14, fontWeight: 600 }}>Aloha!</div>
             <div style={{ fontSize: 12, marginTop: 4 }}>
@@ -500,8 +500,8 @@ export function GenieCopilotPopup({ isOpen, onClose, actionContext, onClearConte
                 maxWidth: "85%",
                 padding: "8px 12px",
                 borderRadius: msg.role === "user" ? "12px 12px 2px 12px" : "12px 12px 12px 2px",
-                background: msg.role === "user" ? "#4f46e5" : "#fff",
-                color: msg.role === "user" ? "#fff" : "#111827",
+                background: msg.role === "user" ? "#4f46e5" : "hsl(var(--card))",
+                color: msg.role === "user" ? "#fff" : "hsl(var(--foreground))",
                 fontSize: 13,
                 lineHeight: 1.5,
                 border: msg.role === "assistant" ? "1px solid #e5e7eb" : "none",
@@ -524,7 +524,7 @@ export function GenieCopilotPopup({ isOpen, onClose, actionContext, onClearConte
                     borderRadius: 4,
                     border: "none",
                     background: "transparent",
-                    color: "#9ca3af",
+                    color: "hsl(var(--muted-foreground))",
                     fontSize: 11,
                     cursor: "pointer",
                   }}
@@ -610,7 +610,7 @@ export function GenieCopilotPopup({ isOpen, onClose, actionContext, onClearConte
                                 : `Found ${total} properties`}
                             </strong>
                             {filters && (filters.minYearsOwned > 0 || filters.minBeds > 0) && (
-                              <div style={{ fontSize: 10, color: "#6b7280", marginTop: 2 }}>
+                              <div style={{ fontSize: 10, color: "hsl(var(--muted-foreground))", marginTop: 2 }}>
                                 Filters: {filters.minYearsOwned > 0 ? `${filters.minYearsOwned}+ years owned` : ""}
                                 {filters.minBeds > 0 ? ` | ${filters.minBeds}+ beds` : ""}
                                 {filters.minBaths > 0 ? ` / ${filters.minBaths}+ baths` : ""}
@@ -679,14 +679,14 @@ export function GenieCopilotPopup({ isOpen, onClose, actionContext, onClearConte
                                   >
                                     <div style={{ flex: 1 }}>
                                       <div style={{ fontWeight: 700, fontSize: 12, color: tc.text }}>{addr}</div>
-                                      <div style={{ color: "#6b7280", marginTop: 2 }}>
+                                      <div style={{ color: "hsl(var(--muted-foreground))", marginTop: 2 }}>
                                         {beds != null && `${beds}bd `}
                                         {baths != null && `${baths}ba `}
                                         {avm ? `| AVM: ${fmt(avm)} ` : ""}
                                         {p.DaysOnMarket != null && `| ${p.DaysOnMarket}d DOM`}
                                       </div>
                                       {ownerName && (
-                                        <div style={{ marginTop: 2, color: "#4b5563" }}>
+                                        <div style={{ marginTop: 2, color: "hsl(var(--foreground))" }}>
                                           Owner: {ownerName}
                                           {absentee && (
                                             <span
@@ -706,7 +706,7 @@ export function GenieCopilotPopup({ isOpen, onClose, actionContext, onClearConte
                                         </div>
                                       )}
                                       {mailing && (
-                                        <div style={{ fontSize: 10, color: "#9ca3af", marginTop: 1 }}>
+                                        <div style={{ fontSize: 10, color: "hsl(var(--muted-foreground))", marginTop: 1 }}>
                                           Mailing: {mailing}
                                         </div>
                                       )}
@@ -748,7 +748,7 @@ export function GenieCopilotPopup({ isOpen, onClose, actionContext, onClearConte
                           </div>
 
                           {total > props.length && (
-                            <div style={{ fontSize: 10, color: "#9ca3af", textAlign: "center", marginTop: 4 }}>
+                            <div style={{ fontSize: 10, color: "hsl(var(--muted-foreground))", textAlign: "center", marginTop: 4 }}>
                               Showing top {Math.min(props.length, 15)} of {total} total matches
                             </div>
                           )}
@@ -760,7 +760,7 @@ export function GenieCopilotPopup({ isOpen, onClose, actionContext, onClearConte
                   {msg.actionResult.data?.results && (
                     <div style={{ marginTop: 6, display: "flex", flexDirection: "column", gap: 4 }}>
                       {msg.actionResult.data.summary && (
-                        <div style={{ fontSize: 11, color: "#6b7280", marginBottom: 2 }}>
+                        <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", marginBottom: 2 }}>
                           {msg.actionResult.data.summary.red || 0} red | {msg.actionResult.data.summary.orange || 0}{" "}
                           orange | {msg.actionResult.data.summary.charcoal || 0} charcoal
                         </div>
@@ -776,14 +776,14 @@ export function GenieCopilotPopup({ isOpen, onClose, actionContext, onClearConte
                             key={j}
                             style={{
                               padding: "6px 8px",
-                              background: "#f3f4f6",
+                              background: "hsl(var(--muted))",
                               borderRadius: 6,
                               fontSize: 11,
                               borderLeft: `3px solid ${tierColors[r.tier] || "#9ca3af"}`,
                             }}
                           >
                             <div style={{ fontWeight: 600 }}>{r.address}</div>
-                            <div style={{ color: "#6b7280" }}>
+                            <div style={{ color: "hsl(var(--muted-foreground))" }}>
                               {r.daysOnMarket}d DOM | {r.domRatio}x avg | {fmt(r.listPrice)}
                             </div>
                           </div>
@@ -861,7 +861,7 @@ export function GenieCopilotPopup({ isOpen, onClose, actionContext, onClearConte
                           Subject: {msg.actionResult.data.draft.subject}
                         </div>
                       )}
-                      <div style={{ whiteSpace: "pre-wrap", color: "#374151" }}>{msg.actionResult.data.draft.body}</div>
+                      <div style={{ whiteSpace: "pre-wrap", color: "hsl(var(--foreground))" }}>{msg.actionResult.data.draft.body}</div>
                     </div>
                   )}
                 </div>
@@ -893,8 +893,8 @@ export function GenieCopilotPopup({ isOpen, onClose, actionContext, onClearConte
               style={{
                 padding: "10px 14px",
                 borderRadius: "12px 12px 12px 2px",
-                background: "#fff",
-                border: "1px solid #e5e7eb",
+                background: "hsl(var(--card))",
+                border: "1px solid hsl(var(--border))",
                 display: "flex",
                 gap: 4,
               }}
@@ -923,10 +923,10 @@ export function GenieCopilotPopup({ isOpen, onClose, actionContext, onClearConte
         onSubmit={handleSubmit}
         style={{
           padding: "10px 14px",
-          borderTop: "1px solid #e5e7eb",
+          borderTop: "1px solid hsl(var(--border))",
           display: "flex",
           gap: 8,
-          background: "#fff",
+          background: "hsl(var(--card))",
         }}
       >
         <input
@@ -939,10 +939,12 @@ export function GenieCopilotPopup({ isOpen, onClose, actionContext, onClearConte
           style={{
             flex: 1,
             padding: "8px 12px",
-            border: "1px solid #d1d5db",
+            border: "1px solid hsl(var(--border))",
             borderRadius: 8,
             fontSize: 13,
             outline: "none",
+            background: "hsl(var(--card))",
+            color: "hsl(var(--foreground))",
           }}
         />
         <button
@@ -953,9 +955,9 @@ export function GenieCopilotPopup({ isOpen, onClose, actionContext, onClearConte
           style={{
             padding: "8px 10px",
             borderRadius: 8,
-            border: "none",
-            background: isListening ? "#dc2626" : "#f3f4f6",
-            color: isListening ? "#fff" : "#6b7280",
+            border: "1px solid hsl(var(--border))",
+            background: isListening ? "#dc2626" : "hsl(var(--muted))",
+            color: isListening ? "#fff" : "hsl(var(--muted-foreground))",
             fontSize: 16,
             cursor: "pointer",
             transition: "all 0.2s",
