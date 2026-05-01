@@ -24,10 +24,12 @@ interface Draft {
   body: string;
 }
 
+// Use rgba with low alpha so the priority tint reads on both light and
+// dark backgrounds without being a bright pastel block in dark mode.
 const PRIORITY_COLORS = {
-  1: { dot: "#ef4444", bg: "#fef2f2" },
-  2: { dot: "#f59e0b", bg: "#fffbeb" },
-  3: { dot: "#3b82f6", bg: "#eff6ff" },
+  1: { dot: "#ef4444", bg: "rgba(239, 68, 68, 0.08)" },
+  2: { dot: "#f59e0b", bg: "rgba(245, 158, 11, 0.08)" },
+  3: { dot: "#3b82f6", bg: "rgba(59, 130, 246, 0.08)" },
 };
 
 export function GenieAssistant({ onOpenCopilot }: { onOpenCopilot?: (actionType: string) => void } = {}) {
@@ -409,9 +411,9 @@ export function GenieAssistant({ onOpenCopilot }: { onOpenCopilot?: (actionType:
   return (
     <div
       style={{
-        background: "#fff",
+        background: "hsl(var(--card))",
         borderRadius: 12,
-        border: "1px solid #e0e7ff",
+        border: "1px solid hsl(var(--border))",
         boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
         overflow: "hidden",
       }}
@@ -438,7 +440,7 @@ export function GenieAssistant({ onOpenCopilot }: { onOpenCopilot?: (actionType:
       {/* Content */}
       <div style={{ padding: "12px 16px" }}>
         {loading && (
-          <div style={{ textAlign: "center", padding: 20, color: "#9ca3af" }}>Analyzing your leads and pipeline...</div>
+          <div style={{ textAlign: "center", padding: 20, color: "hsl(var(--muted-foreground))" }}>Analyzing your leads and pipeline...</div>
         )}
 
         {!loading && actions.length === 0 && (
@@ -473,8 +475,8 @@ export function GenieAssistant({ onOpenCopilot }: { onOpenCopilot?: (actionType:
                     }}
                   />
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: "#111827" }}>{action.title}</div>
-                    <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>{action.description}</div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: "hsl(var(--foreground))" }}>{action.title}</div>
+                    <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 2 }}>{action.description}</div>
 
                     {/* Action buttons */}
                     <div style={{ display: "flex", gap: 6, marginTop: 8, flexWrap: "wrap" }}>
@@ -487,7 +489,7 @@ export function GenieAssistant({ onOpenCopilot }: { onOpenCopilot?: (actionType:
                             fontWeight: 600,
                             borderRadius: 4,
                             border: "1px solid #6366f1",
-                            background: "#fff",
+                            background: "hsl(var(--card))",
                             color: "#4f46e5",
                             cursor: "pointer",
                           }}
@@ -504,7 +506,7 @@ export function GenieAssistant({ onOpenCopilot }: { onOpenCopilot?: (actionType:
                             fontWeight: 600,
                             borderRadius: 4,
                             border: "1px solid #059669",
-                            background: "#fff",
+                            background: "hsl(var(--card))",
                             color: "#059669",
                             cursor: "pointer",
                           }}
@@ -521,8 +523,8 @@ export function GenieAssistant({ onOpenCopilot }: { onOpenCopilot?: (actionType:
                             fontWeight: 600,
                             borderRadius: 4,
                             border: "1px solid #6b7280",
-                            background: "#fff",
-                            color: "#374151",
+                            background: "hsl(var(--card))",
+                            color: "hsl(var(--foreground))",
                             cursor: "pointer",
                             textDecoration: "none",
                           }}
@@ -538,7 +540,7 @@ export function GenieAssistant({ onOpenCopilot }: { onOpenCopilot?: (actionType:
           })}
 
         {!loading && actions.length > 0 && (
-          <div style={{ fontSize: 10, color: "#9ca3af", textAlign: "center", marginTop: 4 }}>
+          <div style={{ fontSize: 10, color: "hsl(var(--muted-foreground))", textAlign: "center", marginTop: 4 }}>
             AI-generated recommendations. Review before acting.
           </div>
         )}
@@ -596,7 +598,7 @@ export function GenieAssistant({ onOpenCopilot }: { onOpenCopilot?: (actionType:
                     style={{
                       fontSize: 10,
                       fontWeight: 700,
-                      color: "#9ca3af",
+                      color: "hsl(var(--muted-foreground))",
                       textTransform: "uppercase",
                       letterSpacing: 0.5,
                       marginBottom: 4,
@@ -616,7 +618,7 @@ export function GenieAssistant({ onOpenCopilot }: { onOpenCopilot?: (actionType:
                           padding: "8px 10px",
                           borderRadius: 6,
                           border: `1px solid ${qa.color}20`,
-                          background: "#fff",
+                          background: "hsl(var(--card))",
                           cursor: "pointer",
                           textAlign: "left",
                           opacity: quickActionLoading === qa.type ? 0.6 : 1,
@@ -624,7 +626,7 @@ export function GenieAssistant({ onOpenCopilot }: { onOpenCopilot?: (actionType:
                       >
                         <div style={{ fontSize: 14, marginBottom: 2 }}>{qa.icon}</div>
                         <div style={{ fontSize: 11, fontWeight: 600, color: qa.color }}>{qa.label}</div>
-                        <div style={{ fontSize: 9, color: "#9ca3af", lineHeight: 1.3, marginTop: 1 }}>
+                        <div style={{ fontSize: 9, color: "hsl(var(--muted-foreground))", lineHeight: 1.3, marginTop: 1 }}>
                           {qa.description}
                         </div>
                       </button>
@@ -639,10 +641,10 @@ export function GenieAssistant({ onOpenCopilot }: { onOpenCopilot?: (actionType:
         {/* Inline Search Panel */}
         {activeSearch && (
           <div
-            style={{ marginTop: 10, padding: 12, background: "#f9fafb", borderRadius: 8, border: "1px solid #e5e7eb" }}
+            style={{ marginTop: 10, padding: 12, background: "hsl(var(--muted))", borderRadius: 8, border: "1px solid hsl(var(--border))" }}
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: "#111827" }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "hsl(var(--foreground))" }}>
                 {activeSearch === "create_dom_search" && "DOM Prospect Search"}
                 {activeSearch === "search_seller_map" && "Seller Map Search"}
                 {activeSearch === "search_mls" && "MLS Listing Search"}
@@ -658,7 +660,7 @@ export function GenieAssistant({ onOpenCopilot }: { onOpenCopilot?: (actionType:
                   setActiveSearch(null);
                   setSearchResults(null);
                 }}
-                style={{ background: "none", border: "none", fontSize: 16, color: "#9ca3af", cursor: "pointer" }}
+                style={{ background: "none", border: "none", fontSize: 16, color: "hsl(var(--muted-foreground))", cursor: "pointer" }}
               >
                 &times;
               </button>
@@ -674,7 +676,7 @@ export function GenieAssistant({ onOpenCopilot }: { onOpenCopilot?: (actionType:
                     ? "Enter address (123 Main St, Kailua, HI)"
                     : "Enter zip codes (96815, 96816)"
                 }
-                style={{ flex: 1, padding: "6px 10px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 12 }}
+                style={{ flex: 1, padding: "6px 10px", border: "1px solid hsl(var(--border))", borderRadius: 6, fontSize: 12 }}
               />
               <button
                 onClick={() => runInlineSearch(activeSearch, searchInput)}
@@ -701,7 +703,7 @@ export function GenieAssistant({ onOpenCopilot }: { onOpenCopilot?: (actionType:
             )}
 
             {searchMeta && !searchMeta.error && (
-              <div style={{ fontSize: 11, color: "#6b7280", marginBottom: 6 }}>
+              <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", marginBottom: 6 }}>
                 {searchMeta.total ?? searchMeta.totalCount ?? 0} results found
                 {searchMeta.summary &&
                   ` (${searchMeta.summary.red || 0} red, ${searchMeta.summary.orange || 0} orange, ${searchMeta.summary.charcoal || 0} charcoal)`}
@@ -726,16 +728,16 @@ export function GenieAssistant({ onOpenCopilot }: { onOpenCopilot?: (actionType:
                         style={{
                           padding: "8px 10px",
                           borderRadius: 6,
-                          background: "#fff",
+                          background: "hsl(var(--card))",
                           border: `1px solid ${tierColors[r.tier] || "#e5e7eb"}`,
                           fontSize: 12,
                         }}
                       >
                         <div style={{ display: "flex", justifyContent: "space-between" }}>
-                          <div style={{ fontWeight: 600, color: "#111827" }}>{r.address}</div>
+                          <div style={{ fontWeight: 600, color: "hsl(var(--foreground))" }}>{r.address}</div>
                           <div style={{ fontWeight: 800, color: tierColors[r.tier] }}>{r.daysOnMarket}d</div>
                         </div>
-                        <div style={{ color: "#6b7280", fontSize: 11 }}>
+                        <div style={{ color: "hsl(var(--muted-foreground))", fontSize: 11 }}>
                           {r.propertyType} | {r.listPrice ? `$${Number(r.listPrice).toLocaleString()}` : ""} |{" "}
                           {r.domRatio}x avg ({r.avgDomForType}d)
                           {r.listingAgentName && ` | ${r.listingAgentName}`}
@@ -760,16 +762,16 @@ export function GenieAssistant({ onOpenCopilot }: { onOpenCopilot?: (actionType:
                         style={{
                           padding: "8px 10px",
                           borderRadius: 6,
-                          background: "#fff",
+                          background: "hsl(var(--card))",
                           border: `1px solid ${scoreColor}40`,
                           fontSize: 12,
                         }}
                       >
                         <div style={{ display: "flex", justifyContent: "space-between" }}>
-                          <div style={{ fontWeight: 600, color: "#111827" }}>{r.address || "Unknown"}</div>
+                          <div style={{ fontWeight: 600, color: "hsl(var(--foreground))" }}>{r.address || "Unknown"}</div>
                           <div style={{ fontWeight: 800, color: scoreColor }}>{score}</div>
                         </div>
-                        <div style={{ color: "#6b7280", fontSize: 11 }}>
+                        <div style={{ color: "hsl(var(--muted-foreground))", fontSize: 11 }}>
                           {levelLabels[r.level] || r.level || ""} | {r.propertyType || ""} | {r.owner || ""}
                           {r.equity != null && ` | Equity: $${Number(r.equity).toLocaleString()}`}
                           {r.absentee && " | Absentee"}
@@ -785,20 +787,20 @@ export function GenieAssistant({ onOpenCopilot }: { onOpenCopilot?: (actionType:
                         style={{
                           padding: "8px 10px",
                           borderRadius: 6,
-                          background: "#fff",
-                          border: "1px solid #e5e7eb",
+                          background: "hsl(var(--card))",
+                          border: "1px solid hsl(var(--border))",
                           fontSize: 12,
                         }}
                       >
                         <div style={{ display: "flex", justifyContent: "space-between" }}>
-                          <div style={{ fontWeight: 600, color: "#111827" }}>
+                          <div style={{ fontWeight: 600, color: "hsl(var(--foreground))" }}>
                             {r.UnparsedAddress || [r.StreetNumber, r.StreetName].filter(Boolean).join(" ")}
                           </div>
                           <div style={{ fontWeight: 700, color: "#059669" }}>
                             ${Number(r.ListPrice || 0).toLocaleString()}
                           </div>
                         </div>
-                        <div style={{ color: "#6b7280", fontSize: 11 }}>
+                        <div style={{ color: "hsl(var(--muted-foreground))", fontSize: 11 }}>
                           {r.PropertyType} | {r.BedroomsTotal}bd {r.BathroomsTotalInteger}ba |{" "}
                           {r.LivingArea?.toLocaleString()} sqft | {r.DaysOnMarket}d DOM
                           {r.ListAgentFullName && ` | ${r.ListAgentFullName}`}
@@ -820,12 +822,12 @@ export function GenieAssistant({ onOpenCopilot }: { onOpenCopilot?: (actionType:
                         }}
                       >
                         <div style={{ fontWeight: 600, color: "#1e40af" }}>{r.address?.oneLine || "Unknown"}</div>
-                        <div style={{ color: "#6b7280", fontSize: 11 }}>
+                        <div style={{ color: "hsl(var(--muted-foreground))", fontSize: 11 }}>
                           {r.owner?.owner1?.fullName || "Unknown Owner"}
                           {r.owner?.corporateIndicator === "Y" && " (Corporate)"}
                           {r.owner?.mailingAddressOneLine && ` | Mailing: ${r.owner.mailingAddressOneLine}`}
                         </div>
-                        <div style={{ color: "#6b7280", fontSize: 11 }}>
+                        <div style={{ color: "hsl(var(--muted-foreground))", fontSize: 11 }}>
                           {r.summary?.propType || ""} | {r.building?.rooms?.beds}bd {r.building?.rooms?.bathsFull}ba
                           {r.avm?.amount?.value && ` | AVM: $${Number(r.avm.amount.value).toLocaleString()}`}
                         </div>
@@ -853,7 +855,7 @@ export function GenieAssistant({ onOpenCopilot }: { onOpenCopilot?: (actionType:
                           <div style={{ fontWeight: 600, color: "#065f46" }}>{r.address?.oneLine || "Unknown"}</div>
                           <div style={{ fontWeight: 800, color: "#059669" }}>{eqPct}% equity</div>
                         </div>
-                        <div style={{ color: "#6b7280", fontSize: 11 }}>
+                        <div style={{ color: "hsl(var(--muted-foreground))", fontSize: 11 }}>
                           {r.owner?.owner1?.fullName || ""} | AVM: ${avm > 0 ? Number(avm).toLocaleString() : "N/A"} |
                           Est. Equity: ${equity > 0 ? Number(equity).toLocaleString() : "N/A"}
                         </div>
@@ -874,7 +876,7 @@ export function GenieAssistant({ onOpenCopilot }: { onOpenCopilot?: (actionType:
                         }}
                       >
                         <div style={{ fontWeight: 600, color: "#991b1b" }}>{r.address?.oneLine || "Unknown"}</div>
-                        <div style={{ color: "#6b7280", fontSize: 11 }}>
+                        <div style={{ color: "hsl(var(--muted-foreground))", fontSize: 11 }}>
                           {r.foreclosure?.actionType || "Distressed"} | Filed: {r.foreclosure?.filingDate || "N/A"}
                           {r.owner?.owner1?.fullName && ` | ${r.owner.owner1.fullName}`}
                           {r.avm?.amount?.value && ` | AVM: $${Number(r.avm.amount.value).toLocaleString()}`}
@@ -901,7 +903,7 @@ export function GenieAssistant({ onOpenCopilot }: { onOpenCopilot?: (actionType:
                             {r.sale?.amount?.saleAmt ? `$${Number(r.sale.amount.saleAmt).toLocaleString()}` : "N/A"}
                           </div>
                         </div>
-                        <div style={{ color: "#6b7280", fontSize: 11 }}>
+                        <div style={{ color: "hsl(var(--muted-foreground))", fontSize: 11 }}>
                           Sold: {r.sale?.amount?.saleTransDate || r.sale?.amount?.saleRecDate || "N/A"}|{" "}
                           {r.summary?.propType || ""} | {r.building?.rooms?.beds}bd {r.building?.rooms?.bathsFull}ba
                         </div>
@@ -922,12 +924,12 @@ export function GenieAssistant({ onOpenCopilot }: { onOpenCopilot?: (actionType:
                         }}
                       >
                         <div style={{ fontWeight: 600, color: "#92400e" }}>{r.address?.oneLine || "Unknown"}</div>
-                        <div style={{ color: "#6b7280", fontSize: 11 }}>
+                        <div style={{ color: "hsl(var(--muted-foreground))", fontSize: 11 }}>
                           {r.owner?.owner1?.fullName || "Unknown"}
                           {r.owner?.corporateIndicator === "Y" ? " (Corporate)" : " (Absentee)"}
                           {r.owner?.mailingAddressOneLine && ` | ${r.owner.mailingAddressOneLine}`}
                         </div>
-                        <div style={{ color: "#6b7280", fontSize: 11 }}>
+                        <div style={{ color: "hsl(var(--muted-foreground))", fontSize: 11 }}>
                           {r.summary?.propType || ""} | {r.building?.rooms?.beds}bd {r.building?.rooms?.bathsFull}ba
                           {r.avm?.amount?.value && ` | AVM: $${Number(r.avm.amount.value).toLocaleString()}`}
                         </div>
@@ -941,13 +943,13 @@ export function GenieAssistant({ onOpenCopilot }: { onOpenCopilot?: (actionType:
                       style={{
                         padding: "8px 10px",
                         borderRadius: 6,
-                        background: "#fff",
-                        border: "1px solid #e5e7eb",
+                        background: "hsl(var(--card))",
+                        border: "1px solid hsl(var(--border))",
                         fontSize: 12,
                       }}
                     >
-                      <div style={{ fontWeight: 600, color: "#111827" }}>{r.address?.oneLine || "Unknown"}</div>
-                      <div style={{ color: "#6b7280", fontSize: 11 }}>
+                      <div style={{ fontWeight: 600, color: "hsl(var(--foreground))" }}>{r.address?.oneLine || "Unknown"}</div>
+                      <div style={{ color: "hsl(var(--muted-foreground))", fontSize: 11 }}>
                         {r.summary?.propType || r.summary?.propertyType || ""} | {r.building?.rooms?.beds}bd{" "}
                         {r.building?.rooms?.bathsFull}ba | {r.building?.size?.livingSize?.toLocaleString()} sqft
                         {r.avm?.amount?.value && ` | AVM: $${Number(r.avm.amount.value).toLocaleString()}`}
@@ -957,7 +959,7 @@ export function GenieAssistant({ onOpenCopilot }: { onOpenCopilot?: (actionType:
                   );
                 })}
                 {searchResults.length > 15 && (
-                  <div style={{ fontSize: 11, color: "#6b7280", textAlign: "center", padding: 4 }}>
+                  <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", textAlign: "center", padding: 4 }}>
                     Showing 15 of {searchResults.length}. Open the full tool for more.
                   </div>
                 )}
@@ -965,7 +967,7 @@ export function GenieAssistant({ onOpenCopilot }: { onOpenCopilot?: (actionType:
             )}
 
             {searchResults && searchResults.length === 0 && !searchLoading && (
-              <div style={{ textAlign: "center", padding: 12, color: "#9ca3af", fontSize: 12 }}>
+              <div style={{ textAlign: "center", padding: 12, color: "hsl(var(--muted-foreground))", fontSize: 12 }}>
                 No results found for this search.
               </div>
             )}
@@ -1013,7 +1015,7 @@ export function GenieAssistant({ onOpenCopilot }: { onOpenCopilot?: (actionType:
         >
           <div
             style={{
-              background: "#fff",
+              background: "hsl(var(--card))",
               borderRadius: 12,
               width: "100%",
               maxWidth: 520,
@@ -1033,10 +1035,10 @@ export function GenieAssistant({ onOpenCopilot }: { onOpenCopilot?: (actionType:
               }}
             >
               <div>
-                <div style={{ fontSize: 15, fontWeight: 700, color: "#111827" }}>
+                <div style={{ fontSize: 15, fontWeight: 700, color: "hsl(var(--foreground))" }}>
                   {draftChannel === "email" ? "Email Draft" : "SMS Draft"}
                 </div>
-                <div style={{ fontSize: 12, color: "#6b7280" }}>
+                <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>
                   To: {draftingAction.leadName || "Lead"}
                   {draftingAction.leadEmail && draftChannel === "email" && ` (${draftingAction.leadEmail})`}
                   {draftingAction.leadPhone && draftChannel === "sms" && ` (${draftingAction.leadPhone})`}
@@ -1048,7 +1050,7 @@ export function GenieAssistant({ onOpenCopilot }: { onOpenCopilot?: (actionType:
                   background: "none",
                   border: "none",
                   fontSize: 20,
-                  color: "#9ca3af",
+                  color: "hsl(var(--muted-foreground))",
                   cursor: "pointer",
                   padding: 4,
                 }}
@@ -1060,7 +1062,7 @@ export function GenieAssistant({ onOpenCopilot }: { onOpenCopilot?: (actionType:
             {/* Modal body */}
             <div style={{ padding: 18 }}>
               {draftLoading && (
-                <div style={{ textAlign: "center", padding: 30, color: "#6b7280" }}>Generating draft...</div>
+                <div style={{ textAlign: "center", padding: 30, color: "hsl(var(--muted-foreground))" }}>Generating draft...</div>
               )}
 
               {draft && (
@@ -1068,7 +1070,7 @@ export function GenieAssistant({ onOpenCopilot }: { onOpenCopilot?: (actionType:
                   {draftChannel === "email" && (
                     <div style={{ marginBottom: 12 }}>
                       <label
-                        style={{ fontSize: 12, fontWeight: 600, color: "#374151", display: "block", marginBottom: 4 }}
+                        style={{ fontSize: 12, fontWeight: 600, color: "hsl(var(--foreground))", display: "block", marginBottom: 4 }}
                       >
                         Subject
                       </label>
@@ -1078,7 +1080,7 @@ export function GenieAssistant({ onOpenCopilot }: { onOpenCopilot?: (actionType:
                         style={{
                           width: "100%",
                           padding: "8px 10px",
-                          border: "1px solid #d1d5db",
+                          border: "1px solid hsl(var(--border))",
                           borderRadius: 6,
                           fontSize: 13,
                         }}
@@ -1087,11 +1089,11 @@ export function GenieAssistant({ onOpenCopilot }: { onOpenCopilot?: (actionType:
                   )}
                   <div style={{ marginBottom: 12 }}>
                     <label
-                      style={{ fontSize: 12, fontWeight: 600, color: "#374151", display: "block", marginBottom: 4 }}
+                      style={{ fontSize: 12, fontWeight: 600, color: "hsl(var(--foreground))", display: "block", marginBottom: 4 }}
                     >
                       {draftChannel === "email" ? "Body" : "Message"}
                       {draftChannel === "sms" && (
-                        <span style={{ fontWeight: 400, color: "#9ca3af", marginLeft: 8 }}>
+                        <span style={{ fontWeight: 400, color: "hsl(var(--muted-foreground))", marginLeft: 8 }}>
                           {draft.body.length}/300
                         </span>
                       )}
@@ -1103,7 +1105,7 @@ export function GenieAssistant({ onOpenCopilot }: { onOpenCopilot?: (actionType:
                       style={{
                         width: "100%",
                         padding: "8px 10px",
-                        border: "1px solid #d1d5db",
+                        border: "1px solid hsl(var(--border))",
                         borderRadius: 6,
                         fontSize: 13,
                         resize: "vertical",
@@ -1136,9 +1138,9 @@ export function GenieAssistant({ onOpenCopilot }: { onOpenCopilot?: (actionType:
                         fontSize: 12,
                         fontWeight: 600,
                         borderRadius: 6,
-                        border: "1px solid #d1d5db",
-                        background: "#fff",
-                        color: "#374151",
+                        border: "1px solid hsl(var(--border))",
+                        background: "hsl(var(--card))",
+                        color: "hsl(var(--foreground))",
                         cursor: "pointer",
                       }}
                     >
@@ -1151,9 +1153,9 @@ export function GenieAssistant({ onOpenCopilot }: { onOpenCopilot?: (actionType:
                         fontSize: 12,
                         fontWeight: 600,
                         borderRadius: 6,
-                        border: "1px solid #d1d5db",
-                        background: "#fff",
-                        color: "#374151",
+                        border: "1px solid hsl(var(--border))",
+                        background: "hsl(var(--card))",
+                        color: "hsl(var(--foreground))",
                         cursor: "pointer",
                       }}
                     >
@@ -1179,7 +1181,7 @@ export function GenieAssistant({ onOpenCopilot }: { onOpenCopilot?: (actionType:
                     )}
                   </div>
 
-                  <div style={{ fontSize: 10, color: "#9ca3af", textAlign: "center", marginTop: 10 }}>
+                  <div style={{ fontSize: 10, color: "hsl(var(--muted-foreground))", textAlign: "center", marginTop: 10 }}>
                     AI-generated content. Review before sending.
                   </div>
                 </>
