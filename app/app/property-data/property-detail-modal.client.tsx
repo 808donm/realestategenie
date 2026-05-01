@@ -2828,8 +2828,22 @@ export default function PropertyDetailModal({
               {(p.assessment || avmData?.assessment) &&
                 (() => {
                   const assess = p.assessment || avmData?.assessment;
-                  const tmkKey = mlsParcelNumber || p.identifier?.apn;
-                  const assessQpubLink = tmkKey ? buildQPublicUrl(String(tmkKey), undefined, p.address?.postal1) : null;
+                  // Same priority as the Ownership tab: GIS authoritative
+                  // sources first, MLS / property-data APN as fallback.
+                  const gisTmk =
+                    hawaiiData?.parcel?.tmk_txt ||
+                    hawaiiData?.parcel?.tmk ||
+                    hawaiiData?.parcel?.cty_tmk ||
+                    null;
+                  const assessQpubLink =
+                    hawaiiData?.parcel?.qpub_link ||
+                    (gisTmk
+                      ? buildQPublicUrl(String(gisTmk), hawaiiData?.parcel?.county, p.address?.postal1)
+                      : mlsParcelNumber
+                        ? buildQPublicUrl(mlsParcelNumber, hawaiiData?.parcel?.county, p.address?.postal1)
+                        : p.identifier?.apn
+                          ? buildQPublicUrl(String(p.identifier.apn), hawaiiData?.parcel?.county, p.address?.postal1)
+                          : null);
                   return (
                     <div style={{ marginBottom: 20 }}>
                       <div
@@ -3769,18 +3783,28 @@ export default function PropertyDetailModal({
           // APN: prefer MLS ParcelNumber (unit-level) over property data (may be building)
           const attomApn = mlsParcelNumber || p.identifier?.apn || null;
 
-          // Build QPublic direct report link from TMK + county-specific AppID
-          // For condos, MLS ParcelNumber (unit-level) takes priority over GIS TMK (building-level)
+          // Build QPublic direct report link from TMK + county-specific AppID.
+          // Resolution priority (most-authoritative first):
+          //   1. State GIS pre-built qpub_link — exact match against authoritative
+          //      parcel registry, no transformation needed.
+          //   2. State GIS tmk_txt / tmk / cty_tmk — same source, in case the
+          //      pre-built link wasn't generated.
+          //   3. MLS ParcelNumber — only when GIS has no data. MLS records can
+          //      contain typos or stale TMKs (the GIS-vs-MLS mismatch on
+          //      condo unit suffixes is a known data-quality issue).
+          //   4. Property-data APN as last-resort fallback.
           const qpubLink = (() => {
+            if (hawaiiData?.parcel?.qpub_link) return hawaiiData.parcel.qpub_link;
+            if (tmkValue) {
+              return buildQPublicUrl(String(tmkValue), hawaiiData?.parcel?.county, p.address?.postal1);
+            }
             if (mlsParcelNumber) {
               return buildQPublicUrl(mlsParcelNumber, hawaiiData?.parcel?.county, p.address?.postal1);
             }
-            if (hawaiiData?.parcel?.qpub_link) return hawaiiData.parcel.qpub_link;
-
-            const keySource = tmkValue ? String(tmkValue) : attomApn;
-            if (!keySource) return null;
-
-            return buildQPublicUrl(keySource, hawaiiData?.parcel?.county, p.address?.postal1);
+            if (attomApn) {
+              return buildQPublicUrl(attomApn, hawaiiData?.parcel?.county, p.address?.postal1);
+            }
+            return null;
           })();
           // Display TMK: prefer the most specific source (with unit suffix)
           // attomApn from UniversalParcelId has full 6-part TMK (e.g., "1-4-2-002-016-0134")
