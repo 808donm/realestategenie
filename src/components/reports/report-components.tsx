@@ -8,18 +8,22 @@ import React from "react";
 
 // ── Colors ──
 
+// Brand colors (intentional, never themed) + theme-aware neutrals.
+// The neutrals resolve via the html.dark class on the live app and stay
+// at their light values (matching the original hex) inside the PDF
+// render pipeline where the dark class is never set.
 export const REPORT_COLORS = {
   brandBlue: "#1e40af",
   brandGold: "#b48228",
-  textDark: "#111827",
-  textMuted: "#6b7280",
-  sectionBg: "#f3f4f6",
+  textDark: "hsl(var(--foreground))",
+  textMuted: "hsl(var(--muted-foreground))",
+  sectionBg: "hsl(var(--muted))",
   greenAccent: "#15803d",
   redAccent: "#dc2626",
-  cardBg: "#f8fafc",
-  rowAlt: "#f9fafb",
-  lightGray: "#e5e7eb",
-  white: "#ffffff",
+  cardBg: "hsl(var(--card))",
+  rowAlt: "hsl(var(--muted))",
+  lightGray: "hsl(var(--border))",
+  white: "hsl(var(--card))",
 };
 
 // ── Formatting Helpers ──

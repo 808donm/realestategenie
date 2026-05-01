@@ -246,9 +246,16 @@ export default async function AnalyzersPage() {
 
 function FeatureItem({ title, description }: { title: string; description: string }) {
   return (
-    <div style={{ padding: 16, background: "#fafafa", borderRadius: 8 }}>
-      <h3 style={{ margin: "0 0 8px 0", fontSize: 14, fontWeight: 700 }}>{title}</h3>
-      <p style={{ margin: 0, fontSize: 13, opacity: 0.7 }}>{description}</p>
+    <div
+      style={{
+        padding: 16,
+        background: "hsl(var(--muted))",
+        borderRadius: 8,
+        border: "1px solid hsl(var(--border))",
+      }}
+    >
+      <h3 style={{ margin: "0 0 8px 0", fontSize: 14, fontWeight: 700, color: "hsl(var(--foreground))" }}>{title}</h3>
+      <p style={{ margin: 0, fontSize: 13, color: "hsl(var(--muted-foreground))" }}>{description}</p>
     </div>
   );
 }

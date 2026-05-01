@@ -479,7 +479,7 @@ export default function MarketAnalyticsDashboard() {
               const maxVal = Math.max(...data.zipTable.map((r) => Math.max((r as any).sfrMedian || 0, (r as any).condoMedian || 0, r.medianPrice || 0)), 1);
               return (
                 <div key={z.zipCode} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <div style={{ width: 55, fontSize: 12, color: REPORT_COLORS.textDark, textAlign: "right", flexShrink: 0, fontWeight: 600 }}>
+                  <div style={{ width: 55, fontSize: 12, color: "hsl(var(--foreground))", textAlign: "right", flexShrink: 0, fontWeight: 600 }}>
                     {z.zipCode}
                   </div>
                   <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 2 }}>

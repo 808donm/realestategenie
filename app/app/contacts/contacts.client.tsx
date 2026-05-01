@@ -275,6 +275,8 @@ export default function ContactsClient() {
               border: "1px solid hsl(var(--border))",
               borderRadius: 8,
               fontSize: 14,
+              background: "hsl(var(--card))",
+              color: "hsl(var(--foreground))",
             }}
           />
         </div>
@@ -664,7 +666,7 @@ export default function ContactsClient() {
               <div
                 style={{
                   padding: "8px 12px",
-                  background: "#f3f4f6",
+                  background: "hsl(var(--muted))",
                   borderRadius: 6,
                   fontWeight: 700,
                   fontSize: 14,

@@ -95,6 +95,8 @@ export default function HazardMapClient() {
     fontSize: 14,
     outline: "none",
     boxSizing: "border-box",
+    background: "hsl(var(--card))",
+    color: "hsl(var(--foreground))",
   };
 
   return (
@@ -104,17 +106,17 @@ export default function HazardMapClient() {
         style={{
           width: 280,
           minWidth: 280,
-          borderRight: "1px solid #e5e7eb",
+          borderRight: "1px solid hsl(var(--border))",
           overflowY: "auto",
           padding: 16,
-          backgroundColor: "#f9fafb",
+          backgroundColor: "hsl(var(--muted))",
         }}
       >
         <h2 style={{ margin: "0 0 16px", fontSize: 18, fontWeight: 700 }}>Hazard Map</h2>
 
         {/* Search */}
         <div style={{ marginBottom: 16 }}>
-          <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#374151" }}>
+          <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "hsl(var(--foreground))" }}>
             Address or ZIP
           </label>
           <div style={{ display: "flex", gap: 6 }}>
@@ -145,7 +147,7 @@ export default function HazardMapClient() {
         </div>
 
         {/* Layer Toggles */}
-        <div style={{ fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 8 }}>Hazard Layers</div>
+        <div style={{ fontSize: 12, fontWeight: 600, color: "hsl(var(--foreground))", marginBottom: 8 }}>Hazard Layers</div>
         {Object.entries(groupedLayers).map(([group, layers]) => {
           const groupInfo = HAZARD_GROUPS[group];
           return (
@@ -168,7 +170,7 @@ export default function HazardMapClient() {
                       borderRadius: 6,
                       cursor: "pointer",
                       backgroundColor: isActive ? `${layer.fillColor}15` : "transparent",
-                      border: `1px solid ${isActive ? layer.fillColor : "#e5e7eb"}`,
+                      border: `1px solid ${isActive ? layer.fillColor : "hsl(var(--border))"}`,
                       opacity: isActive ? 1 : 0.6,
                       transition: "all 0.15s",
                     }}
@@ -184,7 +186,7 @@ export default function HazardMapClient() {
                         flexShrink: 0,
                       }}
                     />
-                    <span style={{ fontSize: 12, fontWeight: 500, color: "#374151" }}>{layer.label}</span>
+                    <span style={{ fontSize: 12, fontWeight: 500, color: "hsl(var(--foreground))" }}>{layer.label}</span>
                   </div>
                 );
               })}
@@ -193,14 +195,14 @@ export default function HazardMapClient() {
         })}
 
         {/* Legend */}
-        <div style={{ marginTop: 16, padding: 12, backgroundColor: "#fff", borderRadius: 8, border: "1px solid hsl(var(--border))" }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: "#374151", marginBottom: 6 }}>Legend</div>
+        <div style={{ marginTop: 16, padding: 12, backgroundColor: "hsl(var(--card))", borderRadius: 8, border: "1px solid hsl(var(--border))" }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: "hsl(var(--foreground))", marginBottom: 6 }}>Legend</div>
           <div style={{ fontSize: 10, color: "hsl(var(--muted-foreground))", lineHeight: 1.6 }}>
             <div><span style={{ display: "inline-block", width: 10, height: 10, backgroundColor: "#2563eb", opacity: 0.4, borderRadius: 2, marginRight: 4, verticalAlign: "middle" }} /> FEMA Flood Zones (AE, VE, X)</div>
             <div><span style={{ display: "inline-block", width: 10, height: 10, backgroundColor: "#0891b2", opacity: 0.5, borderRadius: 2, marginRight: 4, verticalAlign: "middle" }} /> Tsunami Evacuation Zones</div>
             <div><span style={{ display: "inline-block", width: 10, height: 10, backgroundColor: "#14b8a6", opacity: 0.5, borderRadius: 2, marginRight: 4, verticalAlign: "middle" }} /> Sea Level Rise Exposure</div>
           </div>
-          <div style={{ fontSize: 9, color: "#9ca3af", marginTop: 8 }}>
+          <div style={{ fontSize: 9, color: "hsl(var(--muted-foreground))", marginTop: 8 }}>
             Data: FEMA, Hawaii State GIS. Boundaries are approximate.
           </div>
         </div>
