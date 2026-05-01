@@ -274,7 +274,7 @@ export default function ContactDetailClient({ contactId }: { contactId: string }
   };
 
   if (isLoading) {
-    return <div style={{ padding: 40, textAlign: "center", color: "#6b7280" }}>Loading contact details...</div>;
+    return <div style={{ padding: 40, textAlign: "center", color: "hsl(var(--muted-foreground))" }}>Loading contact details...</div>;
   }
 
   if (error) {
@@ -300,7 +300,7 @@ export default function ContactDetailClient({ contactId }: { contactId: string }
         >
           &larr; Back to Contacts
         </Link>
-        <div style={{ padding: 32, textAlign: "center", color: "#6b7280", background: "#f9fafb", borderRadius: 12 }}>
+        <div style={{ padding: 32, textAlign: "center", color: "hsl(var(--muted-foreground))", background: "hsl(var(--muted))", borderRadius: 12 }}>
           Contact not found.
         </div>
       </div>
@@ -378,7 +378,7 @@ export default function ContactDetailClient({ contactId }: { contactId: string }
       </Link>
 
       {/* Header */}
-      <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, padding: 24, marginBottom: 20 }}>
+      <div style={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12, padding: 24, marginBottom: 20 }}>
         <div
           style={{
             display: "flex",
@@ -391,10 +391,10 @@ export default function ContactDetailClient({ contactId }: { contactId: string }
           <div>
             <h1 style={{ fontSize: 24, fontWeight: 700, margin: 0 }}>{getDisplayName(contact)}</h1>
             {contact.source && (
-              <div style={{ fontSize: 13, color: "#6b7280", marginTop: 4 }}>Source: {contact.source}</div>
+              <div style={{ fontSize: 13, color: "hsl(var(--muted-foreground))", marginTop: 4 }}>Source: {contact.source}</div>
             )}
             {contact.dateAdded && (
-              <div style={{ fontSize: 13, color: "#6b7280", marginTop: 2 }}>Added: {formatDate(contact.dateAdded)}</div>
+              <div style={{ fontSize: 13, color: "hsl(var(--muted-foreground))", marginTop: 2 }}>Added: {formatDate(contact.dateAdded)}</div>
             )}
           </div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -526,7 +526,7 @@ export default function ContactDetailClient({ contactId }: { contactId: string }
 
       {/* Details Tab */}
       {activeTab === "details" && (
-        <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, padding: 24 }}>
+        <div style={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12, padding: 24 }}>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: 20 }}>
             <InfoField label="First Name" value={contact.firstName} />
             <InfoField label="Last Name" value={contact.lastName} />
@@ -545,7 +545,7 @@ export default function ContactDetailClient({ contactId }: { contactId: string }
 
       {/* Compose Tab — Email & SMS */}
       {activeTab === "compose" && (
-        <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, padding: 24 }}>
+        <div style={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12, padding: 24 }}>
           {/* Channel Toggle */}
           <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
             <button
@@ -592,7 +592,7 @@ export default function ContactDetailClient({ contactId }: { contactId: string }
                 padding: "6px 14px",
                 fontSize: 12,
                 fontWeight: 600,
-                border: "1px solid #e5e7eb",
+                border: "1px solid hsl(var(--border))",
                 borderRadius: 6,
                 background: showTemplates ? "#f0f9ff" : "#fff",
                 color: "#3b82f6",
@@ -612,11 +612,11 @@ export default function ContactDetailClient({ contactId }: { contactId: string }
                       style={{
                         padding: "5px 12px",
                         fontSize: 12,
-                        border: "1px solid #e5e7eb",
+                        border: "1px solid hsl(var(--border))",
                         borderRadius: 6,
-                        background: "#fff",
+                        background: "hsl(var(--card))",
                         cursor: "pointer",
-                        color: "#374151",
+                        color: "hsl(var(--foreground))",
                       }}
                       title={t.body}
                     >
@@ -624,7 +624,7 @@ export default function ContactDetailClient({ contactId }: { contactId: string }
                     </button>
                   ))}
                 {templates.filter((t) => t.channels.includes(composeType)).length === 0 && (
-                  <span style={{ fontSize: 12, color: "#9ca3af" }}>No templates for this channel</span>
+                  <span style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>No templates for this channel</span>
                 )}
               </div>
             )}
@@ -633,7 +633,7 @@ export default function ContactDetailClient({ contactId }: { contactId: string }
           {/* Subject (email only) */}
           {composeType === "email" && (
             <div style={{ marginBottom: 12 }}>
-              <label style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", display: "block", marginBottom: 4 }}>
+              <label style={{ fontSize: 12, fontWeight: 600, color: "hsl(var(--muted-foreground))", display: "block", marginBottom: 4 }}>
                 Subject
               </label>
               <input
@@ -644,7 +644,7 @@ export default function ContactDetailClient({ contactId }: { contactId: string }
                 style={{
                   width: "100%",
                   padding: 10,
-                  border: "1px solid #e5e7eb",
+                  border: "1px solid hsl(var(--border))",
                   borderRadius: 8,
                   fontSize: 14,
                   fontFamily: "inherit",
@@ -655,7 +655,7 @@ export default function ContactDetailClient({ contactId }: { contactId: string }
 
           {/* Message Body */}
           <div style={{ marginBottom: 12 }}>
-            <label style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", display: "block", marginBottom: 4 }}>
+            <label style={{ fontSize: 12, fontWeight: 600, color: "hsl(var(--muted-foreground))", display: "block", marginBottom: 4 }}>
               Message{" "}
               {composeType === "sms" && <span style={{ fontWeight: 400 }}>({composeMessage.length}/300 chars)</span>}
             </label>
@@ -667,7 +667,7 @@ export default function ContactDetailClient({ contactId }: { contactId: string }
               style={{
                 width: "100%",
                 padding: 12,
-                border: "1px solid #e5e7eb",
+                border: "1px solid hsl(var(--border))",
                 borderRadius: 8,
                 fontSize: 14,
                 resize: "vertical",
@@ -703,11 +703,11 @@ export default function ContactDetailClient({ contactId }: { contactId: string }
               style={{
                 padding: "8px 16px",
                 fontSize: 13,
-                border: "1px solid #e5e7eb",
+                border: "1px solid hsl(var(--border))",
                 borderRadius: 6,
-                background: "#fff",
+                background: "hsl(var(--card))",
                 cursor: "pointer",
-                color: "#6b7280",
+                color: "hsl(var(--muted-foreground))",
               }}
             >
               Clear
@@ -737,7 +737,7 @@ export default function ContactDetailClient({ contactId }: { contactId: string }
       {activeTab === "timeline" && (
         <div>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-            <h3 style={{ fontSize: 16, fontWeight: 700, margin: 0, color: "#111827" }}>Conversation Timeline</h3>
+            <h3 style={{ fontSize: 16, fontWeight: 700, margin: 0, color: "hsl(var(--foreground))" }}>Conversation Timeline</h3>
             <button
               onClick={loadTimeline}
               disabled={timelineLoading}
@@ -745,9 +745,9 @@ export default function ContactDetailClient({ contactId }: { contactId: string }
                 padding: "6px 14px",
                 fontSize: 12,
                 fontWeight: 600,
-                border: "1px solid #e5e7eb",
+                border: "1px solid hsl(var(--border))",
                 borderRadius: 6,
-                background: "#fff",
+                background: "hsl(var(--card))",
                 cursor: "pointer",
                 color: "#3b82f6",
               }}
@@ -757,12 +757,12 @@ export default function ContactDetailClient({ contactId }: { contactId: string }
           </div>
 
           {timelineLoading && timeline.length === 0 && (
-            <div style={{ padding: 40, textAlign: "center", color: "#6b7280" }}>Loading conversation timeline...</div>
+            <div style={{ padding: 40, textAlign: "center", color: "hsl(var(--muted-foreground))" }}>Loading conversation timeline...</div>
           )}
 
           {!timelineLoading && timeline.length === 0 && (
             <div
-              style={{ padding: 32, textAlign: "center", color: "#6b7280", background: "#f9fafb", borderRadius: 12 }}
+              style={{ padding: 32, textAlign: "center", color: "hsl(var(--muted-foreground))", background: "hsl(var(--muted))", borderRadius: 12 }}
             >
               <div style={{ marginBottom: 8, fontWeight: 600 }}>No conversations yet</div>
               <div style={{ fontSize: 13 }}>Send an email or SMS to start a conversation with this contact.</div>
@@ -805,8 +805,8 @@ export default function ContactDetailClient({ contactId }: { contactId: string }
 
                     <div
                       style={{
-                        background: "#fff",
-                        border: "1px solid #e5e7eb",
+                        background: "hsl(var(--card))",
+                        border: "1px solid hsl(var(--border))",
                         borderRadius: 8,
                         padding: 12,
                         borderLeft: `3px solid ${color}`,
@@ -844,15 +844,15 @@ export default function ContactDetailClient({ contactId }: { contactId: string }
                             {isNote ? "Internal" : isOutbound ? "Sent" : "Received"}
                           </span>
                         </div>
-                        <span style={{ fontSize: 11, color: "#9ca3af" }}>{formatDate(event.timestamp)}</span>
+                        <span style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>{formatDate(event.timestamp)}</span>
                       </div>
                       {event.subject && (
-                        <div style={{ fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 4 }}>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: "hsl(var(--foreground))", marginBottom: 4 }}>
                           {event.subject}
                         </div>
                       )}
                       <div style={{ fontSize: 13, color: "#4b5563", lineHeight: 1.5, whiteSpace: "pre-wrap" }}>
-                        {event.body || <span style={{ color: "#9ca3af", fontStyle: "italic" }}>No content</span>}
+                        {event.body || <span style={{ color: "hsl(var(--muted-foreground))", fontStyle: "italic" }}>No content</span>}
                       </div>
                     </div>
                   </div>
@@ -867,7 +867,7 @@ export default function ContactDetailClient({ contactId }: { contactId: string }
       {activeTab === "notes" && (
         <div>
           <div
-            style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, padding: 16, marginBottom: 16 }}
+            style={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12, padding: 16, marginBottom: 16 }}
           >
             <textarea
               value={newNote}
@@ -877,7 +877,7 @@ export default function ContactDetailClient({ contactId }: { contactId: string }
               style={{
                 width: "100%",
                 padding: 12,
-                border: "1px solid #e5e7eb",
+                border: "1px solid hsl(var(--border))",
                 borderRadius: 8,
                 fontSize: 14,
                 resize: "vertical",
@@ -928,7 +928,7 @@ export default function ContactDetailClient({ contactId }: { contactId: string }
 
           {notes.length === 0 ? (
             <div
-              style={{ padding: 32, textAlign: "center", color: "#6b7280", background: "#f9fafb", borderRadius: 12 }}
+              style={{ padding: 32, textAlign: "center", color: "hsl(var(--muted-foreground))", background: "hsl(var(--muted))", borderRadius: 12 }}
             >
               No notes for this contact yet. Add one above.
             </div>
@@ -937,10 +937,10 @@ export default function ContactDetailClient({ contactId }: { contactId: string }
               {notes.map((note) => (
                 <div
                   key={note.id}
-                  style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 8, padding: 16 }}
+                  style={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, padding: 16 }}
                 >
                   {note.dateAdded && (
-                    <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 6 }}>{formatDate(note.dateAdded)}</div>
+                    <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginBottom: 6 }}>{formatDate(note.dateAdded)}</div>
                   )}
                   <div style={{ fontSize: 14, lineHeight: 1.5, whiteSpace: "pre-wrap" }}>{note.body}</div>
                 </div>
@@ -952,14 +952,14 @@ export default function ContactDetailClient({ contactId }: { contactId: string }
 
       {/* Booking Tab */}
       {activeTab === "booking" && (
-        <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, padding: 24 }}>
-          <h3 style={{ fontSize: 16, fontWeight: 700, margin: "0 0 16px", color: "#111827" }}>
+        <div style={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12, padding: 24 }}>
+          <h3 style={{ fontSize: 16, fontWeight: 700, margin: "0 0 16px", color: "hsl(var(--foreground))" }}>
             Book Appointment with {getDisplayName(contact)}
           </h3>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
             <div>
-              <label style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", display: "block", marginBottom: 4 }}>
+              <label style={{ fontSize: 12, fontWeight: 600, color: "hsl(var(--muted-foreground))", display: "block", marginBottom: 4 }}>
                 Title
               </label>
               <input
@@ -967,11 +967,11 @@ export default function ContactDetailClient({ contactId }: { contactId: string }
                 value={bookingTitle}
                 onChange={(e) => setBookingTitle(e.target.value)}
                 placeholder="e.g. Property Showing, Consultation"
-                style={{ width: "100%", padding: 10, border: "1px solid #e5e7eb", borderRadius: 8, fontSize: 14 }}
+                style={{ width: "100%", padding: 10, border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 14 }}
               />
             </div>
             <div>
-              <label style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", display: "block", marginBottom: 4 }}>
+              <label style={{ fontSize: 12, fontWeight: 600, color: "hsl(var(--muted-foreground))", display: "block", marginBottom: 4 }}>
                 Location
               </label>
               <input
@@ -979,14 +979,14 @@ export default function ContactDetailClient({ contactId }: { contactId: string }
                 value={bookingLocation}
                 onChange={(e) => setBookingLocation(e.target.value)}
                 placeholder="e.g. 123 Main St or Zoom"
-                style={{ width: "100%", padding: 10, border: "1px solid #e5e7eb", borderRadius: 8, fontSize: 14 }}
+                style={{ width: "100%", padding: 10, border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 14 }}
               />
             </div>
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 12 }}>
             <div>
-              <label style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", display: "block", marginBottom: 4 }}>
+              <label style={{ fontSize: 12, fontWeight: 600, color: "hsl(var(--muted-foreground))", display: "block", marginBottom: 4 }}>
                 Date
               </label>
               <input
@@ -994,22 +994,22 @@ export default function ContactDetailClient({ contactId }: { contactId: string }
                 value={bookingDate}
                 onChange={(e) => setBookingDate(e.target.value)}
                 min={new Date().toISOString().split("T")[0]}
-                style={{ width: "100%", padding: 10, border: "1px solid #e5e7eb", borderRadius: 8, fontSize: 14 }}
+                style={{ width: "100%", padding: 10, border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 14 }}
               />
             </div>
             <div>
-              <label style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", display: "block", marginBottom: 4 }}>
+              <label style={{ fontSize: 12, fontWeight: 600, color: "hsl(var(--muted-foreground))", display: "block", marginBottom: 4 }}>
                 Time
               </label>
               <input
                 type="time"
                 value={bookingTime}
                 onChange={(e) => setBookingTime(e.target.value)}
-                style={{ width: "100%", padding: 10, border: "1px solid #e5e7eb", borderRadius: 8, fontSize: 14 }}
+                style={{ width: "100%", padding: 10, border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 14 }}
               />
             </div>
             <div>
-              <label style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", display: "block", marginBottom: 4 }}>
+              <label style={{ fontSize: 12, fontWeight: 600, color: "hsl(var(--muted-foreground))", display: "block", marginBottom: 4 }}>
                 Duration
               </label>
               <select
@@ -1018,10 +1018,10 @@ export default function ContactDetailClient({ contactId }: { contactId: string }
                 style={{
                   width: "100%",
                   padding: 10,
-                  border: "1px solid #e5e7eb",
+                  border: "1px solid hsl(var(--border))",
                   borderRadius: 8,
                   fontSize: 14,
-                  background: "#fff",
+                  background: "hsl(var(--card))",
                 }}
               >
                 <option value="15">15 min</option>
@@ -1034,7 +1034,7 @@ export default function ContactDetailClient({ contactId }: { contactId: string }
           </div>
 
           <div style={{ marginBottom: 16 }}>
-            <label style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", display: "block", marginBottom: 4 }}>
+            <label style={{ fontSize: 12, fontWeight: 600, color: "hsl(var(--muted-foreground))", display: "block", marginBottom: 4 }}>
               Notes
             </label>
             <textarea
@@ -1045,7 +1045,7 @@ export default function ContactDetailClient({ contactId }: { contactId: string }
               style={{
                 width: "100%",
                 padding: 12,
-                border: "1px solid #e5e7eb",
+                border: "1px solid hsl(var(--border))",
                 borderRadius: 8,
                 fontSize: 14,
                 resize: "vertical",
@@ -1096,7 +1096,7 @@ export default function ContactDetailClient({ contactId }: { contactId: string }
         <div>
           {!hasAddress && !propertySearched && (
             <div
-              style={{ padding: 32, textAlign: "center", color: "#6b7280", background: "#f9fafb", borderRadius: 12 }}
+              style={{ padding: 32, textAlign: "center", color: "hsl(var(--muted-foreground))", background: "hsl(var(--muted))", borderRadius: 12 }}
             >
               <div style={{ marginBottom: 8, fontWeight: 600 }}>No address on file</div>
               <div style={{ fontSize: 13 }}>Add an address to this contact to look up their property data.</div>
@@ -1104,11 +1104,11 @@ export default function ContactDetailClient({ contactId }: { contactId: string }
           )}
 
           {hasAddress && !propertySearched && !propertyLoading && (
-            <div style={{ padding: 32, textAlign: "center", background: "#f9fafb", borderRadius: 12 }}>
-              <div style={{ fontSize: 14, color: "#374151", marginBottom: 4, fontWeight: 600 }}>
+            <div style={{ padding: 32, textAlign: "center", background: "hsl(var(--muted))", borderRadius: 12 }}>
+              <div style={{ fontSize: 14, color: "hsl(var(--foreground))", marginBottom: 4, fontWeight: 600 }}>
                 Look up property data for this contact
               </div>
-              <div style={{ fontSize: 13, color: "#6b7280", marginBottom: 16 }}>{location}</div>
+              <div style={{ fontSize: 13, color: "hsl(var(--muted-foreground))", marginBottom: 16 }}>{location}</div>
               <button
                 onClick={lookupProperty}
                 style={{
@@ -1128,7 +1128,7 @@ export default function ContactDetailClient({ contactId }: { contactId: string }
           )}
 
           {propertyLoading && (
-            <div style={{ padding: 40, textAlign: "center", color: "#6b7280" }}>Looking up property data...</div>
+            <div style={{ padding: 40, textAlign: "center", color: "hsl(var(--muted-foreground))" }}>Looking up property data...</div>
           )}
 
           {propertyError && (
@@ -1183,7 +1183,7 @@ export default function ContactDetailClient({ contactId }: { contactId: string }
                       ${propertyData.avm.amount.value.toLocaleString()}
                     </div>
                     {propertyData.avm.amount.low != null && propertyData.avm.amount.high != null && (
-                      <div style={{ fontSize: 11, color: "#6b7280" }}>
+                      <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>
                         ${propertyData.avm.amount.low.toLocaleString()} - $
                         {propertyData.avm.amount.high.toLocaleString()}
                       </div>
@@ -1207,7 +1207,7 @@ export default function ContactDetailClient({ contactId }: { contactId: string }
                       ${(propertyData.sale.amount.saleAmt || propertyData.sale.amount.salePrice).toLocaleString()}
                     </div>
                     {propertyData.sale.amount.saleTransDate && (
-                      <div style={{ fontSize: 11, color: "#6b7280" }}>{propertyData.sale.amount.saleTransDate}</div>
+                      <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>{propertyData.sale.amount.saleTransDate}</div>
                     )}
                   </div>
                 )}
@@ -1228,7 +1228,7 @@ export default function ContactDetailClient({ contactId }: { contactId: string }
                       ${propertyData.assessment.assessed.assdTtlValue.toLocaleString()}
                     </div>
                     {propertyData.assessment.tax?.taxAmt != null && (
-                      <div style={{ fontSize: 11, color: "#6b7280" }}>
+                      <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>
                         Tax: ${propertyData.assessment.tax.taxAmt.toLocaleString()}/yr
                       </div>
                     )}
@@ -1259,8 +1259,8 @@ export default function ContactDetailClient({ contactId }: { contactId: string }
                   )}
               </div>
 
-              <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 20 }}>
-                <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 12, color: "#374151" }}>Property Details</h3>
+              <div style={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 10, padding: 20 }}>
+                <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 12, color: "hsl(var(--foreground))" }}>Property Details</h3>
                 <div
                   style={{
                     display: "grid",
@@ -1308,8 +1308,8 @@ export default function ContactDetailClient({ contactId }: { contactId: string }
               </div>
 
               {propertyData.owner && (
-                <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 20 }}>
-                  <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 12, color: "#374151" }}>Ownership</h3>
+                <div style={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 10, padding: 20 }}>
+                  <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 12, color: "hsl(var(--foreground))" }}>Ownership</h3>
                   <div
                     style={{
                       display: "grid",
@@ -1338,8 +1338,8 @@ export default function ContactDetailClient({ contactId }: { contactId: string }
               )}
 
               {propertyData.mortgage?.amount != null && (
-                <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 20 }}>
-                  <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 12, color: "#374151" }}>Mortgage</h3>
+                <div style={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 10, padding: 20 }}>
+                  <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 12, color: "hsl(var(--foreground))" }}>Mortgage</h3>
                   <div
                     style={{
                       display: "grid",
@@ -1366,13 +1366,13 @@ function InfoField({ label, value, href }: { label: string; value?: string; href
   if (!value) return null;
   return (
     <div>
-      <div style={{ fontSize: 12, fontWeight: 500, color: "#6b7280", marginBottom: 2 }}>{label}</div>
+      <div style={{ fontSize: 12, fontWeight: 500, color: "hsl(var(--muted-foreground))", marginBottom: 2 }}>{label}</div>
       {href ? (
         <a href={href} style={{ fontSize: 14, color: "#3b82f6", textDecoration: "none" }}>
           {value}
         </a>
       ) : (
-        <div style={{ fontSize: 14, color: "#111827" }}>{value}</div>
+        <div style={{ fontSize: 14, color: "hsl(var(--foreground))" }}>{value}</div>
       )}
     </div>
   );
@@ -1382,10 +1382,10 @@ function PropertyField({ label, value }: { label: string; value?: string | numbe
   if (value == null || value === "") return null;
   return (
     <div>
-      <div style={{ fontSize: 11, fontWeight: 500, color: "#9ca3af", textTransform: "uppercase", letterSpacing: 0.5 }}>
+      <div style={{ fontSize: 11, fontWeight: 500, color: "hsl(var(--muted-foreground))", textTransform: "uppercase", letterSpacing: 0.5 }}>
         {label}
       </div>
-      <div style={{ fontSize: 14, color: "#111827", fontWeight: 500 }}>{value}</div>
+      <div style={{ fontSize: 14, color: "hsl(var(--foreground))", fontWeight: 500 }}>{value}</div>
     </div>
   );
 }

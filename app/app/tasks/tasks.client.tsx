@@ -338,13 +338,13 @@ export default function TasksClient() {
 
       {/* Toolbar: Tabs + Actions */}
       <div className="flex flex-wrap items-center gap-3 mb-4">
-        <div className="flex gap-1 bg-gray-100 rounded-lg p-1 flex-wrap">
+        <div className="flex gap-1 bg-muted rounded-lg p-1 flex-wrap">
           {tabs.map((tab) => (
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
               className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
-                activeTab === tab.key ? "bg-white shadow-sm text-gray-900" : "text-gray-500 hover:text-gray-700"
+                activeTab === tab.key ? "bg-card shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
               }`}
             >
               {tab.label}
@@ -362,7 +362,7 @@ export default function TasksClient() {
         {/* Bulk Actions */}
         {selectedIds.size > 0 && (
           <div className="flex items-center gap-2">
-            <span className="text-xs text-gray-500 font-medium">{selectedIds.size} selected</span>
+            <span className="text-xs text-muted-foreground font-medium">{selectedIds.size} selected</span>
             <button
               onClick={() => bulkAction("complete")}
               className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold bg-green-50 text-green-700 border border-green-200 rounded-lg hover:bg-green-100"
@@ -400,15 +400,15 @@ export default function TasksClient() {
 
       {/* Create Task Form */}
       {showCreateForm && (
-        <div className="mb-6 p-4 bg-white border border-gray-200 rounded-xl shadow-sm">
-          <h3 className="text-sm font-bold text-gray-900 mb-3">Create New Task</h3>
+        <div className="mb-6 p-4 bg-card border border-border rounded-xl shadow-sm">
+          <h3 className="text-sm font-bold text-foreground mb-3">Create New Task</h3>
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="sm:col-span-2">
               <input
                 value={newTitle}
                 onChange={(e) => setNewTitle(e.target.value)}
                 placeholder="Task title..."
-                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-200"
               />
             </div>
             <div className="sm:col-span-2">
@@ -417,15 +417,15 @@ export default function TasksClient() {
                 onChange={(e) => setNewDescription(e.target.value)}
                 placeholder="Description (optional)"
                 rows={2}
-                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-200"
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-gray-500 mb-1">Priority</label>
+              <label className="block text-xs font-semibold text-muted-foreground mb-1">Priority</label>
               <select
                 value={newPriority}
                 onChange={(e) => setNewPriority(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg"
+                className="w-full px-3 py-2 text-sm border border-border rounded-lg"
               >
                 <option value="urgent">Urgent</option>
                 <option value="high">High</option>
@@ -434,11 +434,11 @@ export default function TasksClient() {
               </select>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-gray-500 mb-1">Type</label>
+              <label className="block text-xs font-semibold text-muted-foreground mb-1">Type</label>
               <select
                 value={newTaskType}
                 onChange={(e) => setNewTaskType(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg"
+                className="w-full px-3 py-2 text-sm border border-border rounded-lg"
               >
                 {TASK_TYPES.map((t) => (
                   <option key={t.value} value={t.value}>
@@ -448,29 +448,29 @@ export default function TasksClient() {
               </select>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-gray-500 mb-1">Due Date</label>
+              <label className="block text-xs font-semibold text-muted-foreground mb-1">Due Date</label>
               <input
                 type="date"
                 value={newDueDate}
                 onChange={(e) => setNewDueDate(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg"
+                className="w-full px-3 py-2 text-sm border border-border rounded-lg"
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-gray-500 mb-1">Due Time</label>
+              <label className="block text-xs font-semibold text-muted-foreground mb-1">Due Time</label>
               <input
                 type="time"
                 value={newDueTime}
                 onChange={(e) => setNewDueTime(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg"
+                className="w-full px-3 py-2 text-sm border border-border rounded-lg"
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-gray-500 mb-1">Recurrence</label>
+              <label className="block text-xs font-semibold text-muted-foreground mb-1">Recurrence</label>
               <select
                 value={newRecurrence}
                 onChange={(e) => setNewRecurrence(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg"
+                className="w-full px-3 py-2 text-sm border border-border rounded-lg"
               >
                 {RECURRENCE_OPTIONS.map((r) => (
                   <option key={r.value} value={r.value}>
@@ -480,11 +480,11 @@ export default function TasksClient() {
               </select>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-gray-500 mb-1">Assign To</label>
+              <label className="block text-xs font-semibold text-muted-foreground mb-1">Assign To</label>
               <select
                 value={newAssignedTo}
                 onChange={(e) => setNewAssignedTo(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg"
+                className="w-full px-3 py-2 text-sm border border-border rounded-lg"
               >
                 <option value="">Me (default)</option>
                 {teamMemberOptions.map((m) => (
@@ -496,17 +496,17 @@ export default function TasksClient() {
             </div>
 
             {/* Entity Linking */}
-            <div className="sm:col-span-2 pt-2 border-t border-gray-100">
-              <p className="text-xs font-semibold text-gray-500 mb-2 flex items-center gap-1">
+            <div className="sm:col-span-2 pt-2 border-t border-border">
+              <p className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1">
                 <LinkIcon className="w-3 h-3" /> Link to Entity (optional)
               </p>
               <div className="grid gap-3 sm:grid-cols-2">
                 <div>
-                  <label className="block text-xs font-semibold text-gray-500 mb-1">Lead</label>
+                  <label className="block text-xs font-semibold text-muted-foreground mb-1">Lead</label>
                   <select
                     value={newLinkedLeadId}
                     onChange={(e) => setNewLinkedLeadId(e.target.value)}
-                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg"
+                    className="w-full px-3 py-2 text-sm border border-border rounded-lg"
                   >
                     <option value="">No lead linked</option>
                     {leadOptions.map((l) => (
@@ -517,11 +517,11 @@ export default function TasksClient() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-gray-500 mb-1">Open House</label>
+                  <label className="block text-xs font-semibold text-muted-foreground mb-1">Open House</label>
                   <select
                     value={newLinkedOpenHouseId}
                     onChange={(e) => setNewLinkedOpenHouseId(e.target.value)}
-                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg"
+                    className="w-full px-3 py-2 text-sm border border-border rounded-lg"
                   >
                     <option value="">No open house linked</option>
                     {openHouseOptions.map((oh) => (
@@ -537,7 +537,7 @@ export default function TasksClient() {
           <div className="flex justify-end gap-2 mt-4">
             <button
               onClick={() => setShowCreateForm(false)}
-              className="px-3 py-1.5 text-xs font-semibold text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50"
+              className="px-3 py-1.5 text-xs font-semibold text-foreground border border-border rounded-lg hover:bg-muted"
             >
               Cancel
             </button>
@@ -554,12 +554,12 @@ export default function TasksClient() {
 
       {/* Task List */}
       {isLoading ? (
-        <div className="text-center py-12 text-gray-400 text-sm">Loading tasks...</div>
+        <div className="text-center py-12 text-muted-foreground text-sm">Loading tasks...</div>
       ) : tasks.length === 0 ? (
-        <div className="text-center py-16 bg-gray-50 rounded-xl">
-          <AlertCircle className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-          <p className="text-gray-500 font-medium">No tasks found</p>
-          <p className="text-gray-400 text-sm mt-1">Create your first task to get started</p>
+        <div className="text-center py-16 bg-muted rounded-xl">
+          <AlertCircle className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
+          <p className="text-muted-foreground font-medium">No tasks found</p>
+          <p className="text-muted-foreground text-sm mt-1">Create your first task to get started</p>
         </div>
       ) : (
         <div className="space-y-2">
@@ -569,9 +569,9 @@ export default function TasksClient() {
               type="checkbox"
               checked={selectedIds.size === tasks.length && tasks.length > 0}
               onChange={toggleSelectAll}
-              className="w-4 h-4 rounded border-gray-300"
+              className="w-4 h-4 rounded border-border"
             />
-            <span className="text-xs text-gray-400">Select all</span>
+            <span className="text-xs text-muted-foreground">Select all</span>
           </div>
 
           {tasks.map((task) => {
@@ -584,8 +584,8 @@ export default function TasksClient() {
             return (
               <div
                 key={task.id}
-                className={`flex items-start gap-3 px-4 py-3 bg-white border rounded-xl transition-all ${
-                  isSelected ? "border-indigo-300 bg-indigo-50/30" : "border-gray-200"
+                className={`flex items-start gap-3 px-4 py-3 bg-card border rounded-xl transition-all ${
+                  isSelected ? "border-indigo-300 bg-indigo-50/30" : "border-border"
                 } ${task.status === "completed" ? "opacity-60" : ""}`}
               >
                 {/* Checkbox */}
@@ -593,7 +593,7 @@ export default function TasksClient() {
                   type="checkbox"
                   checked={isSelected}
                   onChange={() => toggleSelect(task.id)}
-                  className="w-4 h-4 rounded border-gray-300 mt-1 flex-shrink-0"
+                  className="w-4 h-4 rounded border-border mt-1 flex-shrink-0"
                 />
 
                 {/* Complete button */}
@@ -602,7 +602,7 @@ export default function TasksClient() {
                   className={`flex-shrink-0 w-5 h-5 mt-0.5 rounded-full border-2 flex items-center justify-center transition-colors ${
                     task.status === "completed"
                       ? "bg-green-500 border-green-500 text-white"
-                      : "border-gray-300 hover:border-green-400"
+                      : "border-border hover:border-green-400"
                   }`}
                 >
                   {task.status === "completed" && <Check className="w-3 h-3" />}
@@ -612,7 +612,7 @@ export default function TasksClient() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span
-                      className={`text-sm font-semibold ${task.status === "completed" ? "line-through text-gray-400" : "text-gray-900"}`}
+                      className={`text-sm font-semibold ${task.status === "completed" ? "line-through text-muted-foreground" : "text-foreground"}`}
                     >
                       {task.title}
                     </span>
@@ -633,8 +633,8 @@ export default function TasksClient() {
                       </span>
                     )}
                   </div>
-                  {task.description && <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{task.description}</p>}
-                  <div className="flex items-center gap-3 mt-1 text-[11px] text-gray-400 flex-wrap">
+                  {task.description && <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{task.description}</p>}
+                  <div className="flex items-center gap-3 mt-1 text-[11px] text-muted-foreground flex-wrap">
                     {task.due_date && (
                       <span
                         className={`flex items-center gap-0.5 ${isOverdue ? "text-red-500 font-semibold" : isToday ? "text-blue-600 font-semibold" : ""}`}
@@ -674,14 +674,14 @@ export default function TasksClient() {
                         <button
                           onClick={() => setSnoozeDropdownId(snoozeDropdownId === task.id ? null : task.id)}
                           title="Snooze"
-                          className="p-1.5 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
+                          className="p-1.5 text-muted-foreground hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
                         >
                           <AlarmClock className="w-3.5 h-3.5" />
                         </button>
                         {snoozeDropdownId === task.id && (
                           <>
                             <div className="fixed inset-0 z-40" onClick={() => setSnoozeDropdownId(null)} />
-                            <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-xl z-50 py-1 min-w-[120px]">
+                            <div className="absolute right-0 top-full mt-1 bg-card border border-border rounded-lg shadow-xl z-50 py-1 min-w-[120px]">
                               {[
                                 { days: 1, label: "1 day" },
                                 { days: 3, label: "3 days" },
@@ -692,7 +692,7 @@ export default function TasksClient() {
                                 <button
                                   key={opt.days}
                                   onClick={() => snoozeTask(task.id, opt.days)}
-                                  className="w-full text-left px-3 py-1.5 text-xs text-gray-700 hover:bg-amber-50 hover:text-amber-700"
+                                  className="w-full text-left px-3 py-1.5 text-xs text-foreground hover:bg-amber-50 hover:text-amber-700"
                                 >
                                   {opt.label}
                                 </button>
@@ -706,7 +706,7 @@ export default function TasksClient() {
                   <button
                     onClick={() => deleteTask(task.id)}
                     title="Delete"
-                    className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                    className="p-1.5 text-muted-foreground hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>

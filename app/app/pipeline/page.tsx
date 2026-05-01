@@ -18,7 +18,7 @@ export default function PipelinePage() {
           ]}
         />
       </div>
-      <p style={{ color: "#6b7280", marginBottom: 24, fontSize: 14 }}>
+      <p style={{ color: "hsl(var(--muted-foreground))", marginBottom: 24, fontSize: 14 }}>
         Track and advance your leads through every stage of the deal.
       </p>
       <LocalPipelineClient />

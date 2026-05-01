@@ -52,9 +52,9 @@ export default function LeadsBySourceChart({ bySource, byEvent }: LeadsBySourceC
         }}
       >
         <h3 style={{ margin: "0 0 4px 0", fontSize: 16, fontWeight: 700 }}>Leads by Source</h3>
-        <p style={{ margin: "0 0 16px 0", fontSize: 13, color: "#6b7280" }}>{totalLeads} total leads</p>
+        <p style={{ margin: "0 0 16px 0", fontSize: 13, color: "hsl(var(--muted-foreground))" }}>{totalLeads} total leads</p>
         {bySource.length === 0 ? (
-          <p style={{ color: "#9ca3af", textAlign: "center", padding: 40 }}>No lead data yet</p>
+          <p style={{ color: "hsl(var(--muted-foreground))", textAlign: "center", padding: 40 }}>No lead data yet</p>
         ) : (
           <ResponsiveContainer width="100%" height={280}>
             <PieChart>
@@ -92,13 +92,13 @@ export default function LeadsBySourceChart({ bySource, byEvent }: LeadsBySourceC
         }}
       >
         <h3 style={{ margin: "0 0 4px 0", fontSize: 16, fontWeight: 700 }}>Leads by Open House</h3>
-        <p style={{ margin: "0 0 16px 0", fontSize: 13, color: "#6b7280" }}>Top events by lead volume</p>
+        <p style={{ margin: "0 0 16px 0", fontSize: 13, color: "hsl(var(--muted-foreground))" }}>Top events by lead volume</p>
         {byEvent.length === 0 ? (
-          <p style={{ color: "#9ca3af", textAlign: "center", padding: 40 }}>No event data yet</p>
+          <p style={{ color: "hsl(var(--muted-foreground))", textAlign: "center", padding: 40 }}>No event data yet</p>
         ) : (
           <ResponsiveContainer width="100%" height={280}>
             <BarChart data={byEvent.slice(0, 10)} layout="vertical" margin={{ top: 5, right: 20, bottom: 5, left: 10 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" horizontal={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
               <XAxis type="number" tick={{ fontSize: 11 }} allowDecimals={false} />
               <YAxis
                 type="category"

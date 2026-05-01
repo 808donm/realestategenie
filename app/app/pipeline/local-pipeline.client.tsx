@@ -343,7 +343,7 @@ export default function LocalPipelineClient() {
   }
 
   if (isLoading) {
-    return <div style={{ padding: 60, textAlign: "center", color: "#6b7280" }}>Loading pipeline...</div>;
+    return <div style={{ padding: 60, textAlign: "center", color: "hsl(var(--muted-foreground))" }}>Loading pipeline...</div>;
   }
 
   if (totalLeads === 0) {
@@ -352,9 +352,9 @@ export default function LocalPipelineClient() {
         style={{
           padding: 40,
           textAlign: "center",
-          background: "#f9fafb",
+          background: "hsl(var(--muted))",
           borderRadius: 12,
-          color: "#6b7280",
+          color: "hsl(var(--muted-foreground))",
         }}
       >
         <p style={{ fontSize: 16, fontWeight: 600, marginBottom: 8 }}>No leads in the pipeline yet</p>
@@ -395,14 +395,14 @@ export default function LocalPipelineClient() {
           gap: 16,
           marginBottom: 20,
           padding: 16,
-          background: "#f9fafb",
+          background: "hsl(var(--muted))",
           borderRadius: 12,
           flexWrap: "wrap",
           alignItems: "center",
         }}
       >
         <div>
-          <div style={{ fontSize: 12, color: "#6b7280", fontWeight: 600 }}>Total Leads</div>
+          <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>Total Leads</div>
           <div style={{ fontSize: 20, fontWeight: 700 }}>{totalLeads}</div>
         </div>
         {/* Mini stage indicator */}
@@ -430,7 +430,7 @@ export default function LocalPipelineClient() {
             />
           ))}
         </div>
-        <div style={{ fontSize: 11, color: "#9ca3af" }}>Drag cards to move between stages</div>
+        <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>Drag cards to move between stages</div>
         <ExportToolbar
           title="Sales Pipeline"
           columns={[
@@ -510,7 +510,7 @@ export default function LocalPipelineClient() {
                       style={{
                         fontWeight: 700,
                         fontSize: 13,
-                        color: "#111827",
+                        color: "hsl(var(--foreground))",
                       }}
                     >
                       {stage.label}
@@ -547,7 +547,7 @@ export default function LocalPipelineClient() {
                       style={{
                         padding: 16,
                         textAlign: "center",
-                        color: "#9ca3af",
+                        color: "hsl(var(--muted-foreground))",
                         fontSize: 12,
                       }}
                     >
@@ -565,7 +565,7 @@ export default function LocalPipelineClient() {
                           onDragStart={(e) => handleDragStart(e, lead)}
                           onDragEnd={handleDragEnd}
                           style={{
-                            background: "#fff",
+                            background: "hsl(var(--card))",
                             border: isDragging ? `2px dashed ${color}` : "1px solid #e5e7eb",
                             borderRadius: 8,
                             padding: 10,
@@ -596,7 +596,7 @@ export default function LocalPipelineClient() {
                               style={{
                                 fontWeight: 600,
                                 fontSize: 13,
-                                color: "#111827",
+                                color: "hsl(var(--foreground))",
                                 overflow: "hidden",
                                 textOverflow: "ellipsis",
                                 whiteSpace: "nowrap",
@@ -623,7 +623,7 @@ export default function LocalPipelineClient() {
                           <div
                             style={{
                               fontSize: 12,
-                              color: "#6b7280",
+                              color: "hsl(var(--muted-foreground))",
                               marginBottom: 6,
                               overflow: "hidden",
                               textOverflow: "ellipsis",
@@ -785,9 +785,9 @@ export default function LocalPipelineClient() {
                               style={{
                                 padding: "2px 8px",
                                 fontSize: 11,
-                                border: "1px solid #e5e7eb",
+                                border: "1px solid hsl(var(--border))",
                                 borderRadius: 4,
-                                background: "#fff",
+                                background: "hsl(var(--card))",
                                 cursor: stage.key === "new_lead" ? "not-allowed" : "pointer",
                                 color: stage.key === "new_lead" ? "#d1d5db" : "#6b7280",
                               }}
@@ -801,7 +801,7 @@ export default function LocalPipelineClient() {
                               style={{
                                 padding: "2px 8px",
                                 fontSize: 11,
-                                border: "1px solid #e5e7eb",
+                                border: "1px solid hsl(var(--border))",
                                 borderRadius: 4,
                                 background: stage.key === "review_request" ? "#fff" : color,
                                 color: stage.key === "review_request" ? "#d1d5db" : "#fff",
@@ -849,7 +849,7 @@ export default function LocalPipelineClient() {
         >
           <div
             style={{
-              background: "#fff",
+              background: "hsl(var(--card))",
               borderRadius: 16,
               maxWidth: 540,
               width: "100%",
@@ -871,7 +871,7 @@ export default function LocalPipelineClient() {
                   <h2 style={{ fontSize: 20, fontWeight: 700, margin: 0 }}>{selectedLead.name}</h2>
                   <p
                     style={{
-                      color: "#6b7280",
+                      color: "hsl(var(--muted-foreground))",
                       fontSize: 13,
                       margin: "4px 0 0",
                     }}
@@ -886,9 +886,9 @@ export default function LocalPipelineClient() {
                   }}
                   style={{
                     padding: "6px 12px",
-                    border: "1px solid #d1d5db",
+                    border: "1px solid hsl(var(--border))",
                     borderRadius: 6,
-                    background: "#fff",
+                    background: "hsl(var(--card))",
                     cursor: "pointer",
                     fontSize: 16,
                   }}
@@ -904,7 +904,7 @@ export default function LocalPipelineClient() {
                   gridTemplateColumns: "1fr 1fr",
                   gap: 12,
                   padding: 16,
-                  background: "#f9fafb",
+                  background: "hsl(var(--muted))",
                   borderRadius: 10,
                   marginBottom: 20,
                 }}
@@ -913,7 +913,7 @@ export default function LocalPipelineClient() {
                   <div
                     style={{
                       fontSize: 12,
-                      color: "#6b7280",
+                      color: "hsl(var(--muted-foreground))",
                       fontWeight: 600,
                     }}
                   >
@@ -933,7 +933,7 @@ export default function LocalPipelineClient() {
                   <div
                     style={{
                       fontSize: 12,
-                      color: "#6b7280",
+                      color: "hsl(var(--muted-foreground))",
                       fontWeight: 600,
                     }}
                   >
@@ -946,13 +946,13 @@ export default function LocalPipelineClient() {
                     <div
                       style={{
                         fontSize: 12,
-                        color: "#6b7280",
+                        color: "hsl(var(--muted-foreground))",
                         fontWeight: 600,
                       }}
                     >
                       Email
                     </div>
-                    <div style={{ fontSize: 14, color: "#374151" }}>{selectedLead.email}</div>
+                    <div style={{ fontSize: 14, color: "hsl(var(--foreground))" }}>{selectedLead.email}</div>
                   </div>
                 )}
                 {selectedLead.phone && (
@@ -960,13 +960,13 @@ export default function LocalPipelineClient() {
                     <div
                       style={{
                         fontSize: 12,
-                        color: "#6b7280",
+                        color: "hsl(var(--muted-foreground))",
                         fontWeight: 600,
                       }}
                     >
                       Phone
                     </div>
-                    <div style={{ fontSize: 14, color: "#374151" }}>{selectedLead.phone}</div>
+                    <div style={{ fontSize: 14, color: "hsl(var(--foreground))" }}>{selectedLead.phone}</div>
                   </div>
                 )}
                 {selectedLead.financing && (
@@ -974,44 +974,44 @@ export default function LocalPipelineClient() {
                     <div
                       style={{
                         fontSize: 12,
-                        color: "#6b7280",
+                        color: "hsl(var(--muted-foreground))",
                         fontWeight: 600,
                       }}
                     >
                       Financing
                     </div>
-                    <div style={{ fontSize: 14, color: "#374151" }}>{selectedLead.financing}</div>
+                    <div style={{ fontSize: 14, color: "hsl(var(--foreground))" }}>{selectedLead.financing}</div>
                   </div>
                 )}
                 <div>
                   <div
                     style={{
                       fontSize: 12,
-                      color: "#6b7280",
+                      color: "hsl(var(--muted-foreground))",
                       fontWeight: 600,
                     }}
                   >
                     Captured
                   </div>
-                  <div style={{ fontSize: 14, color: "#374151" }}>
+                  <div style={{ fontSize: 14, color: "hsl(var(--foreground))" }}>
                     {new Date(selectedLead.createdAt).toLocaleDateString()}
                   </div>
                 </div>
                 {selectedLead.priceRange && (
                   <div>
-                    <div style={{ fontSize: 12, color: "#6b7280", fontWeight: 600 }}>Price Range</div>
-                    <div style={{ fontSize: 14, color: "#374151" }}>{selectedLead.priceRange}</div>
+                    <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>Price Range</div>
+                    <div style={{ fontSize: 14, color: "hsl(var(--foreground))" }}>{selectedLead.priceRange}</div>
                   </div>
                 )}
                 {selectedLead.buyerType && (
                   <div>
-                    <div style={{ fontSize: 12, color: "#6b7280", fontWeight: 600 }}>Buyer Type</div>
-                    <div style={{ fontSize: 14, color: "#374151" }}>{selectedLead.buyerType}</div>
+                    <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>Buyer Type</div>
+                    <div style={{ fontSize: 14, color: "hsl(var(--foreground))" }}>{selectedLead.buyerType}</div>
                   </div>
                 )}
                 {selectedLead.preApproved && (
                   <div>
-                    <div style={{ fontSize: 12, color: "#6b7280", fontWeight: 600 }}>Pre-Approved</div>
+                    <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>Pre-Approved</div>
                     <div
                       style={{
                         fontSize: 14,
@@ -1025,20 +1025,20 @@ export default function LocalPipelineClient() {
                 )}
                 {selectedLead.areas && (
                   <div>
-                    <div style={{ fontSize: 12, color: "#6b7280", fontWeight: 600 }}>Areas of Interest</div>
-                    <div style={{ fontSize: 14, color: "#374151" }}>{selectedLead.areas}</div>
+                    <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>Areas of Interest</div>
+                    <div style={{ fontSize: 14, color: "hsl(var(--foreground))" }}>{selectedLead.areas}</div>
                   </div>
                 )}
                 {selectedLead.motivation && (
                   <div style={{ gridColumn: "1 / -1" }}>
-                    <div style={{ fontSize: 12, color: "#6b7280", fontWeight: 600 }}>Motivation</div>
-                    <div style={{ fontSize: 14, color: "#374151" }}>{selectedLead.motivation}</div>
+                    <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>Motivation</div>
+                    <div style={{ fontSize: 14, color: "hsl(var(--foreground))" }}>{selectedLead.motivation}</div>
                   </div>
                 )}
                 {selectedLead.notes && (
                   <div style={{ gridColumn: "1 / -1" }}>
-                    <div style={{ fontSize: 12, color: "#6b7280", fontWeight: 600 }}>Notes</div>
-                    <div style={{ fontSize: 13, color: "#374151", lineHeight: 1.5 }}>{selectedLead.notes}</div>
+                    <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>Notes</div>
+                    <div style={{ fontSize: 13, color: "hsl(var(--foreground))", lineHeight: 1.5 }}>{selectedLead.notes}</div>
                   </div>
                 )}
               </div>
@@ -1062,7 +1062,7 @@ export default function LocalPipelineClient() {
                     style={{
                       fontSize: 13,
                       fontWeight: 700,
-                      color: "#374151",
+                      color: "hsl(var(--foreground))",
                     }}
                   >
                     Follow-Up Email
@@ -1088,8 +1088,8 @@ export default function LocalPipelineClient() {
                 {draftEmail && (
                   <div
                     style={{
-                      background: "#f9fafb",
-                      border: "1px solid #e5e7eb",
+                      background: "hsl(var(--muted))",
+                      border: "1px solid hsl(var(--border))",
                       borderRadius: 8,
                       padding: 14,
                     }}
@@ -1097,7 +1097,7 @@ export default function LocalPipelineClient() {
                     <div
                       style={{
                         fontSize: 12,
-                        color: "#6b7280",
+                        color: "hsl(var(--muted-foreground))",
                         fontWeight: 600,
                         marginBottom: 4,
                       }}
@@ -1108,7 +1108,7 @@ export default function LocalPipelineClient() {
                       style={{
                         fontSize: 14,
                         fontWeight: 600,
-                        color: "#111827",
+                        color: "hsl(var(--foreground))",
                         marginBottom: 12,
                       }}
                     >
@@ -1117,7 +1117,7 @@ export default function LocalPipelineClient() {
                     <div
                       style={{
                         fontSize: 12,
-                        color: "#6b7280",
+                        color: "hsl(var(--muted-foreground))",
                         fontWeight: 600,
                         marginBottom: 4,
                       }}
@@ -1128,7 +1128,7 @@ export default function LocalPipelineClient() {
                       style={{
                         fontSize: 13,
                         lineHeight: 1.6,
-                        color: "#374151",
+                        color: "hsl(var(--foreground))",
                         whiteSpace: "pre-wrap",
                       }}
                     >
@@ -1162,7 +1162,7 @@ export default function LocalPipelineClient() {
                   style={{
                     fontSize: 13,
                     fontWeight: 700,
-                    color: "#374151",
+                    color: "hsl(var(--foreground))",
                     marginBottom: 8,
                   }}
                 >

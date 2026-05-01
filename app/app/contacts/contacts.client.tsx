@@ -272,7 +272,7 @@ export default function ContactsClient() {
             style={{
               width: "100%",
               padding: "12px 16px",
-              border: "1px solid #e5e7eb",
+              border: "1px solid hsl(var(--border))",
               borderRadius: 8,
               fontSize: 14,
             }}
@@ -356,9 +356,9 @@ export default function ContactsClient() {
               }}
               style={{
                 padding: "6px 14px",
-                background: "#fff",
-                color: "#6b7280",
-                border: "1px solid #d1d5db",
+                background: "hsl(var(--card))",
+                color: "hsl(var(--muted-foreground))",
+                border: "1px solid hsl(var(--border))",
                 borderRadius: 6,
                 fontSize: 12,
                 fontWeight: 600,
@@ -374,7 +374,7 @@ export default function ContactsClient() {
       {/* Bulk Compose Panel */}
       {showBulkPanel && selectedIds.size > 0 && (
         <div
-          style={{ padding: 20, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, marginBottom: 16 }}
+          style={{ padding: 20, background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12, marginBottom: 16 }}
         >
           <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12 }}>
             Send to {selectedIds.size} Contact{selectedIds.size !== 1 ? "s" : ""}
@@ -422,7 +422,7 @@ export default function ContactsClient() {
               style={{
                 width: "100%",
                 padding: 10,
-                border: "1px solid #e5e7eb",
+                border: "1px solid hsl(var(--border))",
                 borderRadius: 8,
                 fontSize: 14,
                 marginBottom: 8,
@@ -437,7 +437,7 @@ export default function ContactsClient() {
             style={{
               width: "100%",
               padding: 12,
-              border: "1px solid #e5e7eb",
+              border: "1px solid hsl(var(--border))",
               borderRadius: 8,
               fontSize: 14,
               resize: "vertical",
@@ -486,8 +486,8 @@ export default function ContactsClient() {
         <div
           style={{
             padding: 20,
-            background: "#f9fafb",
-            border: "1px solid #e5e7eb",
+            background: "hsl(var(--muted))",
+            border: "1px solid hsl(var(--border))",
             borderRadius: 12,
             marginBottom: 20,
           }}
@@ -506,7 +506,7 @@ export default function ContactsClient() {
                   type="text"
                   value={newContact.firstName}
                   onChange={(e) => setNewContact({ ...newContact, firstName: e.target.value })}
-                  style={{ width: "100%", padding: 10, border: "1px solid #d1d5db", borderRadius: 6 }}
+                  style={{ width: "100%", padding: 10, border: "1px solid hsl(var(--border))", borderRadius: 6 }}
                 />
               </div>
               <div>
@@ -515,7 +515,7 @@ export default function ContactsClient() {
                   type="text"
                   value={newContact.lastName}
                   onChange={(e) => setNewContact({ ...newContact, lastName: e.target.value })}
-                  style={{ width: "100%", padding: 10, border: "1px solid #d1d5db", borderRadius: 6 }}
+                  style={{ width: "100%", padding: 10, border: "1px solid hsl(var(--border))", borderRadius: 6 }}
                 />
               </div>
               <div>
@@ -524,7 +524,7 @@ export default function ContactsClient() {
                   type="email"
                   value={newContact.email}
                   onChange={(e) => setNewContact({ ...newContact, email: e.target.value })}
-                  style={{ width: "100%", padding: 10, border: "1px solid #d1d5db", borderRadius: 6 }}
+                  style={{ width: "100%", padding: 10, border: "1px solid hsl(var(--border))", borderRadius: 6 }}
                 />
               </div>
               <div>
@@ -534,7 +534,7 @@ export default function ContactsClient() {
                   value={newContact.phone}
                   onChange={(e) => setNewContact({ ...newContact, phone: e.target.value })}
                   placeholder="+1234567890"
-                  style={{ width: "100%", padding: 10, border: "1px solid #d1d5db", borderRadius: 6 }}
+                  style={{ width: "100%", padding: 10, border: "1px solid hsl(var(--border))", borderRadius: 6 }}
                 />
               </div>
               <div>
@@ -543,7 +543,7 @@ export default function ContactsClient() {
                   type="text"
                   value={newContact.address1}
                   onChange={(e) => setNewContact({ ...newContact, address1: e.target.value })}
-                  style={{ width: "100%", padding: 10, border: "1px solid #d1d5db", borderRadius: 6 }}
+                  style={{ width: "100%", padding: 10, border: "1px solid hsl(var(--border))", borderRadius: 6 }}
                 />
               </div>
               <div>
@@ -552,7 +552,7 @@ export default function ContactsClient() {
                   type="text"
                   value={newContact.city}
                   onChange={(e) => setNewContact({ ...newContact, city: e.target.value })}
-                  style={{ width: "100%", padding: 10, border: "1px solid #d1d5db", borderRadius: 6 }}
+                  style={{ width: "100%", padding: 10, border: "1px solid hsl(var(--border))", borderRadius: 6 }}
                 />
               </div>
               <div>
@@ -561,7 +561,7 @@ export default function ContactsClient() {
                   type="text"
                   value={newContact.state}
                   onChange={(e) => setNewContact({ ...newContact, state: e.target.value })}
-                  style={{ width: "100%", padding: 10, border: "1px solid #d1d5db", borderRadius: 6 }}
+                  style={{ width: "100%", padding: 10, border: "1px solid hsl(var(--border))", borderRadius: 6 }}
                 />
               </div>
               <div>
@@ -570,7 +570,7 @@ export default function ContactsClient() {
                   type="text"
                   value={newContact.postalCode}
                   onChange={(e) => setNewContact({ ...newContact, postalCode: e.target.value })}
-                  style={{ width: "100%", padding: 10, border: "1px solid #d1d5db", borderRadius: 6 }}
+                  style={{ width: "100%", padding: 10, border: "1px solid hsl(var(--border))", borderRadius: 6 }}
                 />
               </div>
             </div>
@@ -607,15 +607,15 @@ export default function ContactsClient() {
 
       {/* Loading State */}
       {isLoading ? (
-        <div style={{ textAlign: "center", padding: 40, color: "#6b7280" }}>Loading contacts...</div>
+        <div style={{ textAlign: "center", padding: 40, color: "hsl(var(--muted-foreground))" }}>Loading contacts...</div>
       ) : contacts.length === 0 ? (
         <div
           style={{
             textAlign: "center",
             padding: 40,
-            background: "#f9fafb",
+            background: "hsl(var(--muted))",
             borderRadius: 12,
-            color: "#6b7280",
+            color: "hsl(var(--muted-foreground))",
           }}
         >
           <p style={{ fontSize: 16, marginBottom: 8 }}>
@@ -632,7 +632,7 @@ export default function ContactsClient() {
             style={{
               marginBottom: 12,
               fontSize: 14,
-              color: "#6b7280",
+              color: "hsl(var(--muted-foreground))",
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
@@ -647,11 +647,11 @@ export default function ContactsClient() {
                 padding: "4px 10px",
                 fontSize: 11,
                 fontWeight: 600,
-                border: "1px solid #e5e7eb",
+                border: "1px solid hsl(var(--border))",
                 borderRadius: 4,
-                background: "#fff",
+                background: "hsl(var(--card))",
                 cursor: "pointer",
-                color: "#6b7280",
+                color: "hsl(var(--muted-foreground))",
               }}
             >
               {selectedIds.size === contacts.length ? "Deselect All" : "Select All"}
@@ -668,7 +668,7 @@ export default function ContactsClient() {
                   borderRadius: 6,
                   fontWeight: 700,
                   fontSize: 14,
-                  color: "#374151",
+                  color: "hsl(var(--foreground))",
                   marginBottom: 8,
                 }}
               >
@@ -683,8 +683,8 @@ export default function ContactsClient() {
                     onClick={() => router.push(`/app/contacts/${contact.id}`)}
                     style={{
                       padding: 16,
-                      background: "#fff",
-                      border: "1px solid #e5e7eb",
+                      background: "hsl(var(--card))",
+                      border: "1px solid hsl(var(--border))",
                       borderRadius: 8,
                       display: "flex",
                       justifyContent: "space-between",
@@ -717,7 +717,7 @@ export default function ContactsClient() {
                     <div style={{ minWidth: 200, flex: 1 }}>
                       <div style={{ fontWeight: 600, fontSize: 15 }}>{getDisplayName(contact)}</div>
                       {contact.email && (
-                        <div style={{ fontSize: 13, color: "#6b7280", marginTop: 2 }}>
+                        <div style={{ fontSize: 13, color: "hsl(var(--muted-foreground))", marginTop: 2 }}>
                           <a
                             href={`mailto:${contact.email}`}
                             onClick={(e) => e.stopPropagation()}
@@ -731,7 +731,7 @@ export default function ContactsClient() {
                         <div
                           style={{
                             fontSize: 13,
-                            color: "#6b7280",
+                            color: "hsl(var(--muted-foreground))",
                             marginTop: 2,
                             display: "flex",
                             alignItems: "center",
@@ -775,7 +775,7 @@ export default function ContactsClient() {
 
                     <div style={{ textAlign: "right", fontSize: 13 }}>
                       {(contact.city || contact.state) && (
-                        <div style={{ color: "#6b7280" }}>
+                        <div style={{ color: "hsl(var(--muted-foreground))" }}>
                           {[contact.city, contact.state].filter(Boolean).join(", ")}
                         </div>
                       )}
@@ -804,7 +804,7 @@ export default function ContactsClient() {
                             </span>
                           ))}
                           {contact.tags.length > 3 && (
-                            <span style={{ fontSize: 11, color: "#6b7280" }}>+{contact.tags.length - 3} more</span>
+                            <span style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>+{contact.tags.length - 3} more</span>
                           )}
                         </div>
                       )}

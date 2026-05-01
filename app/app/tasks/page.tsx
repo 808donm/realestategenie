@@ -19,7 +19,7 @@ export default function TasksPage() {
           ]}
         />
       </div>
-      <p style={{ color: "#6b7280", marginBottom: 24, fontSize: 14 }}>
+      <p style={{ color: "hsl(var(--muted-foreground))", marginBottom: 24, fontSize: 14 }}>
         Stay on top of follow-ups, calls, and deadlines.
       </p>
       <TasksClient />

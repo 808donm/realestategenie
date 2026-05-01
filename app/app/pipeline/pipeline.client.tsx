@@ -141,13 +141,13 @@ export default function PipelineClient() {
     return (
       <div style={{ padding: 40, textAlign: "center", background: "#fef2f2", borderRadius: 12, color: "#dc2626" }}>
         <p style={{ fontSize: 16, fontWeight: 600, marginBottom: 8 }}>{error}</p>
-        <p style={{ fontSize: 14, color: "#6b7280" }}>Make sure your CRM is connected in your Integrations settings.</p>
+        <p style={{ fontSize: 14, color: "hsl(var(--muted-foreground))" }}>Make sure your CRM is connected in your Integrations settings.</p>
       </div>
     );
   }
 
   if (isLoading) {
-    return <div style={{ padding: 60, textAlign: "center", color: "#6b7280" }}>Loading pipeline...</div>;
+    return <div style={{ padding: 60, textAlign: "center", color: "hsl(var(--muted-foreground))" }}>Loading pipeline...</div>;
   }
 
   const stages = pipelineData?.stages?.sort((a, b) => a.position - b.position) || [];
@@ -162,10 +162,10 @@ export default function PipelineClient() {
             onChange={(e) => setSelectedPipelineId(e.target.value)}
             style={{
               padding: "8px 14px",
-              border: "1px solid #d1d5db",
+              border: "1px solid hsl(var(--border))",
               borderRadius: 8,
               fontSize: 14,
-              background: "#fff",
+              background: "hsl(var(--card))",
             }}
           >
             {pipelines.map((p) => (
@@ -185,21 +185,21 @@ export default function PipelineClient() {
             gap: 20,
             marginBottom: 20,
             padding: 16,
-            background: "#f9fafb",
+            background: "hsl(var(--muted))",
             borderRadius: 12,
             flexWrap: "wrap",
           }}
         >
           <div>
-            <div style={{ fontSize: 12, color: "#6b7280", fontWeight: 600 }}>Pipeline</div>
+            <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>Pipeline</div>
             <div style={{ fontSize: 16, fontWeight: 700 }}>{pipelineData.pipelineName}</div>
           </div>
           <div>
-            <div style={{ fontSize: 12, color: "#6b7280", fontWeight: 600 }}>Total Deals</div>
+            <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>Total Deals</div>
             <div style={{ fontSize: 16, fontWeight: 700 }}>{pipelineData.totalOpportunities}</div>
           </div>
           <div>
-            <div style={{ fontSize: 12, color: "#6b7280", fontWeight: 600 }}>Total Value</div>
+            <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>Total Value</div>
             <div style={{ fontSize: 16, fontWeight: 700 }}>{formatCurrency(pipelineData.totalValue)}</div>
           </div>
         </div>
@@ -226,7 +226,7 @@ export default function PipelineClient() {
                 minWidth: 280,
                 maxWidth: 320,
                 flex: "1 0 280px",
-                background: "#f9fafb",
+                background: "hsl(var(--muted))",
                 borderRadius: 12,
                 display: "flex",
                 flexDirection: "column",
@@ -256,7 +256,7 @@ export default function PipelineClient() {
                     {stage.opportunityCount}
                   </span>
                 </div>
-                <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>{formatCurrency(stage.totalValue)}</div>
+                <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 4 }}>{formatCurrency(stage.totalValue)}</div>
               </div>
 
               {/* Cards */}
@@ -275,7 +275,7 @@ export default function PipelineClient() {
                     style={{
                       padding: 20,
                       textAlign: "center",
-                      color: "#9ca3af",
+                      color: "hsl(var(--muted-foreground))",
                       fontSize: 13,
                     }}
                   >
@@ -287,8 +287,8 @@ export default function PipelineClient() {
                       key={opp.id}
                       onClick={() => openLeadDetail(opp)}
                       style={{
-                        background: "#fff",
-                        border: "1px solid #e5e7eb",
+                        background: "hsl(var(--card))",
+                        border: "1px solid hsl(var(--border))",
                         borderRadius: 8,
                         padding: 12,
                         cursor: "pointer",
@@ -297,10 +297,10 @@ export default function PipelineClient() {
                       onMouseEnter={(e) => (e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.08)")}
                       onMouseLeave={(e) => (e.currentTarget.style.boxShadow = "none")}
                     >
-                      <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 4, color: "#111827" }}>
+                      <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 4, color: "hsl(var(--foreground))" }}>
                         {opp.contactName || "Unknown Contact"}
                       </div>
-                      <div style={{ fontSize: 13, color: "#6b7280", marginBottom: 6 }}>{opp.name}</div>
+                      <div style={{ fontSize: 13, color: "hsl(var(--muted-foreground))", marginBottom: 6 }}>{opp.name}</div>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                         <span style={{ fontWeight: 700, fontSize: 14, color: "#059669" }}>
                           {opp.monetaryValue ? formatCurrency(opp.monetaryValue) : "—"}
@@ -351,7 +351,7 @@ export default function PipelineClient() {
         >
           <div
             style={{
-              background: "#fff",
+              background: "hsl(var(--card))",
               borderRadius: 16,
               maxWidth: 700,
               width: "100%",
@@ -368,15 +368,15 @@ export default function PipelineClient() {
                   <h2 style={{ fontSize: 22, fontWeight: 700, margin: 0 }}>
                     {selectedLead.contactName || "Unknown Contact"}
                   </h2>
-                  <p style={{ color: "#6b7280", fontSize: 14, margin: "4px 0 0" }}>{selectedLead.name}</p>
+                  <p style={{ color: "hsl(var(--muted-foreground))", fontSize: 14, margin: "4px 0 0" }}>{selectedLead.name}</p>
                 </div>
                 <button
                   onClick={closeDetail}
                   style={{
                     padding: "6px 12px",
-                    border: "1px solid #d1d5db",
+                    border: "1px solid hsl(var(--border))",
                     borderRadius: 6,
-                    background: "#fff",
+                    background: "hsl(var(--card))",
                     cursor: "pointer",
                     fontSize: 16,
                   }}
@@ -392,19 +392,19 @@ export default function PipelineClient() {
                   gridTemplateColumns: "1fr 1fr",
                   gap: 12,
                   padding: 16,
-                  background: "#f9fafb",
+                  background: "hsl(var(--muted))",
                   borderRadius: 10,
                   marginBottom: 20,
                 }}
               >
                 <div>
-                  <div style={{ fontSize: 12, color: "#6b7280", fontWeight: 600 }}>Deal Value</div>
+                  <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>Deal Value</div>
                   <div style={{ fontSize: 20, fontWeight: 700, color: "#059669" }}>
                     {selectedLead.monetaryValue ? formatCurrency(selectedLead.monetaryValue) : "—"}
                   </div>
                 </div>
                 <div>
-                  <div style={{ fontSize: 12, color: "#6b7280", fontWeight: 600 }}>Status</div>
+                  <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", fontWeight: 600 }}>Status</div>
                   <div style={{ fontSize: 16, fontWeight: 600, textTransform: "capitalize" }}>
                     {selectedLead.status}
                   </div>
@@ -412,13 +412,13 @@ export default function PipelineClient() {
               </div>
 
               {isLoadingDetail ? (
-                <div style={{ padding: 40, textAlign: "center", color: "#6b7280" }}>Loading contact details...</div>
+                <div style={{ padding: 40, textAlign: "center", color: "hsl(var(--muted-foreground))" }}>Loading contact details...</div>
               ) : contactDetail ? (
                 <>
                   {/* Contact Info */}
                   {contactDetail.contact && (
                     <div style={{ marginBottom: 20 }}>
-                      <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 10, color: "#374151" }}>
+                      <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 10, color: "hsl(var(--foreground))" }}>
                         Contact Information
                       </h3>
                       <div
@@ -431,26 +431,26 @@ export default function PipelineClient() {
                       >
                         {contactDetail.contact.name && (
                           <>
-                            <span style={{ fontWeight: 600, color: "#374151" }}>Name:</span>
-                            <span style={{ color: "#6b7280" }}>{contactDetail.contact.name}</span>
+                            <span style={{ fontWeight: 600, color: "hsl(var(--foreground))" }}>Name:</span>
+                            <span style={{ color: "hsl(var(--muted-foreground))" }}>{contactDetail.contact.name}</span>
                           </>
                         )}
                         {contactDetail.contact.email && (
                           <>
-                            <span style={{ fontWeight: 600, color: "#374151" }}>Email:</span>
-                            <span style={{ color: "#6b7280" }}>{contactDetail.contact.email}</span>
+                            <span style={{ fontWeight: 600, color: "hsl(var(--foreground))" }}>Email:</span>
+                            <span style={{ color: "hsl(var(--muted-foreground))" }}>{contactDetail.contact.email}</span>
                           </>
                         )}
                         {contactDetail.contact.phone && (
                           <>
-                            <span style={{ fontWeight: 600, color: "#374151" }}>Phone:</span>
-                            <span style={{ color: "#6b7280" }}>{contactDetail.contact.phone}</span>
+                            <span style={{ fontWeight: 600, color: "hsl(var(--foreground))" }}>Phone:</span>
+                            <span style={{ color: "hsl(var(--muted-foreground))" }}>{contactDetail.contact.phone}</span>
                           </>
                         )}
                         {contactDetail.contact.address1 && (
                           <>
-                            <span style={{ fontWeight: 600, color: "#374151" }}>Address:</span>
-                            <span style={{ color: "#6b7280" }}>
+                            <span style={{ fontWeight: 600, color: "hsl(var(--foreground))" }}>Address:</span>
+                            <span style={{ color: "hsl(var(--muted-foreground))" }}>
                               {[
                                 contactDetail.contact.address1,
                                 contactDetail.contact.city,
@@ -464,7 +464,7 @@ export default function PipelineClient() {
                         )}
                         {contactDetail.contact.tags?.length > 0 && (
                           <>
-                            <span style={{ fontWeight: 600, color: "#374151" }}>Tags:</span>
+                            <span style={{ fontWeight: 600, color: "hsl(var(--foreground))" }}>Tags:</span>
                             <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
                               {contactDetail.contact.tags.map((tag: string) => (
                                 <span
@@ -489,11 +489,11 @@ export default function PipelineClient() {
 
                   {/* Notes */}
                   <div style={{ marginBottom: 20 }}>
-                    <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 10, color: "#374151" }}>
+                    <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 10, color: "hsl(var(--foreground))" }}>
                       Notes ({contactDetail.notes.length})
                     </h3>
                     {contactDetail.notes.length === 0 ? (
-                      <p style={{ color: "#9ca3af", fontSize: 14 }}>No notes yet.</p>
+                      <p style={{ color: "hsl(var(--muted-foreground))", fontSize: 14 }}>No notes yet.</p>
                     ) : (
                       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                         {contactDetail.notes.map((note: any, i: number) => (
@@ -507,9 +507,9 @@ export default function PipelineClient() {
                               fontSize: 13,
                             }}
                           >
-                            <div style={{ whiteSpace: "pre-wrap", color: "#374151" }}>{note.body}</div>
+                            <div style={{ whiteSpace: "pre-wrap", color: "hsl(var(--foreground))" }}>{note.body}</div>
                             {note.dateAdded && (
-                              <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 6 }}>
+                              <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", marginTop: 6 }}>
                                 {new Date(note.dateAdded).toLocaleString()}
                               </div>
                             )}
@@ -521,18 +521,18 @@ export default function PipelineClient() {
 
                   {/* Conversations */}
                   <div>
-                    <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 10, color: "#374151" }}>
+                    <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 10, color: "hsl(var(--foreground))" }}>
                       Conversations ({contactDetail.conversations.length})
                     </h3>
                     {contactDetail.conversations.length === 0 ? (
-                      <p style={{ color: "#9ca3af", fontSize: 14 }}>No conversations yet.</p>
+                      <p style={{ color: "hsl(var(--muted-foreground))", fontSize: 14 }}>No conversations yet.</p>
                     ) : (
                       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                         {contactDetail.conversations.map((conv: any) => (
                           <div
                             key={conv.id}
                             style={{
-                              border: "1px solid #e5e7eb",
+                              border: "1px solid hsl(var(--border))",
                               borderRadius: 8,
                               overflow: "hidden",
                             }}
@@ -543,7 +543,7 @@ export default function PipelineClient() {
                                 background: "#f3f4f6",
                                 fontSize: 12,
                                 fontWeight: 600,
-                                color: "#374151",
+                                color: "hsl(var(--foreground))",
                               }}
                             >
                               {conv.type || "Conversation"} —{" "}
@@ -563,15 +563,15 @@ export default function PipelineClient() {
                                       maxWidth: "85%",
                                     }}
                                   >
-                                    <div style={{ color: "#374151" }}>{msg.body || msg.message || msg.text || ""}</div>
-                                    <div style={{ fontSize: 10, color: "#9ca3af", marginTop: 2 }}>
+                                    <div style={{ color: "hsl(var(--foreground))" }}>{msg.body || msg.message || msg.text || ""}</div>
+                                    <div style={{ fontSize: 10, color: "hsl(var(--muted-foreground))", marginTop: 2 }}>
                                       {msg.dateAdded ? new Date(msg.dateAdded).toLocaleString() : ""}
                                     </div>
                                   </div>
                                 ))}
                               </div>
                             ) : (
-                              <div style={{ padding: 12, color: "#9ca3af", fontSize: 13 }}>No messages loaded.</div>
+                              <div style={{ padding: 12, color: "hsl(var(--muted-foreground))", fontSize: 13 }}>No messages loaded.</div>
                             )}
                           </div>
                         ))}
@@ -580,7 +580,7 @@ export default function PipelineClient() {
                   </div>
                 </>
               ) : (
-                <p style={{ color: "#9ca3af", fontSize: 14, textAlign: "center", padding: 20 }}>
+                <p style={{ color: "hsl(var(--muted-foreground))", fontSize: 14, textAlign: "center", padding: 20 }}>
                   Could not load contact details.
                 </p>
               )}

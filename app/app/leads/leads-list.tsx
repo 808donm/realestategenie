@@ -146,7 +146,7 @@ export default function LeadsList({ leads, eventMap }: LeadsListProps) {
       key: "dnc",
       label: "Do Not Contact",
       count: dncLeads.length,
-      color: "#6b7280",
+      color: "hsl(var(--muted-foreground))",
       icon: <Ban className="w-4 h-4" />,
     },
   ];
@@ -217,21 +217,21 @@ export default function LeadsList({ leads, eventMap }: LeadsListProps) {
       {/* Lead Table */}
       <div style={{ marginTop: 20 }}>
         {currentLeads.length === 0 ? (
-          <div style={{ padding: 40, textAlign: "center", color: "#9ca3af", background: "#f9fafb", borderRadius: 12 }}>
+          <div style={{ padding: 40, textAlign: "center", color: "hsl(var(--muted-foreground))", background: "hsl(var(--muted))", borderRadius: 12 }}>
             No {tabs.find((t) => t.key === activeTab)?.label.toLowerCase()} leads.
           </div>
         ) : (
-          <div style={{ border: "1px solid #e5e7eb", borderRadius: 12, overflow: "hidden" }}>
+          <div style={{ border: "1px solid hsl(var(--border))", borderRadius: 12, overflow: "hidden" }}>
             {/* Table Header */}
             <div
               style={{
                 display: "grid",
                 gridTemplateColumns: activeTab === "dnc" ? "2fr 1.5fr 2fr 1fr 1.5fr" : "2fr 1.5fr 2fr 1fr 1fr 1.5fr",
                 padding: "10px 16px",
-                background: "#f9fafb",
+                background: "hsl(var(--muted))",
                 fontWeight: 700,
                 fontSize: 12,
-                color: "#6b7280",
+                color: "hsl(var(--muted-foreground))",
                 borderBottom: "1px solid #e5e7eb",
               }}
             >
@@ -273,7 +273,7 @@ export default function LeadsList({ leads, eventMap }: LeadsListProps) {
                     borderBottom: "1px solid #f3f4f6",
                     fontSize: 13,
                     alignItems: "center",
-                    background: "#fff",
+                    background: "hsl(var(--card))",
                     transition: "background 0.1s",
                     cursor: "pointer",
                   }}
@@ -283,8 +283,8 @@ export default function LeadsList({ leads, eventMap }: LeadsListProps) {
                 >
                   {/* Name */}
                   <div>
-                    <div style={{ fontWeight: 600, color: "#111827" }}>{p.name || "Unknown"}</div>
-                    {p.financing && <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 2 }}>{p.financing}</div>}
+                    <div style={{ fontWeight: 600, color: "hsl(var(--foreground))" }}>{p.name || "Unknown"}</div>
+                    {p.financing && <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", marginTop: 2 }}>{p.financing}</div>}
                   </div>
 
                   {/* Contact */}
@@ -362,7 +362,7 @@ export default function LeadsList({ leads, eventMap }: LeadsListProps) {
 
                   {activeTab === "dnc" ? (
                     /* Agent of Record */
-                    <div style={{ fontSize: 12, color: "#6b7280" }}>
+                    <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>
                       {p.agent_name || p.representation_agent || "Has agent"}
                     </div>
                   ) : (
@@ -385,12 +385,12 @@ export default function LeadsList({ leads, eventMap }: LeadsListProps) {
                       </div>
 
                       {/* Timeline */}
-                      <div style={{ fontSize: 12, color: "#6b7280" }}>{p.timeline || "—"}</div>
+                      <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>{p.timeline || "—"}</div>
                     </>
                   )}
 
                   {/* Date */}
-                  <div style={{ fontSize: 12, color: "#9ca3af" }}>{new Date(l.created_at).toLocaleDateString()}</div>
+                  <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>{new Date(l.created_at).toLocaleDateString()}</div>
                 </div>
               );
             })}

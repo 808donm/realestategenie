@@ -42,7 +42,7 @@ export default function PipelineTabs() {
               padding: "10px 20px",
               fontSize: 14,
               fontWeight: activeTab === tab.key ? 700 : 500,
-              color: activeTab === tab.key ? "#111827" : "#6b7280",
+              color: activeTab === tab.key ? "hsl(var(--foreground))" : "hsl(var(--muted-foreground))",
               background: "transparent",
               border: "none",
               borderBottom: activeTab === tab.key ? "2px solid #6366f1" : "2px solid transparent",
