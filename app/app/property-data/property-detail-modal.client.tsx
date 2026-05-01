@@ -6824,7 +6824,17 @@ function ListingHistorySection({ address }: { address: string }) {
 
           // If we have unit-specific results, show only those
           // Otherwise fall back to all building results (for SFR)
-          const toShow = unitResults.length > 0 ? unitResults : buildingResults;
+          let toShow = unitResults.length > 0 ? unitResults : buildingResults;
+
+          // Drop rentals — Listing History is for-sale only. The API now
+          // filters these out, but apply client-side as well so previously
+          // cached responses that included leases are scrubbed without a
+          // cache invalidation.
+          toShow = toShow.filter((l: any) => {
+            const t = (l.propertyType || "").toLowerCase();
+            const sub = (l.propertySubType || "").toLowerCase();
+            return !t.includes("lease") && !sub.includes("lease") && !sub.includes("rental");
+          });
 
           // Sort by most recent first
           toShow.sort((a: any, b: any) => {

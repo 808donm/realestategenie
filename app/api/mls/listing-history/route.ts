@@ -109,10 +109,16 @@ export async function GET(request: NextRequest) {
     const selectFields =
       "ListingKey,ListingId,StandardStatus,ListPrice,OriginalListPrice,ClosePrice,CloseDate,OnMarketDate,DaysOnMarket,CumulativeDaysOnMarket,ModificationTimestamp,UnparsedAddress,StreetNumber,StreetName,StreetSuffix,UnitNumber,City,PostalCode,BedroomsTotal,BathroomsTotalInteger,LivingArea,PropertyType,PropertySubType,ListAgentFullName,BuyerAgentFullName,ListOfficeName,BuyerOfficeName,OwnershipType";
 
-    // Query ALL statuses for this address (no StandardStatus filter)
-    const baseFilter = streetNum
+    // Query ALL statuses for this address (no StandardStatus filter), but
+    // exclude lease records — Listing History is for-sale history only.
+    // Rentals (PropertyType "Residential Lease" / "Commercial Lease") share
+    // the same address but represent a different transaction type and would
+    // otherwise pollute the history with $1,500-$5,000 entries.
+    const addressFilter = streetNum
       ? `tolower(StreetNumber) eq '${streetNum.toLowerCase()}' and contains(tolower(StreetName), '${escapedName}')`
       : `contains(tolower(UnparsedAddress), '${escapedName}')`;
+    const noLease = `not contains(tolower(PropertyType), 'lease')`;
+    const baseFilter = `${addressFilter} and ${noLease}`;
 
     let unitListings: any[] = [];
     let buildingListings: any[] = [];
