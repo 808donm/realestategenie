@@ -3,6 +3,13 @@ import { supabaseServer } from "@/lib/supabase/server";
 import { getReapiClient, mapReapiToAttomShape } from "@/lib/integrations/reapi-client";
 import { scoreLead } from "@/lib/bird-dog/bird-dog-engine";
 import { resolveStateFromZip } from "@/lib/zip-to-state";
+import {
+  buildPropertyCacheKey,
+  propertyCacheGet,
+  propertyCacheSet,
+  propertyDbRead,
+  propertyDbWrite,
+} from "@/lib/integrations/property-data-cache";
 
 /**
  * GET /api/prospecting/reapi-search
@@ -38,6 +45,30 @@ export async function GET(request: NextRequest) {
     const size = Math.min(Number(params.get("size") || "250"), 500);
 
     if (!zip) return NextResponse.json({ error: "zip is required" }, { status: 400 });
+
+    // ── Cache check ──
+    // Each REAPI detail call is metered, so the same (zip, mode, type, filters)
+    // tuple should NOT re-fetch within the cache window. Without this layer
+    // every preview / re-search burned ~5% of the monthly allotment.
+    const cacheKey = buildPropertyCacheKey("unified", "reapi-prospect-search", {
+      zip,
+      mode,
+      propertyType: propertyType || "",
+      minYearsOwned: minYearsOwned || "",
+      minAvm: minAvm || "",
+      minEquity: minEquity || "",
+      size,
+    });
+
+    const memCached = propertyCacheGet(cacheKey);
+    if (memCached) {
+      return NextResponse.json({ ...(memCached.data as object), cached: "memory" });
+    }
+    const dbCached = await propertyDbRead(cacheKey, "reapi-prospect-search");
+    if (dbCached) {
+      propertyCacheSet(cacheKey, dbCached.data, "unified");
+      return NextResponse.json({ ...(dbCached.data as object), cached: "db" });
+    }
 
     // Build REAPI search criteria based on prospecting mode
     // Always request a large pool of IDs (free) to get enough results after filtering
@@ -86,11 +117,16 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ properties: [], total: 0, scanned: 0, mode });
     }
 
-    // Step 2: Get full details for top results
-    // When post-filtering (e.g., minYearsOwned, minEquity), we need more detail calls
-    // since many will be filtered out. Cap higher to get enough results.
-    const detailCap = hasPostFilter ? Math.min(allIds.length, 300) : Math.min(allIds.length, 200);
-    const targetResults = Math.min(size, 100);
+    // Step 2: Get full details for top results.
+    // Each detail call is METERED. Conservative caps to control spend:
+    //   - target 25 results by default (was 100 — agents only review top
+    //     results anyway, can re-run if they want more)
+    //   - detail cap = 60 (was 200) without post-filter, 120 (was 300)
+    //     with post-filter to allow rejection slack
+    // The full result set is cached for 7 days so re-running the same
+    // search is free.
+    const detailCap = hasPostFilter ? Math.min(allIds.length, 120) : Math.min(allIds.length, 60);
+    const targetResults = Math.min(size, 25);
     const idsToFetch = allIds.slice(0, detailCap);
     const properties: any[] = [];
     const errors: string[] = [];
@@ -174,14 +210,24 @@ export async function GET(request: NextRequest) {
 
     console.log(`[Prospecting] REAPI ${mode} search for ${zip}: ${allIds.length} total, ${properties.length} fetched, ${errors.length} errors`);
 
-    return NextResponse.json({
+    const response = {
       properties,
       total: idsResult.resultCount || allIds.length,
       fetched: properties.length,
       scanned: allIds.length,
       mode,
       errors: errors.length > 0 ? errors : undefined,
-    });
+    };
+
+    // Cache successful results for 7 days. The cache layer handles both
+    // in-memory (this server instance) and Supabase persistence (cross-
+    // instance + survives restarts).
+    if (properties.length > 0) {
+      propertyCacheSet(cacheKey, response, "unified");
+      propertyDbWrite(cacheKey, "reapi-prospect-search", response, "unified").catch(() => {});
+    }
+
+    return NextResponse.json(response);
   } catch (error: any) {
     console.error("[Prospecting] REAPI search error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
