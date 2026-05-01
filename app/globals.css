@@ -25,7 +25,7 @@
   --info-foreground: 0 0% 100%;
 
   /* Base Colors */
-  --background: 0 0% 100%;
+  --background: 0 0% 98%; /* matches the previous app-shell #fafafa */
   --foreground: 222 47% 11%;
 
   --card: 0 0% 100%;
@@ -47,45 +47,49 @@
   --radius: 0.5rem;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --primary: 220 90% 56%;
-    --primary-foreground: 0 0% 100%;
+/*
+ * Dark mode is class-based, not media-query-based, so the user's explicit
+ * preference (Settings → Appearance) overrides the OS setting. The
+ * ThemeProvider sets `html.dark` whenever the effective theme is dark
+ * (either user picked dark, or user picked system AND the OS is dark).
+ */
+:root.dark {
+  --primary: 220 90% 56%;
+  --primary-foreground: 0 0% 100%;
 
-    --secondary: 220 15% 15%;
-    --secondary-foreground: 220 10% 90%;
+  --secondary: 220 15% 15%;
+  --secondary-foreground: 220 10% 90%;
 
-    --accent: 220 15% 20%;
-    --accent-foreground: 220 10% 90%;
+  --accent: 220 15% 20%;
+  --accent-foreground: 220 10% 90%;
 
-    --success: 142 76% 36%;
-    --success-foreground: 0 0% 100%;
+  --success: 142 76% 36%;
+  --success-foreground: 0 0% 100%;
 
-    --warning: 38 92% 50%;
-    --warning-foreground: 0 0% 100%;
+  --warning: 38 92% 50%;
+  --warning-foreground: 0 0% 100%;
 
-    --danger: 0 84% 60%;
-    --danger-foreground: 0 0% 100%;
+  --danger: 0 84% 60%;
+  --danger-foreground: 0 0% 100%;
 
-    --info: 199 89% 48%;
-    --info-foreground: 0 0% 100%;
+  --info: 199 89% 48%;
+  --info-foreground: 0 0% 100%;
 
-    --background: 222 47% 5%;
-    --foreground: 220 10% 95%;
+  --background: 222 47% 5%;
+  --foreground: 220 10% 95%;
 
-    --card: 222 47% 8%;
-    --card-foreground: 220 10% 95%;
+  --card: 222 47% 8%;
+  --card-foreground: 220 10% 95%;
 
-    --popover: 222 47% 8%;
-    --popover-foreground: 220 10% 95%;
+  --popover: 222 47% 8%;
+  --popover-foreground: 220 10% 95%;
 
-    --muted: 220 15% 15%;
-    --muted-foreground: 220 10% 60%;
+  --muted: 220 15% 15%;
+  --muted-foreground: 220 10% 60%;
 
-    --border: 220 13% 20%;
-    --input: 220 13% 20%;
-    --ring: 220 90% 56%;
-  }
+  --border: 220 13% 20%;
+  --input: 220 13% 20%;
+  --ring: 220 90% 56%;
 }
 
 @theme inline {

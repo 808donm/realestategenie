@@ -9,6 +9,7 @@ import MobileBottomBar from "./components/sidebar/mobile-bottom-bar";
 import GlobalSearch from "./components/global-search";
 import Breadcrumbs from "./components/breadcrumbs";
 import NotificationCenter from "./components/notification-center";
+import ThemeToggle from "@/components/theme-toggle";
 
 import { getSubscriptionStatus, getSuggestedUpgradePlan } from "@/lib/subscriptions/utils";
 import { checkFeatureAccess } from "@/lib/subscriptions/server-utils";
@@ -109,7 +110,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   };
 
   return (
-    <div className="min-h-screen bg-[#fafafa] flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col">
       {/* Impersonation Banner (only visible when admin is viewing as another user) */}
       <ImpersonationBanner />
 
@@ -134,6 +135,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               <div className="flex-1">
                 <GlobalSearch />
               </div>
+              <ThemeToggle />
               <NotificationCenter />
             </div>
           </div>
