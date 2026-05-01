@@ -41,8 +41,8 @@ export default function PipelineStats({
             <div className="text-2xl font-bold">{totalLeads}</div>
             <div className="text-xs text-muted-foreground">Total Leads</div>
           </div>
-          <div className="text-center p-3 rounded-lg bg-red-50">
-            <div className="text-2xl font-bold text-red-600">{hotLeads}</div>
+          <div className="text-center p-3 rounded-lg bg-red-50 dark:bg-red-950/30">
+            <div className="text-2xl font-bold text-red-600 dark:text-red-400">{hotLeads}</div>
             <div className="text-xs text-muted-foreground">Hot Leads</div>
           </div>
         </div>

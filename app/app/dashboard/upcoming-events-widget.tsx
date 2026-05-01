@@ -73,7 +73,7 @@ export default function UpcomingEventsWidget() {
           </CardTitle>
           <Link
             href="/app/calendar"
-            className="text-xs text-blue-600 hover:text-blue-800 flex items-center gap-0.5 no-underline"
+            className="text-xs text-primary hover:opacity-80 flex items-center gap-0.5 no-underline"
           >
             View calendar <ChevronRight className="w-3 h-3" />
           </Link>
@@ -82,14 +82,14 @@ export default function UpcomingEventsWidget() {
       <CardContent>
         <div className="space-y-2">
           {events.map((event) => (
-            <div key={event.id} className="flex items-start gap-2.5 px-3 py-2 bg-gray-50 rounded-lg">
+            <div key={event.id} className="flex items-start gap-2.5 px-3 py-2 bg-muted rounded-lg">
               <span
                 className="flex-shrink-0 w-2 h-2 rounded-full mt-1.5"
                 style={{ background: SOURCE_DOT[event.source] || "#6b7280" }}
               />
               <div className="flex-1 min-w-0">
-                <div className="text-xs font-semibold text-gray-800 truncate">{event.title}</div>
-                <div className="flex items-center gap-2 mt-0.5 text-[11px] text-gray-500">
+                <div className="text-xs font-semibold text-foreground truncate">{event.title}</div>
+                <div className="flex items-center gap-2 mt-0.5 text-[11px] text-muted-foreground">
                   <span className="flex items-center gap-0.5">
                     <Clock className="w-3 h-3" />
                     {formatEventTime(event.start_at, event.all_day)}

@@ -71,18 +71,20 @@ export default function TasksWidget() {
         </div>
         <div className="space-y-1">
           {tasks.map((task) => (
-            <div key={task.id} className="flex items-center gap-2 px-2 py-1.5 bg-gray-50 rounded-lg group">
+            <div key={task.id} className="flex items-center gap-2 px-2 py-1.5 bg-muted rounded-lg group">
               <button
                 onClick={() => markComplete(task.id)}
-                className="flex-shrink-0 w-4 h-4 rounded-full border-2 border-gray-300 hover:border-green-400 transition-colors"
+                className="flex-shrink-0 w-4 h-4 rounded-full border-2 border-border hover:border-green-400 transition-colors"
                 title="Mark complete"
               />
               <span
                 className="flex-shrink-0 w-1.5 h-1.5 rounded-full"
                 style={{ background: PRIORITY_DOT[task.priority] || "#2563eb" }}
               />
-              <span className="text-xs text-gray-700 font-medium truncate flex-1">{task.title}</span>
-              {task.due_date && <span className="text-[10px] text-gray-400 flex-shrink-0">{task.due_date}</span>}
+              <span className="text-xs text-foreground font-medium truncate flex-1">{task.title}</span>
+              {task.due_date && (
+                <span className="text-[10px] text-muted-foreground flex-shrink-0">{task.due_date}</span>
+              )}
             </div>
           ))}
         </div>
@@ -100,16 +102,16 @@ export default function TasksWidget() {
           </CardTitle>
           <Link
             href="/app/tasks"
-            className="text-xs text-blue-600 hover:text-blue-800 flex items-center gap-0.5 no-underline"
+            className="text-xs text-primary hover:opacity-80 flex items-center gap-0.5 no-underline"
           >
             View all <ChevronRight className="w-3 h-3" />
           </Link>
         </div>
       </CardHeader>
       <CardContent>
-        {renderSection("Overdue", overdueTasks, <AlertCircle className="w-3 h-3" />, "text-red-600")}
-        {renderSection("Today", todayTasks, <Calendar className="w-3 h-3" />, "text-blue-600")}
-        {renderSection("Upcoming", upcomingTasks, <Clock className="w-3 h-3" />, "text-gray-500")}
+        {renderSection("Overdue", overdueTasks, <AlertCircle className="w-3 h-3" />, "text-red-600 dark:text-red-400")}
+        {renderSection("Today", todayTasks, <Calendar className="w-3 h-3" />, "text-primary")}
+        {renderSection("Upcoming", upcomingTasks, <Clock className="w-3 h-3" />, "text-muted-foreground")}
       </CardContent>
     </Card>
   );

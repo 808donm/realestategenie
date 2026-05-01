@@ -30,7 +30,7 @@ export default function ListingSnapshot({ stats }: { stats: ListingStat }) {
             <div className="text-xs text-muted-foreground">Avg DOM</div>
           </div>
           <div className="text-center">
-            <div className={`text-2xl font-bold ${stats.staleCount > 0 ? "text-amber-600" : ""}`}>
+            <div className={`text-2xl font-bold ${stats.staleCount > 0 ? "text-amber-600 dark:text-amber-400" : ""}`}>
               {stats.staleCount}
             </div>
             <div className="text-xs text-muted-foreground">21+ DOM</div>
@@ -39,7 +39,7 @@ export default function ListingSnapshot({ stats }: { stats: ListingStat }) {
 
         {stats.staleListings.length > 0 && (
           <div className="border-t pt-3 space-y-2">
-            <div className="flex items-center gap-1.5 text-xs font-medium text-amber-700">
+            <div className="flex items-center gap-1.5 text-xs font-medium text-amber-700 dark:text-amber-400">
               <AlertTriangle className="w-3 h-3" />
               Stale listings needing attention
             </div>

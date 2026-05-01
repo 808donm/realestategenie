@@ -47,7 +47,7 @@ export default function SyncHealthWidget() {
   const hasErrors = syncs.some((s) => s.status === "error" || s.last_error);
 
   return (
-    <Card className={hasErrors ? "border-amber-200" : ""}>
+    <Card className={hasErrors ? "border-warning/40" : ""}>
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-base flex items-center gap-2">
@@ -56,7 +56,7 @@ export default function SyncHealthWidget() {
           </CardTitle>
           <Link
             href="/app/integrations"
-            className="text-xs text-blue-600 hover:text-blue-800 flex items-center gap-0.5 no-underline"
+            className="text-xs text-primary hover:opacity-80 flex items-center gap-0.5 no-underline"
           >
             Manage <ChevronRight className="w-3 h-3" />
           </Link>
@@ -73,19 +73,23 @@ export default function SyncHealthWidget() {
               <div
                 key={sync.provider}
                 className={`flex items-center gap-2.5 px-3 py-2 rounded-lg ${
-                  isError ? "bg-red-50" : isDisconnected ? "bg-gray-50" : "bg-green-50"
+                  isError
+                    ? "bg-red-50 dark:bg-red-950/30"
+                    : isDisconnected
+                      ? "bg-muted"
+                      : "bg-green-50 dark:bg-green-950/30"
                 }`}
               >
                 {isError ? (
                   <XCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
                 ) : isDisconnected ? (
-                  <AlertTriangle className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                  <AlertTriangle className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                 ) : (
                   <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" />
                 )}
                 <div className="flex-1 min-w-0">
-                  <div className="text-xs font-semibold text-gray-800">{label}</div>
-                  <div className="text-[11px] text-gray-500">
+                  <div className="text-xs font-semibold text-foreground">{label}</div>
+                  <div className="text-[11px] text-muted-foreground">
                     {isDisconnected ? (
                       "Not connected"
                     ) : sync.last_sync_at ? (
@@ -94,7 +98,9 @@ export default function SyncHealthWidget() {
                       "Never synced"
                     )}
                   </div>
-                  {sync.last_error && <div className="text-[10px] text-red-500 mt-0.5 truncate">{sync.last_error}</div>}
+                  {sync.last_error && (
+                    <div className="text-[10px] text-red-500 dark:text-red-400 mt-0.5 truncate">{sync.last_error}</div>
+                  )}
                 </div>
               </div>
             );

@@ -124,11 +124,11 @@ export default function TodayView({
 
       {/* Urgent Follow-ups */}
       {urgentFollowUps.length > 0 && (
-        <Card className="border-amber-200 bg-amber-50/50">
+        <Card className="border-amber-200 bg-amber-50/50 dark:border-amber-900/40 dark:bg-amber-950/20">
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
-              <Clock className="w-4 h-4 text-amber-600" />
-              <span className="text-amber-900">Needs Attention</span>
+              <Clock className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+              <span className="text-amber-900 dark:text-amber-200">Needs Attention</span>
               <Badge variant="warning" className="ml-auto">
                 {urgentFollowUps.length}
               </Badge>
@@ -140,13 +140,15 @@ export default function TodayView({
                 <Link
                   key={lead.leadId}
                   href={`/app/leads`}
-                  className="flex items-center justify-between p-2 rounded-md hover:bg-amber-100/50 transition-colors no-underline"
+                  className="flex items-center justify-between p-2 rounded-md hover:bg-amber-100/50 dark:hover:bg-amber-900/30 transition-colors no-underline"
                 >
                   <div>
                     <span className="text-sm font-medium">{lead.name}</span>
                     <span className="text-xs text-muted-foreground ml-2">{lead.pipelineStageLabel}</span>
                   </div>
-                  <div className="text-xs text-amber-700 font-medium">{lead.daysSinceLastTouch}d ago</div>
+                  <div className="text-xs text-amber-700 dark:text-amber-400 font-medium">
+                    {lead.daysSinceLastTouch}d ago
+                  </div>
                 </Link>
               ))}
             </div>

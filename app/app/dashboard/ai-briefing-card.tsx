@@ -18,10 +18,10 @@ export default function AIBriefingCard({
 }) {
   if (!priorities || priorities.length === 0) {
     return (
-      <Card className="border-indigo-200 bg-indigo-50/30">
+      <Card className="border-indigo-200 bg-indigo-50/30 dark:border-indigo-900/40 dark:bg-indigo-950/20">
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-indigo-600" />
+            <Sparkles className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
             AI Daily Briefing
           </CardTitle>
         </CardHeader>
@@ -38,11 +38,11 @@ export default function AIBriefingCard({
   const priorityColors = ["bg-red-500", "bg-amber-500", "bg-blue-500"];
 
   return (
-    <Card className="border-indigo-200 bg-indigo-50/30">
+    <Card className="border-indigo-200 bg-indigo-50/30 dark:border-indigo-900/40 dark:bg-indigo-950/20">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-base flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-indigo-600" />
+            <Sparkles className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
             AI Daily Briefing
           </CardTitle>
           {generatedAt && (
@@ -71,7 +71,7 @@ export default function AIBriefingCard({
             </div>
           ))}
         </div>
-        <p className="text-[9px] text-gray-400 leading-relaxed text-center mt-4">
+        <p className="text-[9px] text-muted-foreground leading-relaxed text-center mt-4">
           This content was generated using AI. AI can make mistakes. Check AI generated content against reliable
           information before using.
         </p>

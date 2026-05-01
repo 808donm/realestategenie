@@ -16,7 +16,7 @@ export default function MarketPulse({ stats }: { stats: MarketStat[] }) {
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground">
-            Connect ATTOM or Trestle MLS to see market stats for your area.
+            Connect MLS or Property Data to see market stats for your area.
           </p>
         </CardContent>
       </Card>
@@ -33,7 +33,11 @@ export default function MarketPulse({ stats }: { stats: MarketStat[] }) {
           {stats.map((stat) => {
             const TrendIcon = stat.trend === "up" ? TrendingUp : stat.trend === "down" ? TrendingDown : Minus;
             const trendColor =
-              stat.trend === "up" ? "text-green-600" : stat.trend === "down" ? "text-red-600" : "text-gray-400";
+              stat.trend === "up"
+                ? "text-green-600 dark:text-green-400"
+                : stat.trend === "down"
+                  ? "text-red-600 dark:text-red-400"
+                  : "text-muted-foreground";
 
             return (
               <div key={stat.label} className="p-3 rounded-lg bg-muted/50">

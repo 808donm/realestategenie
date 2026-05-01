@@ -81,25 +81,25 @@ export default function QuickActions() {
 
           {/* One-Tap Contact Actions for Hot Leads */}
           {hotLeads.length > 0 && (
-            <div className="mt-4 pt-4 border-t border-gray-100">
-              <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+            <div className="mt-4 pt-4 border-t border-border">
+              <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
                 Quick Contact — Hot Leads
               </h4>
               <div className="space-y-2">
                 {hotLeads.map((lead) => (
                   <div
                     key={lead.id}
-                    className="flex items-center justify-between gap-2 px-3 py-2 bg-gray-50 rounded-lg"
+                    className="flex items-center justify-between gap-2 px-3 py-2 bg-muted rounded-lg"
                   >
                     <div className="min-w-0 flex-1">
-                      <div className="text-sm font-semibold text-gray-900 truncate">{lead.name}</div>
-                      <div className="text-xs text-gray-500">Score: {lead.heatScore}</div>
+                      <div className="text-sm font-semibold text-foreground truncate">{lead.name}</div>
+                      <div className="text-xs text-muted-foreground">Score: {lead.heatScore}</div>
                     </div>
                     <div className="flex items-center gap-1.5 flex-shrink-0">
                       {lead.phone && (
                         <a
                           href={`tel:${lead.phone}`}
-                          className="flex items-center justify-center w-8 h-8 bg-green-100 text-green-700 rounded-full hover:bg-green-200 transition-colors"
+                          className="flex items-center justify-center w-8 h-8 bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300 rounded-full hover:bg-green-200 dark:hover:bg-green-900/60 transition-colors"
                           title={`Call ${lead.name}`}
                         >
                           <Phone className="w-3.5 h-3.5" />
@@ -108,7 +108,7 @@ export default function QuickActions() {
                       {lead.phone && (
                         <a
                           href={`sms:${lead.phone}`}
-                          className="flex items-center justify-center w-8 h-8 bg-blue-100 text-blue-700 rounded-full hover:bg-blue-200 transition-colors"
+                          className="flex items-center justify-center w-8 h-8 bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 rounded-full hover:bg-blue-200 dark:hover:bg-blue-900/60 transition-colors"
                           title={`Text ${lead.name}`}
                         >
                           <MessageSquare className="w-3.5 h-3.5" />
@@ -117,7 +117,7 @@ export default function QuickActions() {
                       {lead.email && (
                         <a
                           href={`mailto:${lead.email}`}
-                          className="flex items-center justify-center w-8 h-8 bg-amber-100 text-amber-700 rounded-full hover:bg-amber-200 transition-colors"
+                          className="flex items-center justify-center w-8 h-8 bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 rounded-full hover:bg-amber-200 dark:hover:bg-amber-900/60 transition-colors"
                           title={`Email ${lead.name}`}
                         >
                           <Mail className="w-3.5 h-3.5" />
@@ -137,25 +137,25 @@ export default function QuickActions() {
         {isFloatingOpen && (
           <div className="mb-3 flex flex-col gap-2 items-end animate-in fade-in slide-in-from-bottom-2 duration-200">
             <Link href="/app/open-houses/new" className="no-underline">
-              <button className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 rounded-full shadow-lg text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors">
+              <button className="flex items-center gap-2 px-4 py-2.5 bg-card border border-border rounded-full shadow-lg text-sm font-semibold text-foreground hover:bg-muted transition-colors">
                 <Home className="w-4 h-4 text-indigo-500" />
                 New Open House
               </button>
             </Link>
             <Link href="/app/tasks" className="no-underline">
-              <button className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 rounded-full shadow-lg text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors">
+              <button className="flex items-center gap-2 px-4 py-2.5 bg-card border border-border rounded-full shadow-lg text-sm font-semibold text-foreground hover:bg-muted transition-colors">
                 <ListTodo className="w-4 h-4 text-purple-500" />
                 Add Task
               </button>
             </Link>
             <Link href="/app/leads" className="no-underline">
-              <button className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 rounded-full shadow-lg text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors">
+              <button className="flex items-center gap-2 px-4 py-2.5 bg-card border border-border rounded-full shadow-lg text-sm font-semibold text-foreground hover:bg-muted transition-colors">
                 <UserPlus className="w-4 h-4 text-green-500" />
                 View Leads
               </button>
             </Link>
             <Link href="/app/mls" className="no-underline">
-              <button className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 rounded-full shadow-lg text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors">
+              <button className="flex items-center gap-2 px-4 py-2.5 bg-card border border-border rounded-full shadow-lg text-sm font-semibold text-foreground hover:bg-muted transition-colors">
                 <Search className="w-4 h-4 text-blue-500" />
                 MLS Search
               </button>
