@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
 import { getReapiClient, mapReapiToAttomShape } from "@/lib/integrations/reapi-client";
 import { scoreLead } from "@/lib/bird-dog/bird-dog-engine";
+import { resolveStateFromZip } from "@/lib/zip-to-state";
 
 /**
  * GET /api/prospecting/reapi-search
@@ -42,11 +43,18 @@ export async function GET(request: NextRequest) {
     // Always request a large pool of IDs (free) to get enough results after filtering
     const hasPostFilter = minYearsOwned || minEquity;
     const searchSize = hasPostFilter ? Math.min(size * 3, 1500) : Math.min(size * 2, 1000);
+
+    // Derive state from the ZIP prefix. REAPI's search treats ZIP as a
+    // hint, not a unique key — without `state` it can return matches from
+    // the wrong region or none at all. Hardcoding "HI" was a leftover
+    // from the Hawaii-only era and broke every mainland search.
+    const state = resolveStateFromZip(zip);
+
     const criteria: Record<string, any> = {
       zip,
       size: searchSize,
-      state: "HI",
     };
+    if (state) criteria.state = state;
 
     if (propertyType) criteria.property_type = propertyType;
     if (minAvm) criteria.value_min = minAvm;
