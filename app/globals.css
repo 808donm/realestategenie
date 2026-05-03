@@ -1,5 +1,13 @@
 @import "tailwindcss";
 
+/*
+ * Class-based dark mode for Tailwind 4. Without this, the default `dark:`
+ * variant uses the OS media query (prefers-color-scheme: dark) and ignores
+ * our html.dark class. The ThemeProvider toggles html.dark; this variant
+ * makes every `dark:bg-foo` / `dark:text-bar` rule match it.
+ */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   /* Brand Colors */
   --primary: 220 90% 56%; /* Blue #3b82f6 */
