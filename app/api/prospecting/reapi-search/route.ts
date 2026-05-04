@@ -3,13 +3,6 @@ import { supabaseServer } from "@/lib/supabase/server";
 import { getReapiClient, mapReapiToAttomShape } from "@/lib/integrations/reapi-client";
 import { scoreLead } from "@/lib/bird-dog/bird-dog-engine";
 import { resolveStateFromZip } from "@/lib/zip-to-state";
-import {
-  buildPropertyCacheKey,
-  propertyCacheGet,
-  propertyCacheSet,
-  propertyDbRead,
-  propertyDbWrite,
-} from "@/lib/integrations/property-data-cache";
 
 /**
  * GET /api/prospecting/reapi-search
@@ -45,30 +38,6 @@ export async function GET(request: NextRequest) {
     const size = Math.min(Number(params.get("size") || "250"), 500);
 
     if (!zip) return NextResponse.json({ error: "zip is required" }, { status: 400 });
-
-    // ── Cache check ──
-    // Each REAPI detail call is metered, so the same (zip, mode, type, filters)
-    // tuple should NOT re-fetch within the cache window. Without this layer
-    // every preview / re-search burned ~5% of the monthly allotment.
-    const cacheKey = buildPropertyCacheKey("unified", "reapi-prospect-search", {
-      zip,
-      mode,
-      propertyType: propertyType || "",
-      minYearsOwned: minYearsOwned || "",
-      minAvm: minAvm || "",
-      minEquity: minEquity || "",
-      size,
-    });
-
-    const memCached = propertyCacheGet(cacheKey);
-    if (memCached) {
-      return NextResponse.json({ ...(memCached.data as object), cached: "memory" });
-    }
-    const dbCached = await propertyDbRead(cacheKey, "reapi-prospect-search");
-    if (dbCached) {
-      propertyCacheSet(cacheKey, dbCached.data, "unified");
-      return NextResponse.json({ ...(dbCached.data as object), cached: "db" });
-    }
 
     // Build REAPI search criteria based on prospecting mode
     // Always request a large pool of IDs (free) to get enough results after filtering
@@ -109,12 +78,43 @@ export async function GET(request: NextRequest) {
 
     // Step 1: Get property IDs (FREE)
     const idsResult = await reapi.searchPropertyIds(criteria as any);
-    const allIds = idsResult.data.map((item: any) =>
-      typeof item === "number" || typeof item === "string" ? String(item) : String(item.id || ""),
-    ).filter(Boolean);
+    const allIdsRaw = idsResult.data
+      .map((item: any) => (typeof item === "number" || typeof item === "string" ? String(item) : String(item.id || "")))
+      .filter(Boolean);
+
+    if (allIdsRaw.length === 0) {
+      return NextResponse.json({ properties: [], total: 0, scanned: 0, mode });
+    }
+
+    // ── Dedup: exclude IDs the agent has seen for this (zip, mode, type)
+    // tuple within the last 30 days. Lets agents build a call list across
+    // multiple search passes without burning REAPI detail calls on the
+    // same properties they already reviewed.
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - 30);
+    const { data: alreadySeen } = await supabase
+      .from("prospecting_fetched_ids")
+      .select("attom_id")
+      .eq("agent_id", user.id)
+      .eq("zip", zip)
+      .eq("mode", mode)
+      .eq("property_type", propertyType || "")
+      .gte("fetched_at", cutoffDate.toISOString())
+      .limit(5000);
+
+    const seenSet = new Set((alreadySeen || []).map((r) => r.attom_id));
+    const allIds = allIdsRaw.filter((id) => !seenSet.has(id));
+    const skippedCount = allIdsRaw.length - allIds.length;
 
     if (allIds.length === 0) {
-      return NextResponse.json({ properties: [], total: 0, scanned: 0, mode });
+      return NextResponse.json({
+        properties: [],
+        total: idsResult.resultCount || allIdsRaw.length,
+        scanned: 0,
+        skippedAlreadyReviewed: skippedCount,
+        exhausted: true,
+        mode,
+      });
     }
 
     // Step 2: Get full details for top results.
@@ -208,24 +208,44 @@ export async function GET(request: NextRequest) {
       return (b._reapi?.estimatedEquity || 0) - (a._reapi?.estimatedEquity || 0);
     });
 
-    console.log(`[Prospecting] REAPI ${mode} search for ${zip}: ${allIds.length} total, ${properties.length} fetched, ${errors.length} errors`);
+    console.log(
+      `[Prospecting] REAPI ${mode} search for ${zip}: ${allIdsRaw.length} total, ${skippedCount} dedup-skipped, ${properties.length} fetched, ${errors.length} errors`,
+    );
+
+    // Persist the IDs we just returned so subsequent searches in the same
+    // (zip, mode, type) context skip them. Use upsert with onConflict so
+    // re-running an identical search (cache miss for some reason) is
+    // idempotent rather than duplicating rows.
+    if (properties.length > 0) {
+      const fetchedRows = properties
+        .map((p) => p._reapi?.id || p.identifier?.attomId)
+        .filter(Boolean)
+        .map((attomId) => ({
+          agent_id: user.id,
+          attom_id: String(attomId),
+          zip,
+          mode,
+          property_type: propertyType || "",
+        }));
+      if (fetchedRows.length > 0) {
+        supabase
+          .from("prospecting_fetched_ids")
+          .upsert(fetchedRows, { onConflict: "agent_id,attom_id,zip,mode,property_type" })
+          .then(({ error: insertErr }) => {
+            if (insertErr) console.warn("[Prospecting] Failed to record fetched IDs:", insertErr.message);
+          });
+      }
+    }
 
     const response = {
       properties,
-      total: idsResult.resultCount || allIds.length,
+      total: idsResult.resultCount || allIdsRaw.length,
       fetched: properties.length,
       scanned: allIds.length,
+      skippedAlreadyReviewed: skippedCount,
       mode,
       errors: errors.length > 0 ? errors : undefined,
     };
-
-    // Cache successful results for 7 days. The cache layer handles both
-    // in-memory (this server instance) and Supabase persistence (cross-
-    // instance + survives restarts).
-    if (properties.length > 0) {
-      propertyCacheSet(cacheKey, response, "unified");
-      propertyDbWrite(cacheKey, "reapi-prospect-search", response, "unified").catch(() => {});
-    }
 
     return NextResponse.json(response);
   } catch (error: any) {

@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import PropertyDetailModal from "./property-detail-modal.client";
 import ProspectAIPanel, { type ProspectAIPanelHandle } from "./prospect-ai-panel.client";
 import ExportToolbar from "../components/export-toolbar";
+import ProspectingShortlistDrawer from "./prospecting-shortlist.client";
 import { buildQPublicUrl } from "@/lib/hawaii-zip-county";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -749,6 +750,64 @@ export default function Prospecting() {
   const pageSize = 50;
 
   const [selectedProperty, setSelectedProperty] = useState<AttomProperty | null>(null);
+
+  // ── Shortlist state (multi-search call list builder) ──
+  const [shortlistAttomIds, setShortlistAttomIds] = useState<Set<string>>(new Set());
+  const [shortlistOpen, setShortlistOpen] = useState(false);
+  const [shortlistRefreshKey, setShortlistRefreshKey] = useState(0);
+
+  // Hydrate shortlist on mount so already-shortlisted properties show with
+  // the checkbox checked, even after a fresh page load.
+  useEffect(() => {
+    fetch("/api/prospecting/shortlist")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data?.items) {
+          setShortlistAttomIds(new Set(data.items.map((i: any) => String(i.attom_id))));
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const toggleShortlist = useCallback(
+    async (prop: AttomProperty) => {
+      const attomId = String(
+        (prop as any)._reapi?.id || prop.identifier?.attomId || (prop.identifier as any)?.Id || "",
+      );
+      if (!attomId) return;
+      const wasIn = shortlistAttomIds.has(attomId);
+
+      // Optimistic UI update
+      setShortlistAttomIds((prev) => {
+        const next = new Set(prev);
+        if (wasIn) next.delete(attomId);
+        else next.add(attomId);
+        return next;
+      });
+
+      try {
+        if (wasIn) {
+          await fetch(`/api/prospecting/shortlist?attomId=${attomId}`, { method: "DELETE" });
+        } else {
+          await fetch("/api/prospecting/shortlist", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ property: prop, sourceMode: mode }),
+          });
+        }
+        setShortlistRefreshKey((k) => k + 1);
+      } catch {
+        // Revert on failure
+        setShortlistAttomIds((prev) => {
+          const next = new Set(prev);
+          if (wasIn) next.add(attomId);
+          else next.delete(attomId);
+          return next;
+        });
+      }
+    },
+    [shortlistAttomIds, mode],
+  );
   const [expandedInvestor, setExpandedInvestor] = useState<string | null>(null);
 
   const [debugInfo, setDebugInfo] = useState("");
@@ -1652,16 +1711,35 @@ export default function Prospecting() {
           setSharedRawData(mapped);
           setSharedDataKey(`${zip.trim()}:${propertyType}`);
           applyModeFilter(mode, mapped);
+          const dedupNote =
+            reapiData.skippedAlreadyReviewed && reapiData.skippedAlreadyReviewed > 0
+              ? ` · ${reapiData.skippedAlreadyReviewed} already reviewed (skipped)`
+              : "";
           setDebugInfo(
             `Scanned ${reapiData.scanned} properties — ${reapiData.fetched} with full data, ` +
-            `${mapped.filter((p: any) => p._leadScore?.score === "hot").length} HOT leads, ` +
-            `${mapped.filter((p: any) => p._leadScore?.score === "warm").length} WARM leads ` +
-            `[source: enhanced property data]`,
+              `${mapped.filter((p: any) => p._leadScore?.score === "hot").length} HOT leads, ` +
+              `${mapped.filter((p: any) => p._leadScore?.score === "warm").length} WARM leads` +
+              dedupNote +
+              ` [source: enhanced property data]`,
           );
           setIsLoading(false);
           return;
         }
-        // If REAPI returned 0, fall through to legacy pipeline
+        // If REAPI hit "exhausted" (every property in this zip+mode has been
+        // shown to this agent already), DON'T fall through — falling through
+        // would re-pay Realie/RentCast for properties we've already seen.
+        // Instead, surface a friendly message and stop.
+        if (reapiData.exhausted) {
+          setResults([]);
+          setTotalCount(0);
+          setDebugInfo(
+            `All ${reapiData.skippedAlreadyReviewed || "available"} properties in this ZIP + mode have been ` +
+              `reviewed in the last 30 days. Try a different ZIP, switch modes, or wait for fresh signals.`,
+          );
+          setIsLoading(false);
+          return;
+        }
+        // If REAPI returned 0 (and not exhausted), fall through to legacy pipeline
         console.log("[Prospecting] REAPI returned 0 results, falling back to legacy pipeline");
       } catch (reapiErr) {
         console.warn("[Prospecting] REAPI search failed, falling back to legacy:", reapiErr);
@@ -1977,21 +2055,49 @@ export default function Prospecting() {
         : null;
     const qpubUrl = qpubTmk ? buildQPublicUrl(apn!, null, prop.address?.postal1) : null;
 
+    const cardAttomId = String(
+      (prop as any)._reapi?.id || prop.identifier?.attomId || (prop.identifier as any)?.Id || "",
+    );
+    const isInShortlist = cardAttomId ? shortlistAttomIds.has(cardAttomId) : false;
+
     return (
       <div
         key={prop.identifier?.attomId || idx}
         onClick={() => setSelectedProperty(prop)}
         style={{
           background: "hsl(var(--card))",
-          border: "1px solid hsl(var(--border))",
+          border: isInShortlist ? "1px solid #059669" : "1px solid hsl(var(--border))",
           borderRadius: 10,
           padding: 16,
+          paddingLeft: 44,
           cursor: "pointer",
-          transition: "box-shadow 0.15s",
+          transition: "box-shadow 0.15s, border-color 0.15s",
+          position: "relative",
         }}
         onMouseEnter={(e) => (e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.08)")}
         onMouseLeave={(e) => (e.currentTarget.style.boxShadow = "none")}
       >
+        {/* Shortlist checkbox — clicking does NOT open the modal */}
+        <input
+          type="checkbox"
+          checked={isInShortlist}
+          onChange={(e) => {
+            e.stopPropagation();
+            toggleShortlist(prop);
+          }}
+          onClick={(e) => e.stopPropagation()}
+          aria-label={isInShortlist ? "Remove from shortlist" : "Add to shortlist"}
+          title={isInShortlist ? "Remove from shortlist" : "Add to shortlist"}
+          style={{
+            position: "absolute",
+            top: 16,
+            left: 16,
+            width: 16,
+            height: 16,
+            cursor: "pointer",
+            accentColor: "#059669",
+          }}
+        />
         <div
           style={{
             display: "flex",
@@ -3420,6 +3526,23 @@ export default function Prospecting() {
               {totalCount.toLocaleString()} propert{totalCount === 1 ? "y" : "ies"} found
             </div>
 
+            {/* Shortlist trigger — opens the call-list drawer */}
+            <button
+              onClick={() => setShortlistOpen(true)}
+              style={{
+                padding: "8px 14px",
+                background: shortlistAttomIds.size > 0 ? "#059669" : "hsl(var(--card))",
+                color: shortlistAttomIds.size > 0 ? "#fff" : "hsl(var(--foreground))",
+                border: shortlistAttomIds.size > 0 ? "1px solid #059669" : "1px solid hsl(var(--border))",
+                borderRadius: 6,
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              Call List ({shortlistAttomIds.size})
+            </button>
+
             {/* Power-dialer-friendly export. Columns match GHL/CRM bulk-import
                 conventions (First Name, Last Name, Phone, Email, Address,
                 City, State, Zip, plus property context tags). When skip
@@ -3936,6 +4059,24 @@ export default function Prospecting() {
           farmingContext={mode === "radius" ? { radiusMiles, propertyType } : undefined}
         />
       )}
+
+      <ProspectingShortlistDrawer
+        open={shortlistOpen}
+        onClose={() => {
+          setShortlistOpen(false);
+          // Re-fetch the shortlist count in case the user removed items inside
+          // the drawer — keeps the card checkboxes in sync.
+          fetch("/api/prospecting/shortlist")
+            .then((r) => (r.ok ? r.json() : null))
+            .then((data) => {
+              if (data?.items) {
+                setShortlistAttomIds(new Set(data.items.map((i: any) => String(i.attom_id))));
+              }
+            })
+            .catch(() => {});
+        }}
+        refreshKey={shortlistRefreshKey}
+      />
     </div>
   );
 }
