@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect, lazy, Suspense } from "react";
+import { useState, useEffect, useCallback, lazy, Suspense } from "react";
 
 const PropertyDetailModal = lazy(() => import("../property-data/property-detail-modal.client"));
+const ProspectingShortlistDrawer = lazy(() => import("../property-data/prospecting-shortlist.client"));
 
 const fmt = (n: number) => "$" + n.toLocaleString();
 
@@ -77,6 +78,84 @@ export function BirdDogPage() {
   const [formEquityMin, setFormEquityMin] = useState("");
   const [creating, setCreating] = useState(false);
   const [selectedProperty, setSelectedProperty] = useState<any>(null);
+
+  // ── Shortlist (cherry-pick) state ──
+  // Reuses the same prospecting_shortlist table + drawer used by the
+  // Prospecting page so the agent has a single Call List across surfaces.
+  const [shortlistAttomIds, setShortlistAttomIds] = useState<Set<string>>(new Set());
+  const [shortlistOpen, setShortlistOpen] = useState(false);
+  const [shortlistRefreshKey, setShortlistRefreshKey] = useState(0);
+
+  const refreshShortlist = useCallback(() => {
+    fetch("/api/prospecting/shortlist")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data?.items) {
+          setShortlistAttomIds(new Set(data.items.map((i: any) => String(i.attom_id))));
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    refreshShortlist();
+  }, [refreshShortlist]);
+
+  const toggleShortlist = useCallback(
+    async (r: Result) => {
+      // Bird Dog persists the original REAPI response in `property_data`.
+      // The shortlist endpoint pulls attom_id from `_reapi.id` /
+      // `identifier.attomId` so passing property_data directly works.
+      const propertyData = r.property_data;
+      const attomId = String(
+        propertyData?._reapi?.id ||
+          propertyData?.identifier?.attomId ||
+          propertyData?.identifier?.Id ||
+          "",
+      );
+      if (!attomId) return;
+      const wasIn = shortlistAttomIds.has(attomId);
+
+      // Optimistic UI
+      setShortlistAttomIds((prev) => {
+        const next = new Set(prev);
+        if (wasIn) next.delete(attomId);
+        else next.add(attomId);
+        return next;
+      });
+
+      try {
+        if (wasIn) {
+          await fetch(`/api/prospecting/shortlist?attomId=${attomId}`, { method: "DELETE" });
+        } else {
+          // Build a sourceMode hint from the lead score / Bird Dog flags so the
+          // export tags this lead consistently with prospecting-page entries.
+          const sourceMode = r.lead_flags?.absentee_owner
+            ? "absentee"
+            : r.lead_flags?.high_equity
+              ? "equity"
+              : r.lead_flags?.pre_foreclosure
+                ? "foreclosure"
+                : "absentee";
+          await fetch("/api/prospecting/shortlist", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ property: propertyData, sourceMode }),
+          });
+        }
+        setShortlistRefreshKey((k) => k + 1);
+      } catch {
+        // Revert on failure
+        setShortlistAttomIds((prev) => {
+          const next = new Set(prev);
+          if (wasIn) next.add(attomId);
+          else next.delete(attomId);
+          return next;
+        });
+      }
+    },
+    [shortlistAttomIds],
+  );
 
   // Load searches
   useEffect(() => {
@@ -358,9 +437,26 @@ export function BirdDogPage() {
               <h2 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>{selectedSearch.name}</h2>
               <div style={{ fontSize: 12, color: "#6b7280" }}>{selectedSearch.criteriaSummary}</div>
             </div>
-            <button onClick={exportHotSheet} style={{ padding: "8px 16px", background: "#059669", color: "white", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-              Export Hot Sheet
-            </button>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button
+                onClick={() => setShortlistOpen(true)}
+                style={{
+                  padding: "8px 14px",
+                  background: shortlistAttomIds.size > 0 ? "#059669" : "hsl(var(--card))",
+                  color: shortlistAttomIds.size > 0 ? "#fff" : "hsl(var(--foreground))",
+                  border: shortlistAttomIds.size > 0 ? "1px solid #059669" : "1px solid hsl(var(--border))",
+                  borderRadius: 8,
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                Call List ({shortlistAttomIds.size})
+              </button>
+              <button onClick={exportHotSheet} style={{ padding: "8px 16px", background: "#059669", color: "white", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+                Export Hot Sheet
+              </button>
+            </div>
           </div>
 
           {/* Score filter tabs */}
@@ -380,8 +476,44 @@ export function BirdDogPage() {
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {results.map((r) => {
                 const sc = SCORE_COLORS[r.lead_score];
+                const cardAttomId = String(
+                  r.property_data?._reapi?.id ||
+                    r.property_data?.identifier?.attomId ||
+                    r.property_data?.identifier?.Id ||
+                    "",
+                );
+                const isInShortlist = cardAttomId ? shortlistAttomIds.has(cardAttomId) : false;
                 return (
-                  <div key={r.id} style={{ background: "hsl(var(--card))", border: `1px solid ${sc.border}`, borderLeft: `4px solid ${sc.text}`, borderRadius: 8, padding: 14 }}>
+                  <div
+                    key={r.id}
+                    style={{
+                      background: "hsl(var(--card))",
+                      border: isInShortlist ? "1px solid #059669" : `1px solid ${sc.border}`,
+                      borderLeft: `4px solid ${sc.text}`,
+                      borderRadius: 8,
+                      padding: 14,
+                      paddingLeft: 36,
+                      position: "relative",
+                    }}
+                  >
+                    {cardAttomId && (
+                      <input
+                        type="checkbox"
+                        checked={isInShortlist}
+                        onChange={() => toggleShortlist(r)}
+                        aria-label={isInShortlist ? "Remove from call list" : "Add to call list"}
+                        title={isInShortlist ? "Remove from call list" : "Add to call list"}
+                        style={{
+                          position: "absolute",
+                          top: 14,
+                          left: 12,
+                          width: 16,
+                          height: 16,
+                          cursor: "pointer",
+                          accentColor: "#059669",
+                        }}
+                      />
+                    )}
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
                       <div>
                         <div
@@ -482,6 +614,20 @@ export function BirdDogPage() {
           />
         </Suspense>
       )}
+
+      {/* Call List drawer (shared shortlist with the Prospecting page) */}
+      <Suspense fallback={null}>
+        <ProspectingShortlistDrawer
+          open={shortlistOpen}
+          onClose={() => {
+            setShortlistOpen(false);
+            // Re-sync card checkboxes in case the agent removed items inside
+            // the drawer.
+            refreshShortlist();
+          }}
+          refreshKey={shortlistRefreshKey}
+        />
+      </Suspense>
     </div>
   );
 }
