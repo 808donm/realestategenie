@@ -90,6 +90,8 @@ export async function POST(req: NextRequest) {
 
   // Upsert so re-connecting (e.g., agent rotated their PIT) works without
   // a separate disconnect step. The unique key is (agent_id, provider).
+  // last_error: null clears any stale error from a previous failed
+  // connect so the card no longer shows a red badge.
   const { error: upsertErr } = await supabase
     .from("integrations")
     .upsert(
