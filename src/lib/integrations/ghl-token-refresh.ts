@@ -72,6 +72,27 @@ export async function getValidGHLConfig(agentId: string): Promise<{
       expiresAt: expiresAtStr,
     });
 
+    // ── Private Integration Token (PIT) path ──
+    // PITs don't expire and don't have a refresh token. When config.is_pit
+    // is set, we just return the stored access_token + location_id verbatim
+    // and skip the entire OAuth refresh dance. The agent rotates the PIT
+    // by re-running the Connect flow if they need to.
+    if (config.is_pit) {
+      if (!accessToken || !locationId) {
+        console.error("[Token Refresh] PIT config missing access_token or location_id");
+        return null;
+      }
+      console.log("[Token Refresh] PIT integration — skipping OAuth refresh");
+      return {
+        access_token: accessToken,
+        location_id: locationId,
+        refresh_token: "", // unused for PIT
+        ghl_pipeline_id: config.ghl_pipeline_id,
+        ghl_new_lead_stage: config.ghl_new_lead_stage,
+        ghl_contacted_stage: config.ghl_contacted_stage,
+      };
+    }
+
     if (!accessToken || !refreshToken || !expiresAtStr) {
       console.error("[Token Refresh] Invalid config - missing tokens or expiration");
       console.error("[Token Refresh] Has ghl_access_token:", !!config.ghl_access_token);

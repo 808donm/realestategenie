@@ -43,8 +43,39 @@ export default function GHLIntegrationCard({ integration }: { integration: Integ
   const selectedPipeline = pipelines.find((p) => p.id === selectedPipelineId);
   const pipelineConfigured = integration?.config?.ghl_pipeline_id && integration?.config?.ghl_new_lead_stage;
 
-  const handleConnect = () => {
-    window.location.href = "/api/integrations/ghl/connect";
+  // ── Private Integration Token (PIT) connect form state ──
+  // Replaces the OAuth marketplace flow. The agent creates a Private
+  // Integration in their CRM, pastes the API key + Location ID here.
+  const [pitApiKey, setPitApiKey] = useState("");
+  const [pitLocationId, setPitLocationId] = useState("");
+  const [pitConnecting, setPitConnecting] = useState(false);
+
+  const handleConnectPit = async () => {
+    if (!pitApiKey.trim() || !pitLocationId.trim()) {
+      toast.error("API Key and Location ID are both required");
+      return;
+    }
+    setPitConnecting(true);
+    try {
+      const res = await fetch("/api/integrations/ghl/connect-pit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ apiKey: pitApiKey.trim(), locationId: pitLocationId.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error("Connect failed", { description: data.error || "Unknown error" });
+        return;
+      }
+      toast.success("CRM connected", {
+        description: data.locationName ? `Location: ${data.locationName}` : `Location ID: ${data.locationId}`,
+      });
+      window.location.reload();
+    } catch (e: any) {
+      toast.error("Connect failed", { description: e.message });
+    } finally {
+      setPitConnecting(false);
+    }
   };
 
   const handleTest = async () => {
@@ -374,25 +405,65 @@ export default function GHLIntegrationCard({ integration }: { integration: Integ
           </div>
         )}
 
-        <div className="flex gap-2">
-          {!isConnected ? (
-            <Button onClick={handleConnect} className="w-full">
-              <ExternalLink className="w-4 h-4 mr-2" />
+        {!isConnected ? (
+          <div className="space-y-3 rounded-md border border-border p-4 bg-muted/40">
+            <div className="text-sm font-semibold">Connect via Private Integration Token</div>
+            <div className="text-xs text-muted-foreground">
+              In your CRM:{" "}
+              <span className="font-mono">Settings &rarr; Private Integrations &rarr; + Create Private Integration</span>.
+              Paste the resulting API Key and your Location ID below.
+            </div>
+
+            <div className="space-y-1">
+              <Label htmlFor="pit-api-key" className="text-xs">
+                API Key
+              </Label>
+              <input
+                id="pit-api-key"
+                type="password"
+                autoComplete="off"
+                value={pitApiKey}
+                onChange={(e) => setPitApiKey(e.target.value)}
+                placeholder="pit-..."
+                className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-ring"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <Label htmlFor="pit-location-id" className="text-xs">
+                Location ID
+              </Label>
+              <input
+                id="pit-location-id"
+                type="text"
+                autoComplete="off"
+                value={pitLocationId}
+                onChange={(e) => setPitLocationId(e.target.value)}
+                placeholder="abc123XYZ..."
+                className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-ring"
+              />
+              <div className="text-[11px] text-muted-foreground">
+                Find this in your CRM under <span className="font-mono">Settings &rarr; Business Profile</span>.
+              </div>
+            </div>
+
+            <Button onClick={handleConnectPit} disabled={pitConnecting} className="w-full">
+              {pitConnecting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               Connect CRM
             </Button>
-          ) : (
-            <>
-              <Button onClick={handleTest} disabled={testing} variant="outline" className="flex-1">
-                {testing && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                Test Connection
-              </Button>
-              <Button onClick={handleDisconnect} disabled={disconnecting} variant="outline" className="flex-1">
-                {disconnecting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                Disconnect
-              </Button>
-            </>
-          )}
-        </div>
+          </div>
+        ) : (
+          <div className="flex gap-2">
+            <Button onClick={handleTest} disabled={testing} variant="outline" className="flex-1">
+              {testing && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              Test Connection
+            </Button>
+            <Button onClick={handleDisconnect} disabled={disconnecting} variant="outline" className="flex-1">
+              {disconnecting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              Disconnect
+            </Button>
+          </div>
+        )}
 
         <div className="text-xs text-muted-foreground">
           <strong>Features:</strong> Contact sync, opportunity creation, pipeline mapping, tag management, notes
